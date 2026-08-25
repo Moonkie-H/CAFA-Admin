@@ -13,6 +13,7 @@
  * path to a new password than a table, a migration and a screen to edit it.
  */
 import { verifyPassword, isPasswordHash } from '../domain/password';
+import { timingSafeEqualText } from '../domain/secrets';
 import type { Env } from '../env';
 import { ApiException } from '../shared/api-exception';
 
@@ -60,9 +61,14 @@ export class AuthService {
    * PREVIEW_TOKEN means the draft endpoint does not exist, which is the right
    * default — unpublished work should not be readable by accident.
    */
-  assertPreviewBuild(offered: string | null): void {
+  async assertPreviewBuild(offered: string | null): Promise<void> {
     const expected = this.env.PREVIEW_TOKEN;
-    if (expected === undefined || expected === '' || offered !== expected) {
+    if (
+      expected === undefined ||
+      expected === '' ||
+      offered === null ||
+      !(await timingSafeEqualText(offered, expected))
+    ) {
       throw ApiException.unauthorized('Not the preview build.');
     }
   }

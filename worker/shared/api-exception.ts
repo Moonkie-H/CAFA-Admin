@@ -32,6 +32,10 @@ export class ApiException extends Error {
     return new ApiException(404, message);
   }
 
+  static payloadTooLarge(): ApiException {
+    return new ApiException(413, 'That request body is too large.');
+  }
+
   /** A save the validator refused. 422 because the shape was fine and the values were not. */
   static unprocessable(message: string, problems: Problem[]): ApiException {
     return new ApiException(422, message, problems);

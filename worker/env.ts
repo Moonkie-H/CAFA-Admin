@@ -1,31 +1,12 @@
 /**
  * Everything the Worker is handed by the platform.
  *
- * The bindings come from wrangler.jsonc; the secrets come from
- * `wrangler secret put`. Nothing here is read anywhere but the composition root
- * in worker/index.ts, which builds the repositories and services that close over
- * it — so a service never reaches for an environment variable, it is given the
- * one thing it needs.
+ * Wrangler generates `CloudflareBindings` from wrangler.jsonc. Only secrets and
+ * optional deployment values are declared here because they do not appear in
+ * committed configuration. This keeps D1, R2, assets and ordinary vars from
+ * drifting between the config and a handwritten interface.
  */
-export interface Env {
-  ASSETS: Fetcher;
-  DB: D1Database;
-  MEDIA: R2Bucket;
-
-  /** Where the originals are served from, so the template can transform them. */
-  MEDIA_BASE: string;
-  /**
-   * `off` when the zone cannot run Image Transformations — it is a paid-plan
-   * setting, and on a Free zone `image_resizing` reads back as not editable.
-   * Travels into the bundle as `mediaTransform`; see worker/domain/bundle.ts.
-   */
-  MEDIA_TRANSFORM?: string;
-  /**
-   * The public site's origin. Polled for build-info.json, and stamped into the
-   * published bundle as `site.url` — see worker/domain/bundle.ts for why it
-   * lives here rather than in the database.
-   */
-  PRODUCTION_URL: string;
+interface SecretBindings {
   PREVIEW_URL?: string;
 
   /** The one account that may sign in. */
@@ -40,3 +21,5 @@ export interface Env {
   /** Lets the preview build read the draft. Absent means no draft endpoint. */
   PREVIEW_TOKEN?: string;
 }
+
+export type Env = CloudflareBindings & SecretBindings;

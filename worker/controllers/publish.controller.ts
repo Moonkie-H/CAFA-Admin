@@ -11,6 +11,7 @@ import {
 } from '../models/dtos/publish.dtos';
 import type { PublishService } from '../services/publish.service';
 import { ApiResponse } from '../shared/api-response';
+import { readOptionalJson } from '../shared/request-body';
 import type { AuthorizedContext } from '../shared/router';
 
 export class PublishController {
@@ -22,7 +23,7 @@ export class PublishController {
 
   publish = async ({ request, user }: AuthorizedContext): Promise<ApiResponse<PublishResponse>> => {
     // An empty body is normal — the studio's Publish button sends no message.
-    const body: unknown = await request.json().catch(() => ({}));
+    const body = await readOptionalJson(request);
     const result = await this.publishing.publish(user, parsePublishRequest(body));
 
     return ApiResponse.ok(result, result.published ? 'Published.' : (result.reason ?? 'Nothing to publish.'));

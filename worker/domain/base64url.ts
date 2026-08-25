@@ -24,17 +24,3 @@ export function fromBase64Url(value: string): Uint8Array<ArrayBuffer> | null {
     return null;
   }
 }
-
-/**
- * Comparison whose duration does not depend on where the difference is.
- *
- * A `===` on two hashes leaks, through timing, how long a prefix an attacker
- * has guessed — which over enough attempts is the hash. Length is allowed to
- * leak: it is a property of the algorithm, not of the secret.
- */
-export function equalBytes(left: Uint8Array, right: Uint8Array): boolean {
-  if (left.length !== right.length) return false;
-  let difference = 0;
-  for (let at = 0; at < left.length; at += 1) difference |= (left[at] ?? 0) ^ (right[at] ?? 0);
-  return difference === 0;
-}

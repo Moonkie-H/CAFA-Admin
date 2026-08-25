@@ -43,3 +43,31 @@ export async function insertRevision(
   if (created === null) throw new Error('The revision could not be written.');
   return created.id;
 }
+
+/**
+ * Append only when the newest row differs, as one SQL statement.
+ *
+ * The comparison belongs inside the insert: two publish requests may read the
+ * same newest revision concurrently, but D1 serializes their writes and the
+ * second statement then observes the first one's content.
+ */
+export async function insertRevisionIfChanged(
+  db: D1Database,
+  revision: { content: string; message: string; publishedBy: string },
+): Promise<number | null> {
+  const created = await db
+    .prepare(
+      `INSERT INTO revision (content, message, published_by)
+       SELECT ?, ?, ?
+       WHERE NOT EXISTS (
+         SELECT 1
+         FROM (SELECT content FROM revision ORDER BY id DESC LIMIT 1) AS latest
+         WHERE latest.content = ?
+       )
+       RETURNING id`,
+    )
+    .bind(revision.content, revision.message, revision.publishedBy, revision.content)
+    .first<{ id: number }>();
+
+  return created?.id ?? null;
+}

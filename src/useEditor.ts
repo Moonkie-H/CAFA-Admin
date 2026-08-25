@@ -46,26 +46,32 @@ export function useEditor(initial: ContentSet, initialMedia: MediaInfo[]): Edito
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const changeVersion = useRef(0);
+  const uploadsInFlight = useRef(0);
+  const saveInFlight = useRef(false);
 
   /** Keys already in the bucket, so a preview knows whether to expect bytes. */
-  const known = useRef(new Set(initialMedia.map((entry) => entry.key)));
+  const [known, setKnown] = useState(() => new Set(initialMedia.map((entry) => entry.key)));
   /** Bumped on every upload so a replaced photograph is re-fetched, not cached. */
   const [version, setVersion] = useState(0);
 
   const update = useCallback(<K extends keyof ContentSet>(key: K, value: ContentSet[K]) => {
     setContent((current) => ({ ...current, [key]: value }));
+    changeVersion.current += 1;
     setDirty(true);
   }, []);
 
   const putMedia = useCallback(async (key: string, file: File): Promise<void> => {
+    uploadsInFlight.current += 1;
     setUploading(true);
     setError(null);
     try {
       await mediaService.upload(key, await prepareImage(file));
-      known.current.add(key);
+      setKnown((current) => new Set(current).add(key));
       setVersion((current) => current + 1);
     } finally {
-      setUploading(false);
+      uploadsInFlight.current -= 1;
+      setUploading(uploadsInFlight.current > 0);
     }
   }, []);
 
@@ -73,23 +79,24 @@ export function useEditor(initial: ContentSet, initialMedia: MediaInfo[]): Edito
 
   /*
    * Both gates, so the banner says the same thing the Worker would. `version`
-   * rather than `known` in the dependencies: the set is a ref, so it is the
-   * upload counter beside it that tells React a photograph has arrived and the
-   * complaint about it can go away.
+   * The known-key set is immutable state: replacing it after an upload makes
+   * the missing-file complaint disappear without exposing a mutable Set.
    */
   const problems = useMemo(
-    () => [...checkContent(content), ...checkImagesInStorage(content, known.current)],
-    [content, version],
+    () => [...checkContent(content), ...checkImagesInStorage(content, known)],
+    [content, known],
   );
 
   const save = useCallback(async (): Promise<boolean> => {
-    if (!dirty || problems.length > 0) return false;
+    if (!dirty || problems.length > 0 || saveInFlight.current) return false;
+    saveInFlight.current = true;
+    const versionAtStart = changeVersion.current;
     setSaving(true);
     setError(null);
 
     try {
       await contentService.save(content);
-      setDirty(false);
+      setDirty(changeVersion.current !== versionAtStart);
       return true;
     } catch (failure) {
       // A 422 means the server's copy of the rules caught something the form's
@@ -104,9 +111,10 @@ export function useEditor(initial: ContentSet, initialMedia: MediaInfo[]): Edito
       }
       return false;
     } finally {
+      saveInFlight.current = false;
       setSaving(false);
     }
-  }, [content, dirty, problems.length, say, t]);
+  }, [content, dirty, problems, say, t]);
 
   return {
     content,

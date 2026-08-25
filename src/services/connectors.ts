@@ -61,8 +61,11 @@ export interface ConnectorGroupView {
 }
 
 export const connectorService = {
-  document: async (): Promise<ApiDocument> => {
-    const response = await fetch(DOCUMENT_PATH, { headers: { Accept: 'application/json' } });
+  document: async (signal?: AbortSignal): Promise<ApiDocument> => {
+    const response = await fetch(DOCUMENT_PATH, {
+      headers: { Accept: 'application/json' },
+      signal,
+    });
     if (!response.ok) throw new Error(`The API document could not be read (${response.status}).`);
     return response.json<ApiDocument>();
   },
@@ -74,8 +77,11 @@ export const connectorService = {
    * 404's envelope is as interesting as a 200's data — more so, usually, since
    * it is the one that says nothing has been published yet.
    */
-  probe: async (path: string): Promise<{ status: number; ok: boolean; body: string }> => {
-    const response = await fetch(path, { headers: { Accept: 'application/json' } });
+  probe: async (
+    path: string,
+    signal?: AbortSignal,
+  ): Promise<{ status: number; ok: boolean; body: string }> => {
+    const response = await fetch(path, { headers: { Accept: 'application/json' }, signal });
     const body = await response.text();
     return { status: response.status, ok: response.ok, body: pretty(body) };
   },

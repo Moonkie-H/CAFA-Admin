@@ -13,7 +13,7 @@
  * can change anything: the writing half of the API is behind the session and is
  * not in the document at all.
  */
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -21,29 +21,20 @@ import {
   DOCUMENT_PATH,
   groupsOf,
   resolvePath,
-  type ApiDocument,
   type ConnectorView,
 } from '../services/connectors';
+import { useRemote } from '../useRemote';
 
 /** A long answer is truncated on screen; the whole of it is one click away. */
 const SHOWN = 12_000;
 
+const readDocument = (signal: AbortSignal) => connectorService.document(signal);
+
 export function DevPanelPage() {
   const { t } = useTranslation();
-  const [spec, setSpec] = useState<ApiDocument | null>(null);
-  const [failure, setFailure] = useState<string | null>(null);
+  const { data: spec, error } = useRemote(readDocument, t('devPage.documentFailed'));
 
-  useEffect(() => {
-    void (async () => {
-      try {
-        setSpec(await connectorService.document());
-      } catch (error) {
-        setFailure(error instanceof Error ? error.message : t('devPage.documentFailed'));
-      }
-    })();
-  }, []);
-
-  if (failure !== null) return <p className="problem">{failure}</p>;
+  if (error !== null) return <p className="problem">{error}</p>;
   if (spec === null) return <p className="empty">{t('devPage.loading')}</p>;
 
   const groups = groupsOf(spec);
@@ -77,7 +68,7 @@ export function DevPanelPage() {
       <p className="dev-overview">{plain(spec.info.description)}</p>
 
       <div className="dev-layout">
-        <nav className="dev-index" aria-label="Connectors">
+        <nav className="dev-index" aria-label={t('devPage.connectorsNav')}>
           {groups.map((group) => (
             <div key={group.name} className="dev-index-group">
               <span className="dev-index-title">{group.name}</span>
@@ -164,7 +155,7 @@ function ConnectorCard({ connector, server }: ConnectorCardProps) {
                 {param.name}
                 <span className="connector-param-kind">
                   {param.in}
-                  {param.required ? ' · required' : ''}
+                  {param.required ? ` · ${t('devPage.required')}` : ''}
                 </span>
               </span>
 
@@ -185,7 +176,7 @@ function ConnectorCard({ connector, server }: ConnectorCardProps) {
                     setValues((current) => ({ ...current, [param.name]: event.target.value }))
                   }
                 >
-                  {!param.required && <option value="">— any —</option>}
+                  {!param.required && <option value="">{t('devPage.anyValue')}</option>}
                   {param.schema.enum.map((option) => (
                     <option key={option} value={option}>
                       {option}
@@ -213,11 +204,14 @@ function ConnectorCard({ connector, server }: ConnectorCardProps) {
       {result !== null && (
         <div className="connector-result">
           <span className={`pill${result.ok ? '' : ' pill-warn'}`}>
-            {result.status === 0 ? 'No answer' : result.status}
+            {result.status === 0 ? t('devPage.noAnswer') : result.status}
           </span>
           <pre className="connector-body">
             {result.body.length > SHOWN
-              ? `${result.body.slice(0, SHOWN)}\n\n… ${result.body.length - SHOWN} more characters. Open ${path} in a tab for the whole of it.`
+              ? `${result.body.slice(0, SHOWN)}\n\n${t('devPage.truncated', {
+                  characters: result.body.length - SHOWN,
+                  path,
+                })}`
               : result.body}
           </pre>
         </div>

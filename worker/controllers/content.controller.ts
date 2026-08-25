@@ -8,6 +8,7 @@
 import { parseSaveRequest, type ContentResponse, type SavedResponse } from '../models/dtos/content.dtos';
 import type { ContentService } from '../services/content.service';
 import { ApiResponse } from '../shared/api-response';
+import { readJson } from '../shared/request-body';
 import type { AuthorizedContext } from '../shared/router';
 
 export class ContentController {
@@ -18,7 +19,7 @@ export class ContentController {
   };
 
   save = async ({ request }: AuthorizedContext): Promise<ApiResponse<SavedResponse>> => {
-    const content = parseSaveRequest(await request.json());
+    const content = parseSaveRequest(await readJson(request));
     await this.content.save(content);
     return ApiResponse.ok({ saved: true as const }, 'Saved.');
   };

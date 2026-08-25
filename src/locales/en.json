@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "c.a.f.a atelier",
     "editor": "Studio editor",
     "loading": "Loading…",
     "loadingSite": "Loading the site…",
@@ -18,14 +17,12 @@
     "copy": "Site text",
     "history": "History",
     "developer": "Developer tools",
-    "pages": "Pages"
+    "pages": "Pages",
+    "tools": "Tools"
   },
   "account": {
-    "menu": "Account menu",
     "signedInAs": "Signed in as",
     "language": "Interface language",
-    "english": "English",
-    "chinese": "中文",
     "signOut": "Sign out",
     "unsavedSignOut": "There are unsaved changes. Sign out anyway?"
   },
@@ -48,9 +45,6 @@
     "nothing": "Nothing to publish.",
     "failed": "Publishing failed.",
     "saveFirst": "Save the newest edits before previewing or publishing.",
-    "stepSave": "1. Save",
-    "stepPreview": "2. Preview",
-    "stepPublish": "3. Publish",
     "saveFailed": "The save failed."
   },
   "signin": {
@@ -62,23 +56,29 @@
     "failed": "The sign-in could not be completed."
   },
   "common": {
-    "empty": "Nothing here yet.",
-    "remove": "Remove",
+    "building": "Building…",
     "cancel": "Cancel",
+    "choosePhoto": "Choose a photograph",
+    "decorative": "This photograph is decorative",
+    "empty": "Nothing here yet.",
+    "imageDescription": "Description, for anyone who cannot see it",
+    "imageHint": "Say what is in the photograph, not that it is a photograph.",
+    "incomplete": "Incomplete",
+    "keepIt": "Keep it",
     "live": "Live",
+    "moveItemDown": "Move {{item}} {{number}} down",
+    "moveItemUp": "Move {{item}} {{number}} up",
+    "moveNamedDown": "Move {{name}} down",
+    "moveNamedUp": "Move {{name}} up",
+    "noImage": "No image",
+    "notConfigured": "Not configured",
+    "remove": "Remove",
+    "removeItem": "Remove {{item}} {{number}}",
+    "replace": "Replace",
+    "set": "Set",
     "unknown": "Unknown",
     "upToDate": "Up to date",
-    "building": "Building…",
-    "notConfigured": "Not configured",
-    "incomplete": "Incomplete",
-    "set": "Set",
-    "choosePhoto": "Choose a photograph",
-    "replace": "Replace",
-    "noImage": "No image",
-    "uploading": "Resizing and uploading…",
-    "decorative": "This photograph is decorative",
-    "imageDescription": "Description, for anyone who cannot see it",
-    "imageHint": "Say what is in the photograph, not that it is a photograph."
+    "uploading": "Resizing and uploading…"
   },
   "dashboard": {
     "title": "Control panel",
@@ -203,7 +203,6 @@
     "needsAddress": "Give this work a web address first—it decides where its photographs are filed.",
     "removeQuestion": "Remove {{title}} from the site? Its photographs stay in storage, so a developer can restore them.",
     "removeIt": "Remove it",
-    "keepIt": "Keep it",
     "removeWork": "Remove this work"
   },
   "programPage": {
@@ -238,7 +237,12 @@
     "sending": "Asking…",
     "response": "Response shape",
     "documentFailed": "The API document could not be read.",
-    "requestFailed": "The request failed."
+    "requestFailed": "The request failed.",
+    "connectorsNav": "Connectors",
+    "required": "required",
+    "anyValue": "— any —",
+    "noAnswer": "No answer",
+    "truncated": "… {{characters}} more characters. Open {{path}} in a tab for the whole of it."
   },
   "copyPage": {
     "intro": "Every field exists in both languages. A blank in either is caught before saving."

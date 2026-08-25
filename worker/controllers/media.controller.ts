@@ -9,13 +9,14 @@ import { parseMediaKey, parseTint, type UploadMediaResponse } from '../models/dt
 import { contentTypeOf } from '../domain/image';
 import type { MediaService } from '../services/media.service';
 import { ApiResponse } from '../shared/api-response';
+import { MAX_IMAGE_BYTES, readBytes } from '../shared/request-body';
 import type { AuthorizedContext } from '../shared/router';
 
 export class MediaController {
   constructor(private readonly media: MediaService) {}
 
   get = async ({ url }: AuthorizedContext): Promise<Response> => {
-    const key = parseMediaKey(url);
+    const key = parseMediaKey(url, 'read');
     const object = await this.media.fetch(key);
 
     return new Response(object.body, {
@@ -36,9 +37,9 @@ export class MediaController {
    * browser read out of it while it was resizing it.
    */
   upload = async ({ request, url }: AuthorizedContext): Promise<ApiResponse<UploadMediaResponse>> => {
-    const key = parseMediaKey(url);
+    const key = parseMediaKey(url, 'write');
     const tint = parseTint(url);
-    const uploaded = await this.media.upload(key, await request.arrayBuffer(), tint);
+    const uploaded = await this.media.upload(key, await readBytes(request, MAX_IMAGE_BYTES), tint);
     return ApiResponse.ok(uploaded, 'Uploaded.');
   };
 }

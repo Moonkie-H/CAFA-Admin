@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "c.a.f.a atelier",
     "editor": "工作室编辑器",
     "loading": "正在载入…",
     "loadingSite": "正在载入网站…",
@@ -18,14 +17,12 @@
     "copy": "网站文字",
     "history": "发布记录",
     "developer": "开发者工具",
-    "pages": "页面"
+    "pages": "页面",
+    "tools": "工具"
   },
   "account": {
-    "menu": "账户菜单",
     "signedInAs": "登录账户",
     "language": "界面语言",
-    "english": "English",
-    "chinese": "中文",
     "signOut": "退出登录",
     "unsavedSignOut": "还有未保存的更改，仍要退出吗？"
   },
@@ -48,9 +45,6 @@
     "nothing": "没有可发布的更改。",
     "failed": "发布失败。",
     "saveFirst": "请先保存最新更改，再预览或发布。",
-    "stepSave": "1. 保存",
-    "stepPreview": "2. 预览",
-    "stepPublish": "3. 发布",
     "saveFailed": "保存失败。"
   },
   "signin": {
@@ -62,23 +56,29 @@
     "failed": "无法完成登录。"
   },
   "common": {
-    "empty": "这里还没有内容。",
-    "remove": "删除",
+    "building": "正在生成…",
     "cancel": "取消",
+    "choosePhoto": "选择照片",
+    "decorative": "这张照片仅用于装饰",
+    "empty": "这里还没有内容。",
+    "imageDescription": "为无法看到图片的人提供描述",
+    "imageHint": "请描述照片中的内容，而不是只说这是一张照片。",
+    "incomplete": "未完成",
+    "keepIt": "保留",
     "live": "线上版本",
+    "moveItemDown": "将第 {{number}} 个{{item}}下移",
+    "moveItemUp": "将第 {{number}} 个{{item}}上移",
+    "moveNamedDown": "将 {{name}} 下移",
+    "moveNamedUp": "将 {{name}} 上移",
+    "noImage": "没有图片",
+    "notConfigured": "尚未配置",
+    "remove": "删除",
+    "removeItem": "删除第 {{number}} 个{{item}}",
+    "replace": "替换",
+    "set": "已设置",
     "unknown": "未知",
     "upToDate": "已是最新",
-    "building": "正在生成…",
-    "notConfigured": "尚未配置",
-    "incomplete": "未完成",
-    "set": "已设置",
-    "choosePhoto": "选择照片",
-    "replace": "替换",
-    "noImage": "没有图片",
-    "uploading": "正在调整尺寸并上传…",
-    "decorative": "这张照片仅用于装饰",
-    "imageDescription": "为无法看到图片的人提供描述",
-    "imageHint": "请描述照片中的内容，而不是只说这是一张照片。"
+    "uploading": "正在调整尺寸并上传…"
   },
   "dashboard": {
     "title": "控制面板",
@@ -203,7 +203,6 @@
     "needsAddress": "请先为作品设置网页地址，它决定照片的存放位置。",
     "removeQuestion": "从网站删除“{{title}}”吗？照片仍会保留在存储中，开发者可以恢复。",
     "removeIt": "确认删除",
-    "keepIt": "保留",
     "removeWork": "删除此作品"
   },
   "programPage": {
@@ -238,7 +237,12 @@
     "sending": "请求中…",
     "response": "响应结构",
     "documentFailed": "无法读取 API 文档。",
-    "requestFailed": "请求失败。"
+    "requestFailed": "请求失败。",
+    "connectorsNav": "接口",
+    "required": "必填",
+    "anyValue": "— 任意 —",
+    "noAnswer": "没有响应",
+    "truncated": "… 还有 {{characters}} 个字符。在新标签页中打开 {{path}} 查看完整内容。"
   },
   "copyPage": {
     "intro": "每个字段都同时提供中文和英文，任一语言留空都会在保存前被发现。"

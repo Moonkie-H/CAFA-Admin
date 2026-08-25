@@ -11,7 +11,7 @@
  * a save be one transaction over the whole thing rather than six that could
  * half-succeed.
  */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ControlPanelPage } from './pages/ControlPanelPage';
@@ -34,56 +34,75 @@ import { useEditor } from './useEditor';
 
 export function App() {
   const { t } = useTranslation();
-  const [login, setLogin] = useState<string | null>(null);
-  const [checking, setChecking] = useState(true);
-  const [loaded, setLoaded] = useState<ContentResponse | null>(null);
-  const [failure, setFailure] = useState<string | null>(null);
+  const [state, setState] = useState<AppState>({ status: 'checking-session' });
+  const requestId = useRef(0);
 
-  useEffect(() => {
-    void (async () => {
-      try {
-        setLogin((await sessionService.whoami())?.login ?? null);
-      } catch (error) {
-        setFailure(error instanceof Error ? error.message : t('app.unreachable'));
-      } finally {
-        setChecking(false);
-      }
-    })();
+  const loadContent = useCallback(async (login: string): Promise<void> => {
+    const id = ++requestId.current;
+    setState({ status: 'loading-content', login });
+    try {
+      const content = await contentService.load();
+      if (requestId.current === id) setState({ status: 'ready', login, content });
+    } catch (error) {
+      if (requestId.current === id) setState({ status: 'failed', error });
+    }
   }, []);
 
-  // Keyed on the login rather than folded into the check above, so the content
-  // loads the same way whether the session came back from the cookie or from
-  // the sign-in form a moment ago.
   useEffect(() => {
-    if (login === null) return;
+    const id = ++requestId.current;
     void (async () => {
       try {
-        setLoaded(await contentService.load());
+        const session = await sessionService.whoami();
+        if (requestId.current !== id) return;
+        if (session === null) {
+          setState({ status: 'signed-out' });
+          return;
+        }
+        await loadContent(session.login);
       } catch (error) {
-        setFailure(error instanceof Error ? error.message : t('app.unreachable'));
+        if (requestId.current === id) setState({ status: 'failed', error });
       }
     })();
-  }, [login]);
+    return () => {
+      requestId.current += 1;
+    };
+  }, [loadContent]);
 
-  if (checking) return <p className="centred">{t('app.loading')}</p>;
-  if (login === null) return <SignInPage onSignedIn={(session) => setLogin(session.login)} />;
-  if (failure !== null) return <p className="centred problem">{failure}</p>;
-  if (loaded === null) return <p className="centred">{t('app.loadingSite')}</p>;
+  if (state.status === 'checking-session') {
+    return <p className="centred">{t('app.loading')}</p>;
+  }
+  if (state.status === 'signed-out') {
+    return <SignInPage onSignedIn={(session) => void loadContent(session.login)} />;
+  }
+  if (state.status === 'failed') {
+    const message = state.error instanceof Error ? state.error.message : t('app.unreachable');
+    return <p className="centred problem">{message}</p>;
+  }
+  if (state.status === 'loading-content') {
+    return <p className="centred">{t('app.loadingSite')}</p>;
+  }
 
   return (
     <Editing
-      login={login}
-      content={loaded}
+      login={state.login}
+      content={state.content}
       onSignedOut={() => {
         // Back to the sign-in screen without a page load. `Editing` unmounts,
         // which is what actually discards the edited content — there is no
         // second copy of it anywhere, and nothing to clear by hand.
-        setLogin(null);
-        setLoaded(null);
+        requestId.current += 1;
+        setState({ status: 'signed-out' });
       }}
     />
   );
 }
+
+type AppState =
+  | { status: 'checking-session' }
+  | { status: 'signed-out' }
+  | { status: 'loading-content'; login: string }
+  | { status: 'ready'; login: string; content: ContentResponse }
+  | { status: 'failed'; error: unknown };
 
 interface EditingProps {
   login: string;

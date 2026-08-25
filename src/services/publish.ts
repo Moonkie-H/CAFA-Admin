@@ -8,7 +8,7 @@ import { request } from './http';
 import type { PublishResult, RevisionSummary, SiteStatus } from './types';
 
 export const publishService = {
-  status: () => request<SiteStatus>('/api/status'),
+  status: (signal?: AbortSignal) => request<SiteStatus>('/api/status', { signal }),
 
   publish: () =>
     request<PublishResult>('/api/publish', {
@@ -16,7 +16,7 @@ export const publishService = {
       body: { message: 'Publish from the studio admin' },
     }),
 
-  revisions: () => request<RevisionSummary[]>('/api/revisions'),
+  revisions: (signal?: AbortSignal) => request<RevisionSummary[]>('/api/revisions', { signal }),
 
   restore: (id: number) =>
     request<PublishResult>(`/api/revisions/${id}/restore`, { method: 'POST' }),

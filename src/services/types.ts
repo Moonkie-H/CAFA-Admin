@@ -66,6 +66,6 @@ export interface PublishResult {
 export interface RevisionSummary {
   id: number;
   message: string;
-  published_at: string;
-  published_by: string;
+  publishedAt: string;
+  publishedBy: string;
 }

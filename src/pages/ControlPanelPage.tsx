@@ -12,48 +12,31 @@
  * publishing stays in the bar at the top, where it is on every page, because a
  * second Publish button is a second thing to keep in step with the first.
  */
-import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { href, navigate, type RoutePath } from '../routes';
 import { connectorService } from '../services/connectors';
 import { publishService } from '../services/publish';
-import type { SiteStatus } from '../services/types';
 import type { ContentSet } from '../content/types';
 import type { Editor } from '../useEditor';
+import { useRemote } from '../useRemote';
+import { formatUtcDateTime } from '../ui/format';
 
 interface ControlPanelPageProps {
   editor: Editor;
 }
 
+const readStatus = (signal: AbortSignal) => publishService.status(signal);
+const readDocument = (signal: AbortSignal) => connectorService.document(signal);
+
 export function ControlPanelPage({ editor }: ControlPanelPageProps) {
   const { t, i18n } = useTranslation();
-  const [status, setStatus] = useState<SiteStatus | null>(null);
-  const [connectors, setConnectors] = useState<number | null>(null);
-  const [failure, setFailure] = useState<string | null>(null);
+  const { data: status, error: failure } = useRemote(readStatus, t('dashboard.stateFailed'));
 
-  useEffect(() => {
-    void (async () => {
-      try {
-        setStatus(await publishService.status());
-      } catch (error) {
-        setFailure(error instanceof Error ? error.message : t('dashboard.stateFailed'));
-      }
-    })();
-  }, []);
-
-  // A separate effect, and a swallowed failure: the read API not answering is
-  // worth knowing about on the dev panel, not worth an error banner here.
-  useEffect(() => {
-    void (async () => {
-      try {
-        const document = await connectorService.document();
-        setConnectors(Object.keys(document.paths).length);
-      } catch {
-        setConnectors(null);
-      }
-    })();
-  }, []);
+  // Read separately, and its failure is ignored on purpose: the read API not
+  // answering is worth knowing about on the dev panel, not worth a banner here.
+  const { data: document } = useRemote(readDocument, '');
+  const connectors = document === null ? null : Object.keys(document.paths).length;
 
   const content = editor.content;
   const photographs = countPhotographs(content);
@@ -88,7 +71,7 @@ export function ControlPanelPage({ editor }: ControlPanelPageProps) {
           note={
             status?.publishedAt == null
               ? t('dashboard.nothingPublished')
-              : t('dashboard.revisionPublished', { date: formatPublished(status.publishedAt, i18n.language) })
+              : t('dashboard.revisionPublished', { date: formatUtcDateTime(status.publishedAt, i18n.language) })
           }
         />
         <Tile
@@ -253,11 +236,4 @@ function countPhotographs(content: ContentSet): number {
   }
 
   return keys.size;
-}
-
-/** D1 stores UTC without a zone marker; saying so stops it reading as local. */
-function formatPublished(value: string, language: string): string {
-  const parsed = new Date(`${value.replace(' ', 'T')}Z`);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleString(language.startsWith('zh') ? 'zh-CN' : 'en-NZ');
 }

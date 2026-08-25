@@ -34,6 +34,12 @@ import {
   LOCALES,
   type ContentSet,
   type Dictionary,
+  type Locale,
+  type LocalisedText,
+  type Mentor,
+  type Page,
+  type Program,
+  type SiteContent,
   type Work,
 } from '../../src/content/types';
 import type { MediaRow } from '../models/rows';
@@ -51,19 +57,23 @@ export const PAGE_SECTION_KINDS: readonly string[] = SECTION_KINDS;
  * Copy that describes the chrome rather than a page, and is lifted into `site`
  * instead of staying in the dictionary.
  */
-const CHROME_KEYS = ['localeName'];
+type PageDictionary = Omit<Dictionary, 'localeName'>;
 
 export interface PublishedBundle {
-  site: unknown;
+  site: SiteContent & {
+    url: string;
+    locales: Locale[];
+    localeNames: LocalisedText;
+  };
   /**
    * Every page, in the studio's order — which is also the order of the nav bar,
    * since the template derives the bar from the pages that carry a `navLabel`.
    */
-  pages: unknown;
-  works: unknown;
-  programs: unknown;
-  mentors: unknown;
-  dictionaries: { zh: unknown; en: unknown };
+  pages: Page[];
+  works: Work[];
+  programs: Program[];
+  mentors: Mentor[];
+  dictionaries: { zh: PageDictionary; en: PageDictionary };
   /**
    * What was measured about each photograph the published content cites, and
    * nothing about the ones it does not: the intrinsic size the template holds
@@ -84,15 +94,16 @@ export interface PublishedBundle {
 }
 
 /** A dictionary minus the chrome keys, which belong to `site` instead. */
-function pageCopy(dictionary: Dictionary): Record<string, unknown> {
-  const record = dictionary as unknown as Record<string, unknown>;
-  return Object.fromEntries(Object.entries(record).filter(([key]) => !CHROME_KEYS.includes(key)));
-}
-
-/** The chrome copy, which was stored flat under `localeName`. */
-function localeNameOf(dictionary: Dictionary): string {
-  const record = dictionary as unknown as Record<string, unknown>;
-  return typeof record.localeName === 'string' ? record.localeName : '';
+function pageCopy(dictionary: Dictionary): PageDictionary {
+  return {
+    meta: dictionary.meta,
+    a11y: dictionary.a11y,
+    works: dictionary.works,
+    work: dictionary.work,
+    contact: dictionary.contact,
+    notFound: dictionary.notFound,
+    footer: dictionary.footer,
+  };
 }
 
 /**
@@ -100,7 +111,7 @@ function localeNameOf(dictionary: Dictionary): string {
  * year, its disciplines and the fact that it is private. No cover, no media,
  * no URL for either.
  */
-function project(work: Work): unknown {
+function project(work: Work): Work {
   if (work.status !== 'private') return work;
   return {
     slug: work.slug,
@@ -176,7 +187,7 @@ export function buildBundle(
       // against a base ending in a slash is not the same URL.
       url: siteUrl.replace(/\/$/, ''),
       locales: [...LOCALES],
-      localeNames: { zh: localeNameOf(content.zh), en: localeNameOf(content.en) },
+      localeNames: { zh: content.zh.localeName, en: content.en.localeName },
     },
     pages: content.pages,
     works,

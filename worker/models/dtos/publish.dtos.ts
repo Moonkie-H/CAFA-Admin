@@ -26,6 +26,21 @@ export interface StatusResponse {
   preview: DeployedOrigin;
 }
 
+/**
+ * One line of history.
+ *
+ * Named in the API's own words rather than the table's. The row underneath is
+ * `published_at`/`published_by`, and letting those columns out is how a
+ * rename in a migration becomes a rename in the browser — the boundary exists
+ * exactly so that it does not.
+ */
+export interface RevisionResponse {
+  id: number;
+  message: string;
+  publishedAt: string;
+  publishedBy: string;
+}
+
 export interface PublishResponse {
   published: boolean;
   /** Present when nothing was published, and says why. */
@@ -36,6 +51,7 @@ export interface PublishResponse {
 }
 
 const DEFAULT_MESSAGE = 'Publish';
+const MAX_MESSAGE_LENGTH = 200;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -46,7 +62,11 @@ export function parsePublishRequest(body: unknown): string {
   if (!isRecord(body)) return DEFAULT_MESSAGE;
   const { message } = body;
   if (typeof message !== 'string' || message.trim() === '') return DEFAULT_MESSAGE;
-  return message;
+  const trimmed = message.trim();
+  if (trimmed.length > MAX_MESSAGE_LENGTH) {
+    throw ApiException.badRequest(`A publish message may be at most ${MAX_MESSAGE_LENGTH} characters.`);
+  }
+  return trimmed;
 }
 
 /** A revision id out of the path. Non-numeric never reaches the repository. */

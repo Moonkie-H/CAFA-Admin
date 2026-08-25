@@ -20,11 +20,32 @@ import { ApiException } from '../shared/api-exception';
 import type { Connector, ConnectorGroup, ReadableBundle } from './connector';
 import { list, ref, shape, text, whole } from './schema';
 
+function isWorkStatus(value: string): value is Work['status'] {
+  return WORK_STATUSES.some((status) => status === value);
+}
+
 /** Bumped when a connector's answer changes shape in a way a client would feel. */
 export const API_VERSION = '2.0.0';
 
 /** Where the compiled document is served. */
 export const DOCUMENT_PATH = '/api.json';
+
+/**
+ * One record out of a published collection, or a 404 naming what was asked for.
+ *
+ * Four connectors do exactly this, and the message is the part worth having
+ * once: "no published work called X" is what tells a frontend developer that
+ * the slug is real but unpublished, rather than that the endpoint is broken.
+ */
+function bySlug<T extends { slug: string }>(
+  records: readonly T[],
+  slug: string,
+  missing: (slug: string) => string,
+): T {
+  const found = records.find((candidate) => candidate.slug === slug);
+  if (found === undefined) throw ApiException.notFound(missing(slug));
+  return found;
+}
 
 export const GROUPS: readonly ConnectorGroup[] = [
   {
@@ -100,10 +121,9 @@ export const CONNECTORS: readonly Connector[] = [
     returns: ref('Page'),
     read: ({ bundle }, { params }) => {
       const asked = params.slug ?? '';
-      const slug = asked === '-' ? '' : asked;
-      const page = bundle.pages.find((candidate) => candidate.slug === slug);
-      if (page === undefined) throw ApiException.notFound(`No page called ${asked}.`);
-      return page;
+      // `-` is the one spelling an empty path segment has, and the front page's
+      // slug is empty — so the 404 names what was asked for, not what it became.
+      return bySlug(bundle.pages, asked === '-' ? '' : asked, () => `No page called ${asked}.`);
     },
   },
 
@@ -144,9 +164,7 @@ export const CONNECTORS: readonly Connector[] = [
       const works = [...bundle.works].sort((a, b) => a.index - b.index);
       if (status === null || status === '') return works;
 
-      if (!WORK_STATUSES.includes(status as Work['status'])) {
-        throw ApiException.badRequest(`Not a work status: ${status}.`);
-      }
+      if (!isWorkStatus(status)) throw ApiException.badRequest(`Not a work status: ${status}.`);
       return works.filter((work) => work.status === status);
     },
   },
@@ -168,12 +186,12 @@ export const CONNECTORS: readonly Connector[] = [
       },
     ],
     returns: ref('Work'),
-    read: ({ bundle }, { params }) => {
-      const slug = params.slug ?? '';
-      const work = bundle.works.find((candidate) => candidate.slug === slug);
-      if (work === undefined) throw ApiException.notFound(`No published work called ${slug}.`);
-      return work;
-    },
+    read: ({ bundle }, { params }) =>
+      bySlug(
+        bundle.works,
+        params.slug ?? '',
+        (slug) => `No published work called ${slug}.`,
+      ),
   },
 
   {
@@ -202,12 +220,8 @@ export const CONNECTORS: readonly Connector[] = [
       },
     ],
     returns: ref('Program'),
-    read: ({ bundle }, { params }) => {
-      const slug = params.slug ?? '';
-      const program = bundle.programs.find((candidate) => candidate.slug === slug);
-      if (program === undefined) throw ApiException.notFound(`No programme called ${slug}.`);
-      return program;
-    },
+    read: ({ bundle }, { params }) =>
+      bySlug(bundle.programs, params.slug ?? '', (slug) => `No programme called ${slug}.`),
   },
 
   {
@@ -236,12 +250,8 @@ export const CONNECTORS: readonly Connector[] = [
       },
     ],
     returns: ref('Mentor'),
-    read: ({ bundle }, { params }) => {
-      const slug = params.slug ?? '';
-      const mentor = bundle.mentors.find((candidate) => candidate.slug === slug);
-      if (mentor === undefined) throw ApiException.notFound(`No mentor called ${slug}.`);
-      return mentor;
-    },
+    read: ({ bundle }, { params }) =>
+      bySlug(bundle.mentors, params.slug ?? '', (slug) => `No mentor called ${slug}.`),
   },
 
   {
@@ -264,11 +274,10 @@ export const CONNECTORS: readonly Connector[] = [
     returns: ref('Dictionary'),
     read: ({ bundle }, { params }) => {
       const locale = params.locale ?? '';
-      const dictionary = bundle.dictionaries[locale];
-      if (dictionary === undefined) {
+      if (locale !== 'zh' && locale !== 'en') {
         throw ApiException.notFound(`No dictionary for ${locale}. The site is ${LOCALES.join(' and ')}.`);
       }
-      return dictionary;
+      return bundle.dictionaries[locale];
     },
   },
 

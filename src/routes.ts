@@ -17,9 +17,10 @@
  * The order is the order of the sidebar, and it is meant: the control panel is
  * where you land and where the state of the site is answered, the six editing
  * sections are the work — pages first, since a page is what the rest appears
- * on — and the last two are for looking backwards — at what
- * has been published, and at what the site's own frontend can read. The latter
- * is a utility and is reached from the account menu rather than the sidebar.
+ * on — and the last two are for looking backwards, at what has been published
+ * and at what the site's own frontend can read. `group` is the heading each run
+ * of them sits under, so the sidebar is this table read top to bottom and
+ * nothing is reachable only through a menu.
  */
 import { useSyncExternalStore } from 'react';
 
@@ -31,14 +32,12 @@ export const ROUTES = [
   { path: 'mentors', labelKey: 'nav.mentors', group: 'content' },
   { path: 'site', labelKey: 'nav.site', group: 'content' },
   { path: 'copy', labelKey: 'nav.copy', group: 'content' },
-  { path: 'history', labelKey: 'nav.history', group: 'content' },
+  { path: 'history', labelKey: 'nav.history', group: 'utility' },
   { path: 'dev', labelKey: 'nav.developer', group: 'utility' },
 ] as const;
 
-/** The sidebar is editorial navigation only. Account and developer utilities live in the header. */
-export const SIDEBAR_ROUTES = ROUTES.filter((route) => route.group !== 'utility');
-
 export type RoutePath = (typeof ROUTES)[number]['path'];
+export type RouteGroup = (typeof ROUTES)[number]['group'];
 
 /** What `/` resolves to: the overview, not a form. */
 export const DEFAULT_ROUTE: RoutePath = 'control';

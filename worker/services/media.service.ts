@@ -23,7 +23,7 @@
  * the CLS budget is made of.
  */
 import type { MediaInfo } from '../../src/content/types';
-import { measure } from '../domain/image';
+import { contentTypeOf, measure } from '../domain/image';
 import { recordMedia } from '../repositories/media.repository';
 import { ApiException } from '../shared/api-exception';
 import { getMedia, putMedia } from '../storage/media-storage';
@@ -44,7 +44,17 @@ export class MediaService {
       );
     }
 
-    const info: MediaInfo = { key, ...measured, tint };
+    if (measured.contentType !== contentTypeOf(key)) {
+      throw ApiException.badRequest('The file type does not match its media key.');
+    }
+
+    const info: MediaInfo = {
+      key,
+      width: measured.width,
+      height: measured.height,
+      bytes: measured.bytes,
+      tint,
+    };
 
     await putMedia(this.bucket, key, body);
     await recordMedia(this.db, info);

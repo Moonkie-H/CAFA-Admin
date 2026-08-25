@@ -12,37 +12,29 @@
  * still be sitting on edits that are now behind the live site. The confirmation
  * says so when that is the case.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { publishService } from '../services/publish';
-import type { RevisionSummary } from '../services/types';
 import type { Editor } from '../useEditor';
+import { useRemote } from '../useRemote';
+import { formatUtcDateTime } from '../ui/format';
 
 interface HistoryPageProps {
   editor: Editor;
 }
 
+const readRevisions = (signal: AbortSignal) => publishService.revisions(signal);
+
 export function HistoryPage({ editor }: HistoryPageProps) {
-  const { t } = useTranslation();
-  const [revisions, setRevisions] = useState<RevisionSummary[] | null>(null);
-  const [failure, setFailure] = useState<string | null>(null);
+  const { t, i18n } = useTranslation();
+  const { data: revisions, error: failure, reload } = useRemote(
+    readRevisions,
+    t('historyPage.readFailed'),
+  );
   const [confirming, setConfirming] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-
-  const refresh = useCallback(async () => {
-    try {
-      setRevisions(await publishService.revisions());
-      setFailure(null);
-    } catch (error) {
-      setFailure(error instanceof Error ? error.message : t('historyPage.readFailed'));
-    }
-  }, [t]);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
 
   async function onRestore(id: number): Promise<void> {
     setBusy(true);
@@ -56,7 +48,7 @@ export function HistoryPage({ editor }: HistoryPageProps) {
           to: result.revision ?? id,
         }),
       );
-      await refresh();
+      await reload();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : t('historyPage.restoreFailed'));
     } finally {
@@ -87,7 +79,7 @@ export function HistoryPage({ editor }: HistoryPageProps) {
             <li key={revision.id} className="repeatable-item">
               <div className="repeatable-head">
                 <div className="repeatable-title">
-                  <span className="works-index">{revision.id}</span> {revision.message}
+                  <span className="record-number">{revision.id}</span> {revision.message}
                   {at === 0 && <span className="pill">{t('common.live')}</span>}
                 </div>
                 <div className="repeatable-controls">
@@ -104,8 +96,8 @@ export function HistoryPage({ editor }: HistoryPageProps) {
                 </div>
               </div>
 
-              <p className="works-meta">
-                {revision.published_by} · {formatPublished(revision.published_at)}
+              <p className="record-meta">
+                {revision.publishedBy} · {formatUtcDateTime(revision.publishedAt, i18n.language)}
               </p>
 
               {confirming === revision.id && (
@@ -144,15 +136,4 @@ export function HistoryPage({ editor }: HistoryPageProps) {
       )}
     </section>
   );
-}
-
-/**
- * D1 stores `datetime('now')`, which is UTC without a zone marker. Saying so
- * explicitly stops the browser reading it as local time and showing a publish
- * that happened minutes ago as hours off.
- */
-function formatPublished(value: string): string {
-  const parsed = new Date(`${value.replace(' ', 'T')}Z`);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleString();
 }

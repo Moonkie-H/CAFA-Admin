@@ -16,16 +16,16 @@
  */
 import type { Env } from '../env';
 import type { CurrentUser } from '../shared/current-user';
-import type { PublishResponse, StatusResponse } from '../models/dtos/publish.dtos';
+import type { PublishResponse, RevisionResponse, StatusResponse } from '../models/dtos/publish.dtos';
 import { buildBundle } from '../domain/bundle';
 import { readContent } from '../repositories/content.repository';
 import { readMedia } from '../repositories/media.repository';
 import {
   findRevision,
   insertRevision,
+  insertRevisionIfChanged,
   listRevisions,
   newestRevision,
-  type RevisionSummary,
 } from '../repositories/revision.repository';
 import { ApiException } from '../shared/api-exception';
 import type { DeployService } from './deploy.service';
@@ -102,18 +102,15 @@ export class PublishService {
   }
 
   async publish(user: CurrentUser, message: string): Promise<PublishResponse> {
-    const [newest, draft] = await Promise.all([newestRevision(this.env.DB), this.draftBundle()]);
-    if (newest !== null && newest.content === draft) {
-      return { published: false, reason: 'Nothing to publish.' };
-    }
-
-    const revision = await insertRevision(this.env.DB, {
+    const draft = await this.draftBundle();
+    const revision = await insertRevisionIfChanged(this.env.DB, {
       content: draft,
       message,
       publishedBy: user.login,
     });
+    if (revision === null) return { published: false, reason: 'Nothing to publish.' };
 
-    await this.deploy.pokeProduction();
+    this.deploy.triggerProduction();
     return { published: true, revision };
   }
 
@@ -131,31 +128,34 @@ export class PublishService {
       publishedBy: user.login,
     });
 
-    await this.deploy.pokeProduction();
+    this.deploy.triggerProduction();
     return { published: true, revision, restoredFrom: id };
   }
 
-  async history(): Promise<RevisionSummary[]> {
-    return listRevisions(this.env.DB);
+  async history(): Promise<RevisionResponse[]> {
+    const rows = await listRevisions(this.env.DB);
+    return rows.map((row) => ({
+      id: row.id,
+      message: row.message,
+      publishedAt: row.published_at,
+      publishedBy: row.published_by,
+    }));
   }
 
   /**
    * The newest revision, whole.
    *
-   * One read, two callers: the build endpoint splices `bundle` into its answer
-   * without parsing it, and the read API parses it once and cuts views out of
-   * it. Both need the same "nothing has been published yet" answer, so the rule
-   * is stated here rather than twice.
+   * One read, three callers: the production build splices `bundle` into its
+   * answer without parsing it, the read API parses it once and cuts views out
+   * of it, and history reads it back to restore. All three need the same
+   * "nothing has been published yet" answer, so the rule is stated here rather
+   * than three times. `publishedAt` rides along because only the read API wants
+   * it and a second query for one column would be worse than an unused field.
    */
   async publishedSnapshot(): Promise<PublishedSnapshot> {
     const newest = await newestRevision(this.env.DB);
     if (newest === null) throw ApiException.notFound('Nothing has been published yet.');
     return { revision: newest.id, bundle: newest.content, publishedAt: newest.published_at };
-  }
-
-  /** What the production build reads. */
-  async publishedBundle(): Promise<BundleEnvelope> {
-    return this.publishedSnapshot();
   }
 
   /** What the preview build reads. The draft has no id, so it gets a fingerprint. */

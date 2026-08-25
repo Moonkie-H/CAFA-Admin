@@ -18,10 +18,13 @@
  * shortcut around a better option, it is the only correct one.
  */
 
+import { MAX_IMAGE_EDGE } from '../../src/content/types';
+
 export interface Measured {
   width: number;
   height: number;
   bytes: number;
+  contentType: 'image/jpeg' | 'image/png';
 }
 
 /** IHDR is always the first chunk, at a fixed offset past the signature. */
@@ -57,21 +60,50 @@ function jpegSize(view: DataView): { width: number; height: number } | null {
 
 export function measure(buffer: ArrayBuffer): Measured {
   const view = new DataView(buffer);
-  const size = pngSize(view) ?? jpegSize(view);
+  const png = pngSize(view);
+  const size = png ?? jpegSize(view);
   if (size === null || size.width === 0 || size.height === 0) {
     throw new Error('That file is not a JPEG or PNG the site can read.');
   }
-  return { ...size, bytes: buffer.byteLength };
+  if (size.width > MAX_IMAGE_EDGE || size.height > MAX_IMAGE_EDGE) {
+    throw new Error(`Photographs must be at most ${MAX_IMAGE_EDGE}px on their longest edge.`);
+  }
+  return {
+    ...size,
+    bytes: buffer.byteLength,
+    contentType: png === null ? 'image/jpeg' : 'image/png',
+  };
 }
 
 /**
- * A key the admin is allowed to write. Photographs are filed under a work,
- * a mentor or the studio, and nothing may climb out of the bucket with "..".
+ * Which keys the admin may write, and which it may read.
+ *
+ * Two predicates rather than one, because the answers genuinely differ and
+ * collapsing them costs something either way. Three folders carry a photograph
+ * today: a work, a page's gallery, and a mentor. `pages/` is the one that has
+ * to be here — a page is content now, so its slug is part of the key, and the
+ * front page (whose slug is the empty string) files under `pages/home`. See
+ * `pageFolder` in src/pages/PagesPage.tsx, which is what builds these.
+ *
+ * `studio/` is the fourth and is read-only. Migration 0005 folded the studio
+ * photographs into a gallery section on the front page and dropped the table
+ * they hung off, but the objects kept their keys — `studio/01.jpg` and its four
+ * siblings are still cited by live content, so the editor has to be able to
+ * preview them. Nothing files a new one there, so nothing may write one.
+ *
+ * Neither may climb out of the bucket with "..".
  */
-const KEY = /^(works\/[a-z0-9-]+|mentors|studio)\/[a-z0-9-]+\.(jpg|png)$/;
+const WRITABLE = /^(?:(?:works|pages)\/[a-z0-9-]+|mentors)\/[a-z0-9-]+\.(?:jpg|png)$/;
+const READABLE = /^(?:(?:works|pages)\/[a-z0-9-]+|mentors|studio)\/[a-z0-9-]+\.(?:jpg|png)$/;
 
-export function isMediaKey(key: string): boolean {
-  return KEY.test(key) && !key.includes('..');
+/** A key a photograph may be uploaded under. */
+export function isWritableMediaKey(key: string): boolean {
+  return WRITABLE.test(key) && !key.includes('..');
+}
+
+/** A key the editor may fetch bytes for. Everything writable, plus the legacy folder. */
+export function isReadableMediaKey(key: string): boolean {
+  return READABLE.test(key) && !key.includes('..');
 }
 
 export function contentTypeOf(key: string): string {

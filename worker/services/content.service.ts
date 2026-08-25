@@ -59,6 +59,6 @@ export class ContentService {
       );
     }
 
-    await this.deploy.pokePreview();
+    this.deploy.triggerPreview();
   }
 }

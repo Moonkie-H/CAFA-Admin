@@ -29,6 +29,9 @@ export type Locale = (typeof LOCALES)[number];
 
 export type LocalisedText = Record<Locale, string>;
 
+/** The upload and the Worker enforce the same public-image size budget. */
+export const MAX_IMAGE_EDGE = 2400;
+
 export interface ImageRef {
   /** The R2 object key, e.g. "works/edible-house/01.jpg". */
   src: string;
@@ -244,4 +247,9 @@ export interface ContentSet {
 
 export function emptyLocalised(): LocalisedText {
   return { zh: '', en: '' };
+}
+
+/** A photograph with nothing chosen yet. Three lists start an entry this way. */
+export function blankImage(): ImageRef {
+  return { src: '', alt: emptyLocalised() };
 }

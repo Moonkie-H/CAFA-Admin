@@ -9,29 +9,30 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
+  blankImage,
   emptyLocalised,
   WORK_STATUSES,
-  type ImageRef,
+  type Credit,
   type Work,
   type WorkStatus,
 } from '../content/types';
-import { nextMediaName } from '../images';
+import { isSlug } from '../content/validate';
+import { mediaStem, nextMediaName } from '../images';
 import type { Editor } from '../useEditor';
 import {
+  DeleteRecord,
   Field,
   LocalisedField,
-  moved,
   NumberField,
+  ReorderControls,
   Repeatable,
   SelectField,
   TextField,
 } from '../ui/fields';
 import { ImageField } from '../ui/ImageField';
 
-const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
-function blankImage(): ImageRef {
-  return { src: '', alt: emptyLocalised() };
+function blankCredit(): Credit {
+  return { role: emptyLocalised(), name: emptyLocalised() };
 }
 
 function blankWork(existing: readonly Work[]): Work {
@@ -101,38 +102,27 @@ export function WorksPage({ editor }: WorksPageProps) {
         {t('pages.worksOrder')}
       </p>
 
-      <ol className="works-list">
+      <ol className="record-list">
         {works.map((work, at) => (
-          <li key={work.slug === '' ? `new-${at}` : work.slug} className="works-row">
-            <span className="works-index">{String(work.index).padStart(2, '0')}</span>
+          <li key={work.slug === '' ? `new-${at}` : work.slug} className="record-row">
+            <span className="record-number">{String(work.index).padStart(2, '0')}</span>
 
-            <button type="button" className="works-open" onClick={() => setOpenAt(at)}>
-              <span className="works-title">{work.title.zh || t('pages.untitled')}</span>
-              <span className="works-title-en">{work.title.en || t('pages.untitled')}</span>
+            <button type="button" className="record-open" onClick={() => setOpenAt(at)}>
+              <span className="record-title">{work.title.zh || t('pages.untitled')}</span>
+              <span className="record-subtitle">{work.title.en || t('pages.untitled')}</span>
             </button>
 
-            <span className="works-meta">{work.year}</span>
+            <span className="record-meta">{work.year}</span>
             <span className={`badge badge-${work.status}`}>{t(`works.statusShort.${work.status}`)}</span>
 
-            <span className="works-controls">
-              <button
-                type="button"
-                className="button button-quiet"
-                disabled={at === 0}
-                aria-label={`Move ${work.title.en || 'work'} up`}
-                onClick={() => editor.update('works', moved(works, at, at - 1))}
-              >
-                ↑
-              </button>
-              <button
-                type="button"
-                className="button button-quiet"
-                disabled={at === works.length - 1}
-                aria-label={`Move ${work.title.en || 'work'} down`}
-                onClick={() => editor.update('works', moved(works, at, at + 1))}
-              >
-                ↓
-              </button>
+            <span className="record-controls">
+              <ReorderControls
+                items={works}
+                at={at}
+                onChange={(next) => editor.update('works', next)}
+                upLabel={t('common.moveNamedUp', { name: work.title.en || t('pages.untitled') })}
+                downLabel={t('common.moveNamedDown', { name: work.title.en || t('pages.untitled') })}
+              />
             </span>
           </li>
         ))}
@@ -150,8 +140,7 @@ interface WorkFormProps {
 
 function WorkForm({ work, editor, onChange, onClose }: WorkFormProps) {
   const { t } = useTranslation();
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const namedYet = SLUG.test(work.slug);
+  const namedYet = isSlug(work.slug);
   const folder = `works/${work.slug}`;
 
   const set = <K extends keyof Work>(key: K, value: Work[K]) => onChange({ ...work, [key]: value });
@@ -205,69 +194,39 @@ function WorkForm({ work, editor, onChange, onClose }: WorkFormProps) {
 
       <Repeatable
         label={t('fields.discipline')}
-        count={work.discipline.length}
+        items={work.discipline}
         addLabel={t('works.addDiscipline')}
-        onAdd={() => set('discipline', [...work.discipline, emptyLocalised()])}
-        onRemove={(at) =>
-          set(
-            'discipline',
-            work.discipline.filter((_, position) => position !== at),
-          )
-        }
-        onMove={(at, to) => set('discipline', moved(work.discipline, at, to))}
-        renderItem={(at) => {
-          const entry = work.discipline[at];
-          if (entry === undefined) return null;
-          return (
-            <LocalisedField
-              label={t('works.disciplineNumber', { number: at + 1 })}
-              value={entry}
-              onChange={(value) =>
-                set(
-                  'discipline',
-                  work.discipline.map((existing, position) => (position === at ? value : existing)),
-                )
-              }
-            />
-          );
-        }}
+        blank={emptyLocalised}
+        onChange={(discipline) => set('discipline', discipline)}
+        renderItem={(entry, write, at) => (
+          <LocalisedField
+            label={t('works.disciplineNumber', { number: at + 1 })}
+            value={entry}
+            onChange={write}
+          />
+        )}
       />
 
       <Repeatable
         label={t('fields.credits')}
-        count={work.credits.length}
+        items={work.credits}
         addLabel={t('works.addCredit')}
-        onAdd={() => set('credits', [...work.credits, { role: emptyLocalised(), name: emptyLocalised() }])}
-        onRemove={(at) =>
-          set(
-            'credits',
-            work.credits.filter((_, position) => position !== at),
-          )
-        }
-        onMove={(at, to) => set('credits', moved(work.credits, at, to))}
-        renderItem={(at) => {
-          const credit = work.credits[at];
-          if (credit === undefined) return null;
-          const write = (next: typeof credit) =>
-            set(
-              'credits',
-              work.credits.map((existing, position) => (position === at ? next : existing)),
-            );
-          return (
-            <>
-              <LocalisedField
-                label={t('fields.role')}
-                value={credit.role}
-                onChange={(role) => write({ ...credit, role })}
-              />
-              <LocalisedField
-                label={t('fields.name')}
-                value={credit.name}
-                onChange={(name) => write({ ...credit, name })}
-              />
-            </>
-          );
-        }}
+        blank={blankCredit}
+        onChange={(credits) => set('credits', credits)}
+        renderItem={(credit, write) => (
+          <>
+            <LocalisedField
+              label={t('fields.role')}
+              value={credit.role}
+              onChange={(role) => write({ ...credit, role })}
+            />
+            <LocalisedField
+              label={t('fields.name')}
+              value={credit.name}
+              onChange={(name) => write({ ...credit, name })}
+            />
+          </>
+        )}
       />
 
       {namedYet ? (
@@ -284,44 +243,29 @@ function WorkForm({ work, editor, onChange, onClose }: WorkFormProps) {
 
           <Repeatable
             label={t('fields.photographs')}
-            count={work.media.length}
+            items={work.media}
             addLabel={t('fields.addPhoto')}
             hint={t('works.photoHint')}
-            onAdd={() => set('media', [...work.media, blankImage()])}
-            onRemove={(at) =>
-              set(
-                'media',
-                work.media.filter((_, position) => position !== at),
-              )
-            }
-            onMove={(at, to) => set('media', moved(work.media, at, to))}
-            renderItem={(at) => {
-              const image = work.media[at];
-              if (image === undefined) return null;
-              return (
-                <ImageField
-                  label={t('works.photoNumber', { number: at + 1 })}
-                  value={image}
-                  onChange={(value) =>
-                    set(
-                      'media',
-                      work.media.map((existing, position) => (position === at ? value : existing)),
-                    )
-                  }
-                  folder={folder}
-                  name={
-                    image.src === ''
-                      ? nextMediaName(
-                          work.media.map((entry) => entry.src),
-                          '',
-                        )
-                      : (image.src.split('/').pop() ?? '').replace(/\.[^.]+$/, '')
-                  }
-                  mediaUrl={editor.mediaUrl}
-                  onUpload={editor.putMedia}
-                />
-              );
-            }}
+            blank={blankImage}
+            onChange={(media) => set('media', media)}
+            keyOf={(image, at) => image.src || `new-${at}`}
+            renderItem={(image, write, at) => (
+              <ImageField
+                label={t('works.photoNumber', { number: at + 1 })}
+                value={image}
+                onChange={write}
+                folder={folder}
+                // A photograph keeps the name it was filed under; a new one
+                // takes the next free number in this work's folder.
+                name={
+                  image.src === ''
+                    ? nextMediaName(work.media.map((entry) => entry.src), '')
+                    : mediaStem(image.src)
+                }
+                mediaUrl={editor.mediaUrl}
+                onUpload={editor.putMedia}
+              />
+            )}
           />
         </>
       ) : (
@@ -331,37 +275,20 @@ function WorkForm({ work, editor, onChange, onClose }: WorkFormProps) {
       )}
 
       <footer className="form-footer">
-        {confirmingDelete ? (
-          <div className="confirm">
-            <p>
-              {t('works.removeQuestion', { title: work.title.zh || work.title.en || t('pages.newWork') })}
-            </p>
-            <button
-              type="button"
-              className="button button-danger"
-              onClick={() => {
-                editor.update(
-                  'works',
-                  editor.content.works.filter((existing) => existing !== work),
-                );
-                onClose();
-              }}
-            >
-              {t('works.removeIt')}
-            </button>
-            <button type="button" className="button" onClick={() => setConfirmingDelete(false)}>
-              {t('works.keepIt')}
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            className="button button-danger"
-            onClick={() => setConfirmingDelete(true)}
-          >
-            {t('works.removeWork')}
-          </button>
-        )}
+        <DeleteRecord
+          action={t('works.removeWork')}
+          question={t('works.removeQuestion', {
+            title: work.title.zh || work.title.en || t('pages.newWork'),
+          })}
+          confirm={t('works.removeIt')}
+          onDelete={() => {
+            editor.update(
+              'works',
+              editor.content.works.filter((existing) => existing !== work),
+            );
+            onClose();
+          }}
+        />
       </footer>
     </section>
   );

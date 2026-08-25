@@ -19,11 +19,18 @@ import type { SessionResponse, SignedOutResponse } from '../models/dtos/session.
 import type { AuthService } from '../services/auth.service';
 import { ApiException } from '../shared/api-exception';
 import { ApiResponse, toResponse } from '../shared/api-response';
+import { MAX_CREDENTIAL_BYTES, readJson } from '../shared/request-body';
 import type { RequestContext } from '../shared/router';
 
 interface Credentials {
   username?: unknown;
   password?: unknown;
+}
+
+function credentialsOf(value: unknown): Credentials {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {};
+  const record = value as Record<string, unknown>;
+  return { username: record.username, password: record.password };
 }
 
 export class AuthController {
@@ -33,7 +40,7 @@ export class AuthController {
   ) {}
 
   login = async ({ request }: RequestContext): Promise<Response> => {
-    const { username, password } = await request.json<Credentials>();
+    const { username, password } = credentialsOf(await readJson(request, MAX_CREDENTIAL_BYTES));
 
     if (typeof username !== 'string' || typeof password !== 'string') {
       throw ApiException.badRequest('Send a username and a password.');

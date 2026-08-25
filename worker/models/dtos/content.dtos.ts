@@ -8,6 +8,7 @@
  * Two gates, two jobs: this one answers 400, that one answers 422.
  */
 import type { ContentSet, MediaInfo } from '../../../src/content/types';
+import { ContentShapeError, parseContentSet } from '../../../src/content/parse';
 import { ApiException } from '../../shared/api-exception';
 
 export interface ContentResponse {
@@ -27,5 +28,12 @@ export function parseSaveRequest(body: unknown): ContentSet {
   if (!isRecord(body) || !isRecord(body.content)) {
     throw ApiException.badRequest('Malformed save.');
   }
-  return body.content as unknown as ContentSet;
+  try {
+    return parseContentSet(body.content);
+  } catch (error) {
+    if (error instanceof ContentShapeError) {
+      throw ApiException.badRequest(`Malformed save: ${error.message}`);
+    }
+    throw error;
+  }
 }

@@ -3,6 +3,11 @@
  * and the only place the difference between a draft and the live site is
  * explained.
  *
+ * One bar along the foot of the window: where the draft stands on the left,
+ * what you can do about it on the right, and a line of plain text underneath
+ * when there is something to say. Ordinary buttons, in the order the work
+ * happens; the order is the row, so it does not need numbering.
+ *
  * "Is it live yet?" is answered by asking the site itself: the template writes
  * build-info.json with the revision it was built from, and the Worker fetches
  * it. A published revision that matches what the origin is serving means the
@@ -12,12 +17,12 @@
  * revision number of its own — so it reports a fingerprint of the content
  * instead, and the comparison is otherwise identical.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { publishService } from '../services/publish';
-import type { SiteStatus } from '../services/types';
 import type { Editor } from '../useEditor';
+import { useRemote } from '../useRemote';
 
 /** How often to re-ask while a build is in flight. */
 const POLL_MS = 15_000;
@@ -33,24 +38,16 @@ interface PublishBarProps {
   editor: Editor;
 }
 
+const readStatus = (signal: AbortSignal) => publishService.status(signal);
+
 export function PublishBar({ editor }: PublishBarProps) {
   const { t } = useTranslation();
-  const [status, setStatus] = useState<SiteStatus | null>(null);
+  // A failed status poll is not worth interrupting an edit over, so the error
+  // is never read: `useRemote` keeps the last good answer and the next poll
+  // either succeeds or the save surfaces the real problem.
+  const { data: status, reload } = useRemote(readStatus, '');
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-
-  const refresh = useCallback(async () => {
-    try {
-      setStatus(await publishService.status());
-    } catch {
-      // A failed status poll is not worth interrupting an edit over; the next
-      // one will either succeed or the save will surface the real problem.
-    }
-  }, []);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
 
   const preview =
     status === null ? 'unknown' : deploymentOf(status.draftRevision, status.preview.revision);
@@ -58,11 +55,25 @@ export function PublishBar({ editor }: PublishBarProps) {
     status === null ? 'unknown' : deploymentOf(status.latestRevision, status.production.revision);
   const settling = preview === 'building' || production === 'building';
 
+  // Re-ask while a build is in flight, waiting a full interval *after* each
+  // answer rather than every interval regardless — a slow reply should not
+  // stack a second request behind the first.
   useEffect(() => {
     if (!settling) return;
-    const timer = setInterval(() => void refresh(), POLL_MS);
-    return () => clearInterval(timer);
-  }, [settling, refresh]);
+    let stopped = false;
+    let timer = 0;
+
+    const tick = async (): Promise<void> => {
+      await reload();
+      if (!stopped) timer = window.setTimeout(() => void tick(), POLL_MS);
+    };
+    timer = window.setTimeout(() => void tick(), POLL_MS);
+
+    return () => {
+      stopped = true;
+      window.clearTimeout(timer);
+    };
+  }, [settling, reload]);
 
   const blocked = editor.problems.length > 0;
   const unpublished = status?.unpublished ?? false;
@@ -71,7 +82,7 @@ export function PublishBar({ editor }: PublishBarProps) {
     setNotice(null);
     if (await editor.save()) {
       setNotice(t('publish.savedNotice'));
-      await refresh();
+      await reload();
     }
   }
 
@@ -85,7 +96,7 @@ export function PublishBar({ editor }: PublishBarProps) {
           ? t('publish.publishedNotice', { revision: result.revision })
           : (result.reason ?? t('publish.nothing')),
       );
-      await refresh();
+      await reload();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : t('publish.failed'));
     } finally {
@@ -93,69 +104,81 @@ export function PublishBar({ editor }: PublishBarProps) {
     }
   }
 
+  // One sentence at a time, most urgent first: a failure, then what just
+  // happened, then the reason a button next to it is doing nothing.
+  const message =
+    editor.error ??
+    notice ??
+    (editor.dirty && unpublished ? t('publish.saveFirst') : null);
+
   return (
     <div className="publish-bar" aria-label={t('publish.workflow')}>
-      <div className="publish-state">
-        {editor.dirty ? (
-          <span className="pill pill-warn"><span className="status-dot" />{t('publish.unsaved')}</span>
-        ) : (
-          <span className="pill pill-success"><span className="status-dot" />{t('publish.saved')}</span>
-        )}
+      <p className="publish-state">
+        <span className={`state ${editor.dirty ? 'state-warn' : 'state-ok'}`}>
+          <span className="state-dot" aria-hidden="true" />
+          {editor.dirty ? t('publish.unsaved') : t('publish.saved')}
+        </span>
 
-        {unpublished && <span className="pill pill-warn">{t('publish.notLive')}</span>}
+        {unpublished && <span className="state state-warn">{t('publish.notLive')}</span>}
 
         {status?.latestRevision != null && (
-          <span className="pill">{t('publish.revision', { revision: status.latestRevision })}</span>
+          <span className="state">{t('publish.revision', { revision: status.latestRevision })}</span>
         )}
 
-        {preview === 'building' && <span className="pill">{t('publish.previewBuilding')}</span>}
-        {production === 'building' && <span className="pill">{t('publish.publishing')}</span>}
-      </div>
+        {preview === 'building' && <span className="state">{t('publish.previewBuilding')}</span>}
+        {production === 'building' && <span className="state">{t('publish.publishing')}</span>}
+      </p>
 
       <div className="publish-actions">
         <button
           type="button"
-          className="workflow-action"
+          className="button"
           disabled={!editor.dirty || editor.saving || editor.uploading || blocked}
           onClick={() => void onSave()}
         >
-          <span className="workflow-step">{t('publish.stepSave')}</span>
-          <span>{editor.saving ? t('publish.saving') : t('publish.save')}</span>
+          {editor.saving ? t('publish.saving') : t('publish.save')}
         </button>
 
         {status?.preview.url != null && !editor.dirty ? (
-          <a className="workflow-action" href={status.preview.url} target="_blank" rel="noreferrer">
-            <span className="workflow-step">{t('publish.stepPreview')}</span>
-            <span>{t('publish.preview')} ↗</span>
+          <a
+            className="button button-external"
+            href={status.preview.url}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {t('publish.preview')}
           </a>
         ) : (
-          <button className="workflow-action" type="button" disabled>
-            <span className="workflow-step">{t('publish.stepPreview')}</span>
-            <span>{status?.preview.url == null ? t('publish.previewUnavailable') : t('publish.preview')}</span>
+          <button className="button" type="button" disabled>
+            {status?.preview.url == null ? t('publish.previewUnavailable') : t('publish.preview')}
           </button>
         )}
 
         <button
           type="button"
-          className="workflow-action workflow-publish"
+          className="button button-primary"
           disabled={busy || editor.dirty || !unpublished}
           onClick={() => void onPublish()}
         >
-          <span className="workflow-step">{t('publish.stepPublish')}</span>
-          <span>{busy ? t('publish.publishing') : t('publish.publish')}</span>
+          {busy ? t('publish.publishing') : t('publish.publish')}
         </button>
 
         {status?.production.url != null && (
-          <a className="live-link" href={status.production.url} target="_blank" rel="noreferrer">
-            {t('publish.live')} ↗
+          <a
+            className="button button-external publish-live"
+            href={status.production.url}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {t('publish.live')}
           </a>
         )}
       </div>
 
-      {editor.error !== null && <p className="problem publish-notice">{editor.error}</p>}
-      {notice !== null && <p className="publish-notice">{notice}</p>}
-      {editor.dirty && unpublished && (
-        <p className="publish-notice">{t('publish.saveFirst')}</p>
+      {message !== null && (
+        <p className={`publish-notice${editor.error !== null ? ' problem' : ''}`} aria-live="polite">
+          {message}
+        </p>
       )}
     </div>
   );

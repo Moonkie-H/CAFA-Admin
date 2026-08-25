@@ -10,22 +10,25 @@
  *
  * The dictionary's *keys* are structure: the template reads them by name, so a
  * renamed key is a broken build and a missing one is a blank on the page. So
- * this form exposes values only. Each field carries a typed reader and writer
- * rather than a dotted path string, which is a few more characters per line and
- * buys the compiler's word that every one of them points somewhere real.
+ * this form exposes values only, and each field names the one it exposes with a
+ * `CopyPath` — a dotted path the compiler resolves against `Dictionary`, so
+ * every entry in the table below is checked to point somewhere real and a
+ * renamed field fails to compile here rather than blanking a word on the site.
+ *
+ * The table is therefore what it looks like: a list of paths and the words the
+ * studio should see beside them, in the order they are worth reading.
  */
-import type { Dictionary, Locale } from '../content/types';
-import { LOCALES } from '../content/types';
+import { LOCALES, type Locale } from '../content/types';
+import { readCopyPath, writeCopyPath, type CopyPath } from '../content/dictionary';
 import { useTranslation } from 'react-i18next';
 import type { Editor } from '../useEditor';
-import { TextField } from '../ui/fields';
+import { LOCALE_NAMES, TextField } from '../ui/fields';
 
 interface CopyField {
+  path: CopyPath;
   label: string;
   hint?: string;
   multiline?: boolean;
-  read: (dictionary: Dictionary) => string;
-  write: (dictionary: Dictionary, value: string) => Dictionary;
 }
 
 interface CopyGroup {
@@ -34,229 +37,100 @@ interface CopyGroup {
   fields: CopyField[];
 }
 
+/**
+ * The labels and notes are English because English is the key: they are looked
+ * up in the `copy` namespace, which is a flat dictionary of these very
+ * sentences. A label with no translation shows its English, which is the right
+ * failure — a blank one would be a field with no name.
+ */
 const GROUPS: CopyGroup[] = [
   {
     title: 'A work’s three states',
     note: 'The words the index and a work’s own page use for its status.',
     fields: [
-      {
-        label: 'Status word — completed',
-        read: (d) => d.works.status.completed,
-        write: (d, v) => ({ ...d, works: { ...d.works, status: { ...d.works.status, completed: v } } }),
-      },
-      {
-        label: 'Status word — in progress',
-        read: (d) => d.works.status['in-progress'],
-        write: (d, v) => ({
-          ...d,
-          works: { ...d.works, status: { ...d.works.status, 'in-progress': v } },
-        }),
-      },
-      {
-        label: 'Status word — private',
-        read: (d) => d.works.status.private,
-        write: (d, v) => ({ ...d, works: { ...d.works, status: { ...d.works.status, private: v } } }),
-      },
+      { path: 'works.status.completed', label: 'Status word — completed' },
+      { path: 'works.status.in-progress', label: 'Status word — in progress' },
+      { path: 'works.status.private', label: 'Status word — private' },
     ],
   },
   {
     title: 'Labels on a work page',
     note: 'The words down the left of a work, against its number, year and credits.',
     fields: [
-      {
-        label: 'Number',
-        read: (d) => d.work.index,
-        write: (d, v) => ({ ...d, work: { ...d.work, index: v } }),
-      },
-      {
-        label: 'Status',
-        read: (d) => d.work.status,
-        write: (d, v) => ({ ...d, work: { ...d.work, status: v } }),
-      },
-      {
-        label: 'Year',
-        read: (d) => d.work.year,
-        write: (d, v) => ({ ...d, work: { ...d.work, year: v } }),
-      },
-      {
-        label: 'Discipline',
-        read: (d) => d.work.discipline,
-        write: (d, v) => ({ ...d, work: { ...d.work, discipline: v } }),
-      },
-      {
-        label: 'Credits',
-        read: (d) => d.work.credits,
-        write: (d, v) => ({ ...d, work: { ...d.work, credits: v } }),
-      },
-      {
-        label: 'Previous',
-        read: (d) => d.work.previous,
-        write: (d, v) => ({ ...d, work: { ...d.work, previous: v } }),
-      },
-      {
-        label: 'Next',
-        read: (d) => d.work.next,
-        write: (d, v) => ({ ...d, work: { ...d.work, next: v } }),
-      },
+      { path: 'work.index', label: 'Number' },
+      { path: 'work.status', label: 'Status' },
+      { path: 'work.year', label: 'Year' },
+      { path: 'work.discipline', label: 'Discipline' },
+      { path: 'work.credits', label: 'Credits' },
+      { path: 'work.previous', label: 'Previous' },
+      { path: 'work.next', label: 'Next' },
     ],
   },
   {
     title: 'Contact card',
     fields: [
       {
+        path: 'contact.nav',
         label: 'The word in the menu that opens it',
         hint: 'Contact is the one menu item that is not a page — it opens the card over whichever page the reader is on.',
-        read: (d) => d.contact.nav,
-        write: (d, v) => ({ ...d, contact: { ...d.contact, nav: v } }),
       },
+      { path: 'contact.title', label: 'Card title' },
+      { path: 'contact.email', label: 'Label — email' },
+      { path: 'contact.wechat', label: 'Label — WeChat' },
+      { path: 'contact.address', label: 'Label — address' },
+      { path: 'contact.hours', label: 'Label — hours' },
       {
-        label: 'Card title',
-        read: (d) => d.contact.title,
-        write: (d, v) => ({ ...d, contact: { ...d.contact, title: v } }),
-      },
-      {
-        label: 'Label — email',
-        read: (d) => d.contact.email,
-        write: (d, v) => ({ ...d, contact: { ...d.contact, email: v } }),
-      },
-      {
-        label: 'Label — WeChat',
-        read: (d) => d.contact.wechat,
-        write: (d, v) => ({ ...d, contact: { ...d.contact, wechat: v } }),
-      },
-      {
-        label: 'Label — address',
-        read: (d) => d.contact.address,
-        write: (d, v) => ({ ...d, contact: { ...d.contact, address: v } }),
-      },
-      {
-        label: 'Label — hours',
-        read: (d) => d.contact.hours,
-        write: (d, v) => ({ ...d, contact: { ...d.contact, hours: v } }),
-      },
-      {
+        path: 'contact.note',
         label: 'Note',
-        multiline: true,
         hint: 'How to apply, and what happens next.',
-        read: (d) => d.contact.note,
-        write: (d, v) => ({ ...d, contact: { ...d.contact, note: v } }),
+        multiline: true,
       },
+      { path: 'contact.from', label: 'Message form — the address field' },
+      { path: 'contact.message', label: 'Message form — the message field' },
       {
-        label: 'Message form — the address field',
-        read: (d) => d.contact.from,
-        write: (d, v) => ({ ...d, contact: { ...d.contact, from: v } }),
-      },
-      {
-        label: 'Message form — the message field',
-        read: (d) => d.contact.message,
-        write: (d, v) => ({ ...d, contact: { ...d.contact, message: v } }),
-      },
-      {
+        path: 'contact.subject',
         label: 'Message form — subject line',
         hint: 'The line the reader’s own mail client opens with. Send hands them a draft; nothing is collected here.',
-        read: (d) => d.contact.subject,
-        write: (d, v) => ({ ...d, contact: { ...d.contact, subject: v } }),
       },
-      {
-        label: 'Message form — the send button',
-        read: (d) => d.contact.send,
-        write: (d, v) => ({ ...d, contact: { ...d.contact, send: v } }),
-      },
+      { path: 'contact.send', label: 'Message form — the send button' },
     ],
   },
   {
     title: 'Footer and missing pages',
     fields: [
-      {
-        label: 'Footer note',
-        read: (d) => d.footer.note,
-        write: (d, v) => ({ ...d, footer: { ...d.footer, note: v } }),
-      },
-      {
-        label: 'Missing page — title',
-        read: (d) => d.notFound.title,
-        write: (d, v) => ({ ...d, notFound: { ...d.notFound, title: v } }),
-      },
-      {
-        label: 'Missing page — text',
-        multiline: true,
-        read: (d) => d.notFound.body,
-        write: (d, v) => ({ ...d, notFound: { ...d.notFound, body: v } }),
-      },
-      {
-        label: 'Missing page — link home',
-        read: (d) => d.notFound.home,
-        write: (d, v) => ({ ...d, notFound: { ...d.notFound, home: v } }),
-      },
+      { path: 'footer.note', label: 'Footer note' },
+      { path: 'notFound.title', label: 'Missing page — title' },
+      { path: 'notFound.body', label: 'Missing page — text', multiline: true },
+      { path: 'notFound.home', label: 'Missing page — link home' },
     ],
   },
   {
     title: 'Search engines and sharing',
     note: 'What appears in a search result or when someone pastes a link into a chat.',
     fields: [
+      { path: 'meta.title', label: 'Site title' },
       {
-        label: 'Site title',
-        read: (d) => d.meta.title,
-        write: (d, v) => ({ ...d, meta: { ...d.meta, title: v } }),
-      },
-      {
+        path: 'meta.titleTemplate',
         label: 'Title pattern for inner pages',
         hint: '%s is replaced by the page’s own title.',
-        read: (d) => d.meta.titleTemplate,
-        write: (d, v) => ({ ...d, meta: { ...d.meta, titleTemplate: v } }),
       },
-      {
-        label: 'Site description',
-        multiline: true,
-        read: (d) => d.meta.description,
-        write: (d, v) => ({ ...d, meta: { ...d.meta, description: v } }),
-      },
+      { path: 'meta.description', label: 'Site description', multiline: true },
     ],
   },
   {
     title: 'Read aloud by screen readers',
     note: 'Never shown on screen. Changing these changes what a blind visitor hears.',
     fields: [
-      {
-        label: 'Skip to content',
-        read: (d) => d.a11y.skipToContent,
-        write: (d, v) => ({ ...d, a11y: { ...d.a11y, skipToContent: v } }),
-      },
-      {
-        label: 'Main navigation',
-        read: (d) => d.a11y.primaryNav,
-        write: (d, v) => ({ ...d, a11y: { ...d.a11y, primaryNav: v } }),
-      },
-      {
-        label: 'Language switch',
-        read: (d) => d.a11y.localeSwitch,
-        write: (d, v) => ({ ...d, a11y: { ...d.a11y, localeSwitch: v } }),
-      },
-      {
-        label: 'Index of works',
-        read: (d) => d.a11y.worksList,
-        write: (d, v) => ({ ...d, a11y: { ...d.a11y, worksList: v } }),
-      },
-      {
-        label: 'Work numbers',
-        read: (d) => d.a11y.worksRail,
-        write: (d, v) => ({ ...d, a11y: { ...d.a11y, worksRail: v } }),
-      },
-      {
-        label: 'Works navigation',
-        read: (d) => d.a11y.workPager,
-        write: (d, v) => ({ ...d, a11y: { ...d.a11y, workPager: v } }),
-      },
-      {
-        label: 'Close',
-        read: (d) => d.a11y.close,
-        write: (d, v) => ({ ...d, a11y: { ...d.a11y, close: v } }),
-      },
+      { path: 'a11y.skipToContent', label: 'Skip to content' },
+      { path: 'a11y.primaryNav', label: 'Main navigation' },
+      { path: 'a11y.localeSwitch', label: 'Language switch' },
+      { path: 'a11y.worksList', label: 'Index of works' },
+      { path: 'a11y.worksRail', label: 'Work numbers' },
+      { path: 'a11y.workPager', label: 'Works navigation' },
+      { path: 'a11y.close', label: 'Close' },
     ],
   },
 ];
-
-const LOCALE_NAMES: Record<Locale, string> = { zh: '中文', en: 'English' };
 
 interface CopyPageProps {
   editor: Editor;
@@ -265,16 +139,16 @@ interface CopyPageProps {
 export function CopyPage({ editor }: CopyPageProps) {
   const { t } = useTranslation(['translation', 'copy']);
   const copy = (value: string) => t(value, { ns: 'copy', keySeparator: false });
-  const set = (locale: Locale, next: Dictionary) => editor.update(locale, next);
+
+  const write = (locale: Locale, path: CopyPath, value: string) =>
+    editor.update(locale, writeCopyPath(editor.content[locale], path, value));
 
   return (
     <section>
       <header className="section-head">
         <h2>{t('pages.siteText')}</h2>
       </header>
-      <p className="section-note">
-        {t('copyPage.intro')}
-      </p>
+      <p className="section-note">{t('copyPage.intro')}</p>
 
       {GROUPS.map((group) => (
         <section key={group.title} className="copy-group">
@@ -282,7 +156,7 @@ export function CopyPage({ editor }: CopyPageProps) {
           {group.note !== undefined && <p className="section-note">{copy(group.note)}</p>}
 
           {group.fields.map((field) => (
-            <fieldset key={field.label} className="field localised">
+            <fieldset key={field.path} className="field localised">
               <legend className="field-label">{copy(field.label)}</legend>
               <div className="localised-pair">
                 {LOCALES.map((locale) => (
@@ -290,8 +164,8 @@ export function CopyPage({ editor }: CopyPageProps) {
                     key={locale}
                     label={LOCALE_NAMES[locale]}
                     multiline={field.multiline}
-                    value={field.read(editor.content[locale])}
-                    onChange={(value) => set(locale, field.write(editor.content[locale], value))}
+                    value={readCopyPath(editor.content[locale], field.path)}
+                    onChange={(value) => write(locale, field.path, value)}
                   />
                 ))}
               </div>
@@ -300,7 +174,6 @@ export function CopyPage({ editor }: CopyPageProps) {
           ))}
         </section>
       ))}
-
     </section>
   );
 }

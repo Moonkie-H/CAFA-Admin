@@ -13,16 +13,19 @@
 import type { Env } from '../env';
 
 export class DeployService {
-  constructor(private readonly env: Env) {}
+  constructor(
+    private readonly env: Env,
+    private readonly ctx: ExecutionContext,
+  ) {}
 
   /** Rebuilds the public site. Fired on publish. */
-  async pokeProduction(): Promise<void> {
-    await poke(this.env.DEPLOY_HOOK_URL);
+  triggerProduction(): void {
+    this.trigger('production', this.env.DEPLOY_HOOK_URL);
   }
 
   /** Rebuilds the preview, which reads the draft. Fired on every save. */
-  async pokePreview(): Promise<void> {
-    await poke(this.env.PREVIEW_DEPLOY_HOOK_URL);
+  triggerPreview(): void {
+    this.trigger('preview', this.env.PREVIEW_DEPLOY_HOOK_URL);
   }
 
   /**
@@ -38,6 +41,7 @@ export class DeployService {
       const response = await fetch(`${origin.replace(/\/$/, '')}/build-info.json`, {
         cf: { cacheTtl: 0 },
         headers: { 'Cache-Control': 'no-cache' },
+        signal: AbortSignal.timeout(5_000),
       });
       if (!response.ok) return null;
       const info = await response.json<{ revision?: unknown }>();
@@ -46,13 +50,21 @@ export class DeployService {
       return null;
     }
   }
-}
 
-async function poke(url: string | undefined): Promise<void> {
-  if (url === undefined || url === '') return;
-  try {
-    await fetch(url, { method: 'POST' });
-  } catch {
-    // Reported by the status poll, not by the save.
+  private trigger(target: 'preview' | 'production', url: string | undefined): void {
+    if (url === undefined || url === '') return;
+    this.ctx.waitUntil(
+      fetch(url, { method: 'POST', signal: AbortSignal.timeout(10_000) })
+        .then((response) => {
+          if (!response.ok) throw new Error(`Deploy hook answered ${response.status}.`);
+        })
+        .catch((error: unknown) => {
+          console.error(JSON.stringify({
+            message: 'Deploy hook failed',
+            target,
+            error: error instanceof Error ? error.message : String(error),
+          }));
+        }),
+    );
   }
 }

@@ -1,6 +1,10 @@
 /**
  * The signed-out screen.
  *
+ * A heading, two fields and a button, centred in the viewport and sized so it
+ * never asks to be scrolled. There is no card, no mark and no ornament: this
+ * screen has one job, and everything that is not the form is in the way of it.
+ *
  * A real form, posted to the Worker, which answers with the session or with the
  * reason it refused. Nothing is remembered between attempts and nothing is
  * stored: the cookie the response sets is HttpOnly, so this component never
@@ -14,13 +18,14 @@ import { useTranslation } from 'react-i18next';
 
 import { sessionService } from '../services/session';
 import type { SessionResponse } from '../services/types';
+import { LanguageToggle } from '../ui/LanguageToggle';
 
 interface SignInPageProps {
   onSignedIn: (session: SessionResponse) => void;
 }
 
 export function SignInPage({ onSignedIn }: SignInPageProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const usernameId = useId();
   const passwordId = useId();
 
@@ -45,16 +50,11 @@ export function SignInPage({ onSignedIn }: SignInPageProps) {
   }
 
   return (
-    <main className="centred sign-in">
-      <div className="signin-language segmented" role="group" aria-label={t('account.language')}>
-        <button type="button" className={i18n.resolvedLanguage === 'en' ? 'is-selected' : ''} onClick={() => void i18n.changeLanguage('en')}>EN</button>
-        <button type="button" className={i18n.resolvedLanguage === 'zh' ? 'is-selected' : ''} onClick={() => void i18n.changeLanguage('zh')}>中文</button>
-      </div>
-      <span className="signin-mark">c.a.f.a</span>
-      <h1>{t('app.editor')}</h1>
-      <p>{t('signin.intro')}</p>
+    <main className="sign-in">
+      <h1 className="sign-in-title">{t('app.editor')}</h1>
+      <p className="sign-in-intro">{t('signin.intro')}</p>
 
-      <form className="sign-in-form" onSubmit={(event) => void submit(event)}>
+      <form onSubmit={(event) => void submit(event)}>
         <div className="field">
           <label className="field-label" htmlFor={usernameId}>
             {t('signin.username')}
@@ -97,10 +97,12 @@ export function SignInPage({ onSignedIn }: SignInPageProps) {
           {problem}
         </p>
 
-        <button className="button button-primary" type="submit" disabled={signingIn}>
+        <button className="button button-primary button-wide" type="submit" disabled={signingIn}>
           {signingIn ? t('signin.working') : t('signin.action')}
         </button>
       </form>
+
+      <LanguageToggle />
     </main>
   );
 }

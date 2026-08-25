@@ -47,8 +47,8 @@ import { Router } from './shared/router';
  * here is a closure over bindings — and it buys the thing that matters: nothing
  * is shared between two requests by accident.
  */
-function compose(env: Env): Router {
-  const deploy = new DeployService(env);
+function compose(env: Env, ctx: ExecutionContext): Router {
+  const deploy = new DeployService(env, ctx);
   const auth = new AuthService(env);
 
   const content = new ContentService(env.DB, deploy);
@@ -99,9 +99,9 @@ function compose(env: Env): Router {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
-    const answer = await respond(request, env, url);
+    const answer = await respond(request, env, ctx, url);
 
     // Anything a frontend on another origin is meant to call says so here, in
     // one place, including its errors. Nothing else in the API answers a
@@ -111,25 +111,30 @@ export default {
 } satisfies ExportedHandler<Env>;
 
 /** Match, authenticate, dispatch. Everything but who is allowed to read it. */
-async function respond(request: Request, env: Env, url: URL): Promise<Response> {
-  const matched = compose(env).resolve(request, url);
-
-  if (matched === null) {
-    // An unclaimed /api path is a mistake worth naming. Anything else is a
-    // client route, and the SPA's asset handler owns it.
-    return url.pathname.startsWith('/api/')
-      ? toResponse(ApiResponse.fail(404, 'No such endpoint.'))
-      : env.ASSETS.fetch(request);
-  }
-
-  if (matched.kind === 'method-not-allowed') {
-    return toResponse(
-      ApiResponse.fail(405, `That endpoint takes ${matched.allowed.join(' or ')}.`),
-      { Allow: matched.allowed.join(', ') },
-    );
-  }
-
+async function respond(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext,
+  url: URL,
+): Promise<Response> {
   return applyExceptionFilter(async () => {
+    const matched = compose(env, ctx).resolve(request, url);
+
+    if (matched === null) {
+      // An unclaimed /api path is a mistake worth naming. Anything else is a
+      // client route, and the SPA's asset handler owns it.
+      return url.pathname.startsWith('/api/')
+        ? ApiResponse.fail(404, 'No such endpoint.')
+        : env.ASSETS.fetch(request);
+    }
+
+    if (matched.kind === 'method-not-allowed') {
+      return toResponse(
+        ApiResponse.fail(405, `That endpoint takes ${matched.allowed.join(' or ')}.`),
+        { Allow: matched.allowed.join(', ') },
+      );
+    }
+
     const context = { request, url, params: matched.params };
     if (matched.kind === 'anonymous') return matched.handler(context);
 
@@ -137,5 +142,5 @@ async function respond(request: Request, env: Env, url: URL): Promise<Response> 
     if (session === null) throw ApiException.unauthorized('Not signed in.');
 
     return matched.handler({ ...context, user: { login: session.login } });
-  });
+  }, request);
 }

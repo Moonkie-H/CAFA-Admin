@@ -14,9 +14,9 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { emptyLocalised, HOME_SLUG, type Page, type PageSection } from '../content/types';
+import { emptyLocalised, HOME_SLUG, type Page } from '../content/types';
 import type { Editor } from '../useEditor';
-import { LocalisedField, moved, Repeatable, TextField } from '../ui/fields';
+import { DeleteRecord, LocalisedField, ReorderControls, Repeatable, TextField } from '../ui/fields';
 import { blankSection, SectionFields } from '../ui/SectionFields';
 
 /**
@@ -91,42 +91,31 @@ export function PagesPage({ editor }: PagesPageProps) {
 
       <p className="section-note">{t('pagePage.order')}</p>
 
-      <ol className="works-list">
+      <ol className="record-list">
         {pages.map((page, at) => (
-          <li key={page.slug === '' ? 'front' : page.slug} className="works-row">
-            <span className="works-index">{String(at + 1).padStart(2, '0')}</span>
+          <li key={page.slug === '' ? 'front' : page.slug} className="record-row">
+            <span className="record-number">{String(at + 1).padStart(2, '0')}</span>
 
-            <button type="button" className="works-open" onClick={() => setOpenAt(at)}>
-              <span className="works-title">{page.title.zh || t('pages.untitled')}</span>
-              <span className="works-title-en">
+            <button type="button" className="record-open" onClick={() => setOpenAt(at)}>
+              <span className="record-title">{page.title.zh || t('pages.untitled')}</span>
+              <span className="record-subtitle">
                 {page.slug === HOME_SLUG ? '/' : `/${page.slug}`} ·{' '}
                 {t('pagePage.sectionCount', { count: page.sections.length })}
               </span>
             </button>
 
-            <span className="works-meta">
+            <span className="record-meta">
               {t(page.navLabel === null ? 'pagePage.notInMenu' : 'pagePage.inMenu')}
             </span>
 
-            <span className="works-controls">
-              <button
-                type="button"
-                className="button button-quiet"
-                disabled={at === 0}
-                aria-label={t('pagePage.moveUp', { page: page.title.en || page.slug })}
-                onClick={() => editor.update('pages', moved(pages, at, at - 1))}
-              >
-                ↑
-              </button>
-              <button
-                type="button"
-                className="button button-quiet"
-                disabled={at === pages.length - 1}
-                aria-label={t('pagePage.moveDown', { page: page.title.en || page.slug })}
-                onClick={() => editor.update('pages', moved(pages, at, at + 1))}
-              >
-                ↓
-              </button>
+            <span className="record-controls">
+              <ReorderControls
+                items={pages}
+                at={at}
+                onChange={(next) => editor.update('pages', next)}
+                upLabel={t('pagePage.moveUp', { page: page.title.en || page.slug })}
+                downLabel={t('pagePage.moveDown', { page: page.title.en || page.slug })}
+              />
             </span>
           </li>
         ))}
@@ -144,12 +133,10 @@ interface PageFormProps {
 
 function PageForm({ page, editor, onChange, onClose }: PageFormProps) {
   const { t } = useTranslation();
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const isHome = page.slug === HOME_SLUG;
 
   const set = <K extends keyof Page>(key: K, value: Page[K]) => onChange({ ...page, [key]: value });
 
-  const writeSections = (sections: PageSection[]) => set('sections', sections);
   const usedKeys = page.sections.flatMap((section) =>
     section.kind === 'gallery' ? section.images.map((image) => image.src) : [],
   );
@@ -207,32 +194,21 @@ function PageForm({ page, editor, onChange, onClose }: PageFormProps) {
 
       <Repeatable
         label={t('pages.section')}
-        count={page.sections.length}
+        items={page.sections}
         addLabel={t('pages.addSection')}
         hint={t('pagePage.sectionsHint')}
-        onAdd={() => writeSections([...page.sections, blankSection('prose')])}
-        onRemove={(at) =>
-          writeSections(page.sections.filter((_, position) => position !== at))
-        }
-        onMove={(at, to) => writeSections(moved(page.sections, at, to))}
-        renderItem={(at) => {
-          const section = page.sections[at];
-          if (section === undefined) return null;
-          return (
-            <SectionFields
-              section={section}
-              onChange={(next) =>
-                writeSections(
-                  page.sections.map((existing, position) => (position === at ? next : existing)),
-                )
-              }
-              folder={pageFolder(page.slug)}
-              usedKeys={usedKeys}
-              mediaUrl={editor.mediaUrl}
-              onUpload={editor.putMedia}
-            />
-          );
-        }}
+        blank={() => blankSection('prose')}
+        onChange={(sections) => set('sections', sections)}
+        renderItem={(section, write) => (
+          <SectionFields
+            section={section}
+            onChange={write}
+            folder={pageFolder(page.slug)}
+            usedKeys={usedKeys}
+            mediaUrl={editor.mediaUrl}
+            onUpload={editor.putMedia}
+          />
+        )}
       />
 
       <footer className="form-footer">
@@ -241,34 +217,21 @@ function PageForm({ page, editor, onChange, onClose }: PageFormProps) {
             too — this is simply the earlier place to say it. */}
         {isHome ? (
           <p className="field-hint">{t('pagePage.frontPageKept')}</p>
-        ) : confirmingDelete ? (
-          <div className="confirm">
-            <p>{t('pagePage.removeQuestion', { page: page.title.zh || page.title.en || page.slug })}</p>
-            <button
-              type="button"
-              className="button button-danger"
-              onClick={() => {
-                editor.update(
-                  'pages',
-                  editor.content.pages.filter((existing) => existing !== page),
-                );
-                onClose();
-              }}
-            >
-              {t('pagePage.removeIt')}
-            </button>
-            <button type="button" className="button" onClick={() => setConfirmingDelete(false)}>
-              {t('works.keepIt')}
-            </button>
-          </div>
         ) : (
-          <button
-            type="button"
-            className="button button-danger"
-            onClick={() => setConfirmingDelete(true)}
-          >
-            {t('pagePage.removePage')}
-          </button>
+          <DeleteRecord
+            action={t('pagePage.removePage')}
+            question={t('pagePage.removeQuestion', {
+              page: page.title.zh || page.title.en || page.slug,
+            })}
+            confirm={t('pagePage.removeIt')}
+            onDelete={() => {
+              editor.update(
+                'pages',
+                editor.content.pages.filter((existing) => existing !== page),
+              );
+              onClose();
+            }}
+          />
         )}
       </footer>
     </section>

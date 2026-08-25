@@ -1,20 +1,34 @@
 /**
- * The frame every page sits in: brand, draft workflow, account utilities,
- * editorial navigation and content.
+ * The frame every page sits in: a header, the navigation, the page, and the
+ * draft workflow along the bottom.
+ *
+ * Three regions, none of them on top of another. The header is one row of plain
+ * text and holds nothing that needs a menu to reach; the sidebar is editorial
+ * navigation and the two utilities that are not editorial; the workflow — save,
+ * preview, publish — sits in a bar at the foot of the window, where it is on
+ * every page and never competes with the page's own heading for the top of the
+ * screen. The main column reserves the bar's height, so the bar covers nothing.
  *
  * Navigation renders from the route table rather than a list of its own. Each
- * item is a real `<a href>`
- * that the click handler intercepts — which means middle-click, ⌘-click and
- * "copy link" all behave, and the keyboard gets anchor semantics for free
- * rather than a button pretending to be a link.
+ * item is a real `<a href>` that the click handler intercepts — which means
+ * middle-click, ⌘-click and "copy link" all behave, and the keyboard gets
+ * anchor semantics for free rather than a button pretending to be a link.
  */
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { href, navigate, SIDEBAR_ROUTES, type RoutePath } from '../routes';
+import { href, navigate, ROUTES, type RouteGroup, type RoutePath } from '../routes';
 import { sessionService } from '../services/session';
+import { LanguageToggle } from './LanguageToggle';
 import { PublishBar } from './PublishBar';
 import type { Editor } from '../useEditor';
+
+/** The order of the sidebar, and the heading each run of links sits under. */
+const GROUPS: { group: RouteGroup; labelKey: string }[] = [
+  { group: 'overview', labelKey: 'nav.overview' },
+  { group: 'content', labelKey: 'nav.content' },
+  { group: 'utility', labelKey: 'nav.tools' },
+];
 
 interface AdminLayoutProps {
   editor: Editor;
@@ -25,7 +39,7 @@ interface AdminLayoutProps {
 }
 
 export function AdminLayout({ editor, login, route, onSignedOut, children }: AdminLayoutProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   /**
    * A button rather than a link, because signing out is a POST now.
    *
@@ -48,89 +62,52 @@ export function AdminLayout({ editor, login, route, onSignedOut, children }: Adm
   return (
     <div className="shell">
       <header className="top">
-        <div className="top-main">
-          <a className="brand" href={href('control')} onClick={(event) => {
+        <a
+          className="brand"
+          href={href('control')}
+          onClick={(event) => {
             if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey) return;
             if (event.button !== 0) return;
             event.preventDefault();
             navigate('control');
-          }}>
-            <span className="brand-mark">c.a.f.a</span>
-            <span className="brand-label">{t('app.editor')}</span>
-          </a>
+          }}
+        >
+          {t('app.editor')}
+        </a>
 
-          <PublishBar editor={editor} />
-
-          <details className="account-menu">
-            <summary aria-label={t('account.menu')}>
-              <span className="account-avatar" aria-hidden="true">{login.slice(0, 1).toUpperCase()}</span>
-              <span className="account-name">{login}</span>
-            </summary>
-            <div className="account-popover">
-              <div className="account-heading">
-                <span>{t('account.signedInAs')}</span>
-                <strong>{login}</strong>
-              </div>
-
-              <div className="language-control">
-                <span className="utility-label">{t('account.language')}</span>
-                <div className="segmented" role="group" aria-label={t('account.language')}>
-                  <button
-                    type="button"
-                    className={i18n.resolvedLanguage === 'en' ? 'is-selected' : ''}
-                    aria-pressed={i18n.resolvedLanguage === 'en'}
-                    onClick={() => void i18n.changeLanguage('en')}
-                  >
-                    EN
-                  </button>
-                  <button
-                    type="button"
-                    className={i18n.resolvedLanguage === 'zh' ? 'is-selected' : ''}
-                    aria-pressed={i18n.resolvedLanguage === 'zh'}
-                    onClick={() => void i18n.changeLanguage('zh')}
-                  >
-                    中文
-                  </button>
-                </div>
-              </div>
-
-              <NavLink to="dev" current={route === 'dev'} className="utility-link">
-                <span aria-hidden="true">&lt;/&gt;</span> {t('nav.developer')}
-              </NavLink>
-              <button className="utility-link utility-signout" type="button" onClick={() => void signOut()}>
-                <span aria-hidden="true">↗</span> {t('account.signOut')}
-              </button>
-            </div>
-          </details>
+        <div className="top-account">
+          <LanguageToggle />
+          <span className="account-name" title={t('account.signedInAs')}>
+            {login}
+          </span>
+          <button className="link-button" type="button" onClick={() => void signOut()}>
+            {t('account.signOut')}
+          </button>
         </div>
       </header>
 
       <div className="body">
         <nav className="sidebar" aria-label={t('nav.label')}>
-          <span className="sidebar-group">{t('nav.overview')}</span>
-          <ul className="sidebar-list">
-            {SIDEBAR_ROUTES.filter((entry) => entry.group === 'overview').map((entry) => (
-              <li key={entry.path}>
-                <NavLink to={entry.path} current={route === entry.path}>
-                  {t(entry.labelKey)}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-          <span className="sidebar-group">{t('nav.content')}</span>
-          <ul className="sidebar-list">
-            {SIDEBAR_ROUTES.filter((entry) => entry.group === 'content').map((entry) => (
-              <li key={entry.path}>
-                <NavLink to={entry.path} current={route === entry.path}>
-                  {t(entry.labelKey)}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
+          {GROUPS.map(({ group, labelKey }) => (
+            <div className="sidebar-group" key={group}>
+              <h2 className="sidebar-heading">{t(labelKey)}</h2>
+              <ul className="sidebar-list">
+                {ROUTES.filter((entry) => entry.group === group).map((entry) => (
+                  <li key={entry.path}>
+                    <NavLink to={entry.path} current={route === entry.path}>
+                      {t(entry.labelKey)}
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </nav>
 
         <main className="main">{children}</main>
       </div>
+
+      <PublishBar editor={editor} />
     </div>
   );
 }
@@ -139,13 +116,12 @@ interface NavLinkProps {
   to: RoutePath;
   current: boolean;
   children: ReactNode;
-  className?: string;
 }
 
-function NavLink({ to, current, children, className = 'sidebar-link' }: NavLinkProps) {
+function NavLink({ to, current, children }: NavLinkProps) {
   return (
     <a
-      className={`${className}${current ? ' is-current' : ''}`}
+      className={`sidebar-link${current ? ' is-current' : ''}`}
       href={href(to)}
       aria-current={current ? 'page' : undefined}
       onClick={(event) => {

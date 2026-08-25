@@ -91,6 +91,10 @@ const LOCALE_LABEL: Record<Locale, Phrase> = {
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+export function isSlug(value: string): boolean {
+  return SLUG.test(value);
+}
+
 class Collector {
   readonly problems: Problem[] = [];
 
@@ -117,7 +121,7 @@ class Collector {
 
   slug(value: string, label: Phrase): void {
     if (value.trim() === '') return this.add(label, fault.empty);
-    if (!SLUG.test(value)) this.add(label, fault.slugChars);
+    if (!isSlug(value)) this.add(label, fault.slugChars);
   }
 
   /**

@@ -60,7 +60,11 @@ function capture(template: readonly string[], actual: readonly string[]) {
     if (expected === undefined || given === undefined) return null;
 
     if (expected.startsWith(':')) {
-      params[expected.slice(1)] = decodeURIComponent(given);
+      try {
+        params[expected.slice(1)] = decodeURIComponent(given);
+      } catch {
+        return null;
+      }
       continue;
     }
     if (expected !== given) return null;

@@ -23,8 +23,9 @@
  * again; what it cannot do is find the number itself.
  */
 
+import { MAX_IMAGE_EDGE } from './content/types';
+
 /** The largest derivative the site will ever ask for. */
-const MAX_EDGE = 2400;
 const QUALITY = 0.86;
 
 /**
@@ -53,7 +54,7 @@ const NEUTRAL = 0.015;
 const AGREEMENT = 0.25;
 
 export interface PreparedImage {
-  /** The re-encoded photograph, at most MAX_EDGE on its longest side. */
+  /** The re-encoded photograph, at most MAX_IMAGE_EDGE on its longest side. */
   image: Blob;
   /**
    * Its dominant hue, in degrees on the OKLCH colour circle, or null where it
@@ -64,8 +65,8 @@ export interface PreparedImage {
 
 function scaleToFit(width: number, height: number): { width: number; height: number } {
   const longest = Math.max(width, height);
-  if (longest <= MAX_EDGE) return { width, height };
-  const ratio = MAX_EDGE / longest;
+  if (longest <= MAX_IMAGE_EDGE) return { width, height };
+  const ratio = MAX_IMAGE_EDGE / longest;
   return { width: Math.round(width * ratio), height: Math.round(height * ratio) };
 }
 
@@ -167,6 +168,18 @@ export async function prepareImage(file: File): Promise<PreparedImage> {
  */
 export function mediaKey(folder: string, name: string): string {
   return `${folder}/${name}.jpg`;
+}
+
+/**
+ * The stem `mediaKey` was given, read back off a key.
+ *
+ * A photograph keeps the name it was filed under, so re-uploading over one has
+ * to reconstruct that name rather than take the next free number — which would
+ * leave the old object orphaned in the bucket under the name the record no
+ * longer points at.
+ */
+export function mediaStem(key: string): string {
+  return (key.split('/').pop() ?? '').replace(/\.[^.]+$/, '');
 }
 
 /** A file name that will not collide with what is already in the folder. */

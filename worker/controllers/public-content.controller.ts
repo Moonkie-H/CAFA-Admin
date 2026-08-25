@@ -37,11 +37,11 @@ export class PublicContentController {
   ) {}
 
   published = async (): Promise<Response> => {
-    return envelope(await this.publishing.publishedBundle());
+    return envelope(await this.publishing.publishedSnapshot());
   };
 
   draft = async ({ request }: RequestContext): Promise<Response> => {
-    this.auth.assertPreviewBuild(request.headers.get('X-Preview-Token'));
+    await this.auth.assertPreviewBuild(request.headers.get('X-Preview-Token'));
     return envelope(await this.publishing.draftEnvelope());
   };
 }

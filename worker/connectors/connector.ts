@@ -12,7 +12,7 @@
  * the route, the entry in the document, and the card in the dev panel, in one
  * edit, with no file to remember to regenerate.
  */
-import type { Mentor, Page, Program, Work } from '../../src/content/types';
+import type { PublishedBundle } from '../domain/bundle';
 import type { JsonSchema } from './schema';
 
 /** A path or query parameter, as both the docs and the dev panel read it. */
@@ -33,36 +33,14 @@ export interface ConnectorRequest {
   query: URLSearchParams;
 }
 
-/** The site's chrome, as a published revision carries it. */
-export interface PublishedSite {
-  name: { zh: string; en: string };
-  url: string;
-  locales: string[];
-  localeNames: { zh: string; en: string };
-  contact: unknown;
-}
-
 /**
  * The published bundle, typed for reading.
  *
- * worker/domain/bundle.ts declares most of these `unknown`, because building
- * one is a projection and nothing there needs to look inside the result. Here
- * we are the reader, so the same JSON is described in the terms the connectors
- * slice it in. A private work still fits `Work`: the projection keeps every
- * field and empties the two that name photographs.
+ * The builder owns this contract, so the reader imports it rather than keeping
+ * a parallel interface that can drift. A private work still fits `Work`: the
+ * projection keeps every field and empties the two that name photographs.
  */
-export interface ReadableBundle {
-  site: PublishedSite;
-  pages: Page[];
-  works: Work[];
-  programs: Program[];
-  mentors: Mentor[];
-  dictionaries: Record<string, unknown>;
-  media: Record<string, { width: number; height: number; tint: number | null }>;
-  mediaBase: string;
-  /** False on a zone that cannot transform: render the originals as they are. */
-  mediaTransform: boolean;
-}
+export type ReadableBundle = PublishedBundle;
 
 /** The newest revision, parsed once per request. */
 export interface PublishedContent {

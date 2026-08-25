@@ -5,8 +5,11 @@
  * anything — it publishes an old snapshot as a new revision — so this is two
  * reads and an append, and there is no destructive route to guard.
  */
-import { parseRevisionId, type PublishResponse } from '../models/dtos/publish.dtos';
-import type { RevisionSummary } from '../repositories/revision.repository';
+import {
+  parseRevisionId,
+  type PublishResponse,
+  type RevisionResponse,
+} from '../models/dtos/publish.dtos';
 import type { PublishService } from '../services/publish.service';
 import { ApiResponse } from '../shared/api-response';
 import type { AuthorizedContext } from '../shared/router';
@@ -14,7 +17,7 @@ import type { AuthorizedContext } from '../shared/router';
 export class RevisionsController {
   constructor(private readonly publishing: PublishService) {}
 
-  list = async (): Promise<ApiResponse<RevisionSummary[]>> => {
+  list = async (): Promise<ApiResponse<RevisionResponse[]>> => {
     return ApiResponse.ok(await this.publishing.history());
   };
 

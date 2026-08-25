@@ -15,11 +15,20 @@ import { ApiResponse, isResponse, toResponse, type ActionResult } from './api-re
 
 export async function applyExceptionFilter(
   action: () => Promise<ActionResult>,
+  request: Request,
 ): Promise<Response> {
   try {
     const result = await action();
     return isResponse(result) ? result : toResponse(result);
   } catch (error) {
+    if (!(error instanceof ApiException) && !(error instanceof SyntaxError)) {
+      console.error(JSON.stringify({
+        message: 'Unhandled request error',
+        method: request.method,
+        path: new URL(request.url).pathname,
+        error: error instanceof Error ? error.message : String(error),
+      }));
+    }
     return toResponse(describe(error));
   }
 }
@@ -33,5 +42,5 @@ function describe(error: unknown): ApiResponse<never> {
     // malformed JSON body, which is the client's mistake rather than ours.
     return ApiResponse.fail(400, 'That request body was not valid JSON.');
   }
-  return ApiResponse.fail(500, error instanceof Error ? error.message : 'Something failed.');
+  return ApiResponse.fail(500, 'The server could not complete that request.');
 }

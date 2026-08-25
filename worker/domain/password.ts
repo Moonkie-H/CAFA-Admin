@@ -17,7 +17,8 @@
  *
  * `scripts/set-password.mjs` writes this format. If you change it, change that.
  */
-import { equalBytes, fromBase64Url } from './base64url';
+import { fromBase64Url } from './base64url';
+import { timingSafeEqualBytes } from './secrets';
 
 const KEY_BITS = 256;
 
@@ -48,7 +49,7 @@ function parse(encoded: string): Verifier | null {
   return { iterations, salt: saltBytes, key: keyBytes };
 }
 
-async function derive(password: string, verifier: Verifier): Promise<Uint8Array> {
+async function derive(password: string, verifier: Verifier): Promise<Uint8Array<ArrayBuffer>> {
   const material = await crypto.subtle.importKey(
     'raw',
     encoder.encode(password),
@@ -83,7 +84,7 @@ export async function verifyPassword(password: string, encoded: string): Promise
   if (verifier === null) return false;
 
   const offered = await derive(password, verifier);
-  return equalBytes(offered, verifier.key);
+  return timingSafeEqualBytes(offered, verifier.key);
 }
 
 /** Whether a secret is a verifier at all, without needing a password to try. */

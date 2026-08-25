@@ -553,6 +553,10 @@ worker/
 
 src/
   content/                  the shape of the content, and the rules a save must satisfy
+    types.ts                the records, and the blank ones every form starts from
+    parse.ts                an untrusted body into the exact editable shape
+    validate.ts             every rule a save must satisfy, as phrases not sentences
+    dictionary.ts           one word inside a dictionary, by a path the compiler checks
   services/                 the only place the browser talks to the Worker
     http.ts                 unwraps the envelope; nothing else knows about fetch
     session · content · media · publish
@@ -560,8 +564,11 @@ src/
   pages/                    one per route: the control panel, six editors,
                             history and the dev panel, plus sign-in
   ui/                       the layout, the form vocabulary, the publish bar
+    fields.tsx              the form vocabulary — and the list that owns add,
+                            reorder, remove and replace, so no page spells them out
   routes.ts                 the route table, and the whole of the client router
   useEditor.ts              what has changed, and how it gets sent
+  useRemote.ts              something read from the Worker, and its stale guard
 ```
 
 ### Why the envelope stops at the build endpoints

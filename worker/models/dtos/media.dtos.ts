@@ -7,21 +7,31 @@
  * and the save that references it agree without a round trip.
  */
 import type { MediaInfo } from '../../../src/content/types';
-import { isMediaKey } from '../../domain/image';
+import { isReadableMediaKey, isWritableMediaKey } from '../../domain/image';
 import { ApiException } from '../../shared/api-exception';
 
 export type UploadMediaResponse = MediaInfo;
 
 /**
- * The `key` query parameter, checked against what the admin may write.
+ * The `key` query parameter, checked against what the admin may do with it.
  *
- * Both media routes need it and both must refuse the same things, so the check
- * lives here rather than twice in the controller.
+ * Both media routes need it and neither may accept a key that climbs out of the
+ * bucket, so the check lives here rather than twice in the controller. What
+ * they differ on is the legacy `studio/` folder — readable, because live
+ * content still cites it; not writable, because nothing files there any more.
  */
-export function parseMediaKey(url: URL): string {
+export function parseMediaKey(url: URL, intent: 'read' | 'write'): string {
   const key = url.searchParams.get('key');
   if (key === null || key === '') throw ApiException.badRequest('No media key given.');
-  if (!isMediaKey(key)) throw ApiException.badRequest('Not a media key the admin may write.');
+
+  const allowed = intent === 'write' ? isWritableMediaKey(key) : isReadableMediaKey(key);
+  if (!allowed) {
+    throw ApiException.badRequest(
+      intent === 'write'
+        ? 'Not a media key the admin may write.'
+        : 'Not a media key the admin may read.',
+    );
+  }
   return key;
 }
 

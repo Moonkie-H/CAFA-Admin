@@ -28,6 +28,7 @@ export class ApiError extends Error {
 }
 
 type Query = Record<string, string | number | undefined>;
+const REQUEST_TIMEOUT_MS = 30_000;
 
 export interface RequestOptions extends Omit<RequestInit, 'body'> {
   /** Serialised as JSON, with the header set to match. */
@@ -47,10 +48,13 @@ function buildUrl(path: string, query?: Query): string {
 }
 
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { body, raw, query, headers, ...init } = options;
+  const { body, raw, query, headers, signal, ...init } = options;
+  const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+  const requestSignal = signal == null ? timeout : AbortSignal.any([signal, timeout]);
 
   const response = await fetch(buildUrl(path, query), {
     ...init,
+    signal: requestSignal,
     credentials: 'same-origin',
     headers: {
       Accept: 'application/json',
@@ -60,9 +64,10 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     body: body !== undefined ? JSON.stringify(body) : raw,
   });
 
-  let envelope: ApiResponse<T> | undefined;
+  let envelope: ApiResponse<unknown> | undefined;
   try {
-    envelope = await response.json<ApiResponse<T>>();
+    const body: unknown = await response.json();
+    if (isApiResponse(body)) envelope = body;
   } catch {
     // A gateway error, or a response that never reached the Worker at all.
   }
@@ -79,5 +84,17 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     throw new ApiError(response.status, envelope.msg || 'The server returned no data.');
   }
 
-  return envelope.data;
+  return envelope.data as T;
+}
+
+function isApiResponse(value: unknown): value is ApiResponse<unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.success === 'boolean' &&
+    Object.hasOwn(record, 'data') &&
+    typeof record.code === 'number' &&
+    typeof record.msg === 'string' &&
+    (record.problems === undefined || Array.isArray(record.problems))
+  );
 }

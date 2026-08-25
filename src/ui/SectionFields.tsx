@@ -16,15 +16,14 @@
 import { useTranslation } from 'react-i18next';
 
 import {
+  blankImage,
   emptyLocalised,
   SECTION_KINDS,
-  type ImageRef,
-  type LocalisedText,
   type PageSection,
   type SectionKind,
 } from '../content/types';
-import { nextMediaName } from '../images';
-import { LocalisedField, moved, Repeatable, SelectField } from './fields';
+import { mediaStem, nextMediaName } from '../images';
+import { LocalisedField, Repeatable, SelectField } from './fields';
 import { ImageField } from './ImageField';
 
 /** A section of a kind, with every field it has and nothing in them. */
@@ -118,79 +117,50 @@ function Body({ section, onChange, folder, usedKeys, mediaUrl, onUpload }: Secti
         />
       );
 
-    case 'prose': {
-      const write = (paragraphs: LocalisedText[]) => onChange({ ...section, paragraphs });
+    case 'prose':
       return (
         <Repeatable
           label={t('fields.paragraph')}
-          count={section.paragraphs.length}
+          items={section.paragraphs}
           addLabel={t('fields.addParagraph')}
-          onAdd={() => write([...section.paragraphs, emptyLocalised()])}
-          onRemove={(at) => write(section.paragraphs.filter((_, position) => position !== at))}
-          onMove={(at, to) => write(moved(section.paragraphs, at, to))}
-          renderItem={(at) => {
-            const paragraph = section.paragraphs[at];
-            if (paragraph === undefined) return null;
-            return (
-              <LocalisedField
-                label={t('fields.paragraphNumber', { number: at + 1 })}
-                value={paragraph}
-                onChange={(value) =>
-                  write(
-                    section.paragraphs.map((existing, position) =>
-                      position === at ? value : existing,
-                    ),
-                  )
-                }
-                multiline
-              />
-            );
-          }}
+          blank={emptyLocalised}
+          onChange={(paragraphs) => onChange({ ...section, paragraphs })}
+          renderItem={(paragraph, write, at) => (
+            <LocalisedField
+              label={t('fields.paragraphNumber', { number: at + 1 })}
+              value={paragraph}
+              onChange={write}
+              multiline
+            />
+          )}
         />
       );
-    }
 
-    case 'gallery': {
-      const write = (images: ImageRef[]) => onChange({ ...section, images });
+    case 'gallery':
       return (
         <Repeatable
           label={t('fields.photographs')}
-          count={section.images.length}
+          items={section.images}
           addLabel={t('fields.addPhoto')}
           hint={t('pagePage.galleryHint')}
-          onAdd={() => write([...section.images, { src: '', alt: emptyLocalised() }])}
-          onRemove={(at) => write(section.images.filter((_, position) => position !== at))}
-          onMove={(at, to) => write(moved(section.images, at, to))}
-          renderItem={(at) => {
-            const image = section.images[at];
-            if (image === undefined) return null;
-            return (
-              <ImageField
-                label={t('works.photoNumber', { number: at + 1 })}
-                value={image}
-                onChange={(value) =>
-                  write(
-                    section.images.map((existing, position) =>
-                      position === at ? value : existing,
-                    ),
-                  )
-                }
-                folder={folder}
-                // A photograph keeps the name it was filed under; a new one
-                // takes the next free number in the page's folder, counting
-                // every gallery on the page so two of them cannot collide.
-                name={
-                  image.src === ''
-                    ? nextMediaName([...usedKeys], '')
-                    : (image.src.split('/').pop() ?? '').replace(/\.[^.]+$/, '')
-                }
-                mediaUrl={mediaUrl}
-                onUpload={onUpload}
-              />
-            );
-          }}
+          blank={blankImage}
+          onChange={(images) => onChange({ ...section, images })}
+          keyOf={(image, at) => image.src || `new-${at}`}
+          renderItem={(image, write, at) => (
+            <ImageField
+              label={t('works.photoNumber', { number: at + 1 })}
+              value={image}
+              onChange={write}
+              folder={folder}
+              // A photograph keeps the name it was filed under; a new one takes
+              // the next free number in the page's folder, counting every
+              // gallery on the page so two of them cannot collide.
+              name={image.src === '' ? nextMediaName([...usedKeys], '') : mediaStem(image.src)}
+              mediaUrl={mediaUrl}
+              onUpload={onUpload}
+            />
+          )}
         />
       );
-    }
   }
 }

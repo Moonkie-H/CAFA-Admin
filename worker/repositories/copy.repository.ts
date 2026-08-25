@@ -13,6 +13,7 @@
  * keys — new keys arrive by migration, beside the code that reads them.
  */
 import { LOCALES, type Dictionary, type Locale } from '../../src/content/types';
+import { parseDictionary } from '../../src/content/parse';
 import type { CopyRow } from '../models/rows';
 
 /**
@@ -79,7 +80,10 @@ export async function readCopy(db: D1Database): Promise<Dictionaries> {
   const rows = await db.prepare('SELECT * FROM copy ORDER BY key').all<CopyRow>();
 
   const forLocale = (locale: Locale): Dictionary =>
-    unflatten(rows.results.map((row) => [row.key, row[locale]] as const)) as unknown as Dictionary;
+    parseDictionary(
+      unflatten(rows.results.map((row) => [row.key, row[locale]] as const)),
+      `copy.${locale}`,
+    );
 
   return { zh: forLocale('zh'), en: forLocale('en') };
 }
