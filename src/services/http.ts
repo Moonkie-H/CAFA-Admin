@@ -66,8 +66,8 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 
   let envelope: ApiResponse<unknown> | undefined;
   try {
-    const body: unknown = await response.json();
-    if (isApiResponse(body)) envelope = body;
+    const answered: unknown = await response.json();
+    if (isApiResponse(answered)) envelope = answered;
   } catch {
     // A gateway error, or a response that never reached the Worker at all.
   }

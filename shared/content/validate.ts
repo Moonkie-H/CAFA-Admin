@@ -11,7 +11,7 @@
  * a translation key and the numbers to fill it with. This module runs in two
  * places that cannot share a translator — the form, where react-i18next is
  * loaded, and the Worker, which has no UI at all and sends its problems back
- * over the wire — so the one thing both can produce is a key. `ui/ProblemList`
+ * over the wire — so the one thing both can produce is a key. `src/components/ProblemList`
  * turns them into words in whichever language the studio is reading, which is
  * the whole point: the banner that appears when someone is stuck was the last
  * surface in this admin still speaking English at a Chinese studio.
@@ -126,8 +126,9 @@ class Collector {
   }
 
   /**
-   * CLAUDE.md §10: alt text is required. A decorative image says so with an
-   * empty alt; a half-filled one is the failure this catches.
+   * Alt text is required. A decorative image says so with an empty alt; a
+   * half-filled one — described in one language and not the other — is the
+   * failure this catches, and the `CHECK` on the media columns catches again.
    */
   image(value: ImageRef, label: Phrase): void {
     this.text(value.src, say('problems.label.imageFile', { field: label }));

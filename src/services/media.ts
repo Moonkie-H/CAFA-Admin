@@ -8,7 +8,7 @@
  */
 import { request } from './http';
 import type { MediaInfo } from '../../shared/content/types';
-import type { PreparedImage } from '../images';
+import type { PreparedImage } from '../lib/image-prepare';
 
 export const mediaService = {
   /**
