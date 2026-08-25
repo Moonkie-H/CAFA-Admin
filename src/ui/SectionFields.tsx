@@ -21,7 +21,7 @@ import {
   SECTION_KINDS,
   type PageSection,
   type SectionKind,
-} from '../content/types';
+} from '../../shared/content/types';
 import { mediaStem, nextMediaName } from '../images';
 import { LocalisedField, Repeatable, SelectField } from './fields';
 import { ImageField } from './ImageField';

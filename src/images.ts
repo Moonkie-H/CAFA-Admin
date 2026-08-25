@@ -23,7 +23,7 @@
  * again; what it cannot do is find the number itself.
  */
 
-import { MAX_IMAGE_EDGE } from './content/types';
+import { MAX_IMAGE_EDGE } from '../shared/content/types';
 
 /** The largest derivative the site will ever ask for. */
 const QUALITY = 0.86;

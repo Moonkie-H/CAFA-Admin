@@ -13,8 +13,8 @@
  */
 import { useTranslation } from 'react-i18next';
 
-import { HOME_SLUG } from '../content/types';
-import type { Problem } from '../content/validate';
+import { HOME_SLUG } from '../../shared/content/types';
+import type { Problem } from '../../shared/content/validate';
 import { useSay } from './say';
 
 const SHOWN = 12;

@@ -1,7 +1,7 @@
 /**
  * Programmes. Four of them, no pages of their own — one list, edited in place.
  */
-import { emptyLocalised, type Program } from '../content/types';
+import { emptyLocalised, type Program } from '../../shared/content/types';
 import { useTranslation } from 'react-i18next';
 import type { Editor } from '../useEditor';
 import { LocalisedField, Repeatable, TextField } from '../ui/fields';

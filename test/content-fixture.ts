@@ -4,7 +4,7 @@
  * Every builder returns a new object graph rather than a shared constant, so a
  * test that mutates or projects one cannot reach into another's.
  */
-import type { ContentSet, Dictionary, Page } from '../src/content/types';
+import type { ContentSet, Dictionary, Page } from '../shared/content/types';
 
 export function dictionary(): Dictionary {
   return {

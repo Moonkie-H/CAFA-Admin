@@ -58,6 +58,17 @@ export type WorkStatus = 'completed' | 'in-progress' | 'private';
 
 export const WORK_STATUSES: readonly WorkStatus[] = ['completed', 'in-progress', 'private'];
 
+/**
+ * Narrowing a string off the wire, or out of a column, to the union.
+ *
+ * Beside the array it reads rather than beside each caller: a status arrives
+ * from a JSON body, from a D1 row and from a query parameter, and the three
+ * used to carry a copy of this line each.
+ */
+export function isWorkStatus(value: string): value is WorkStatus {
+  return WORK_STATUSES.some((status) => status === value);
+}
+
 export interface Credit {
   role: LocalisedText;
   name: LocalisedText;
@@ -144,6 +155,11 @@ export const SECTION_KINDS = [
   'programs',
   'mentors',
 ] as const satisfies readonly SectionKind[];
+
+/** The same narrowing as `isWorkStatus`, for the kind on a section row or body. */
+export function isSectionKind(value: string): value is SectionKind {
+  return SECTION_KINDS.some((kind) => kind === value);
+}
 
 /** The two kinds that set a page's h1. Exactly one per page — see validate.ts. */
 export const HEADING_KINDS: readonly SectionKind[] = ['heading', 'statement'];

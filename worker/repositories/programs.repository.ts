@@ -2,7 +2,7 @@
  * Programmes. One table, no children — the simplest aggregate here, and the
  * one worth reading first to see the shape the other repositories follow.
  */
-import type { Program } from '../../src/content/types';
+import type { Program } from '../../shared/content/types';
 import type { ProgramRow } from '../models/rows';
 import { pair } from './mapping';
 

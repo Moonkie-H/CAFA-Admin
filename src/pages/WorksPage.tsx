@@ -15,8 +15,8 @@ import {
   type Credit,
   type Work,
   type WorkStatus,
-} from '../content/types';
-import { isSlug } from '../content/validate';
+} from '../../shared/content/types';
+import { isSlug } from '../../shared/content/validate';
 import { mediaStem, nextMediaName } from '../images';
 import type { Editor } from '../useEditor';
 import {

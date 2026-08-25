@@ -6,7 +6,7 @@
  */
 import { request } from './http';
 import type { ContentResponse, SavedResponse } from './types';
-import type { ContentSet } from '../content/types';
+import type { ContentSet } from '../../shared/content/types';
 
 export const contentService = {
   load: () => request<ContentResponse>('/api/content'),

@@ -15,7 +15,7 @@ import type { ReactNode } from 'react';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { LOCALES, type LocalisedText, type Locale } from '../content/types';
+import { LOCALES, type LocalisedText, type Locale } from '../../shared/content/types';
 
 export const LOCALE_NAMES: Record<Locale, string> = { zh: '中文', en: 'English' };
 

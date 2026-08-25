@@ -1,8 +1,8 @@
 /**
  * Mentors. A name, a discipline, one line, and a portrait.
  */
-import { blankImage, emptyLocalised, type Mentor } from '../content/types';
-import { isSlug } from '../content/validate';
+import { blankImage, emptyLocalised, type Mentor } from '../../shared/content/types';
+import { isSlug } from '../../shared/content/validate';
 import { useTranslation } from 'react-i18next';
 import type { Editor } from '../useEditor';
 import { LocalisedField, Repeatable, TextField } from '../ui/fields';

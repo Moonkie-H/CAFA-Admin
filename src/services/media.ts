@@ -7,7 +7,7 @@
  * keep showing the old bytes for as long as the browser cached them.
  */
 import { request } from './http';
-import type { MediaInfo } from '../content/types';
+import type { MediaInfo } from '../../shared/content/types';
 import type { PreparedImage } from '../images';
 
 export const mediaService = {

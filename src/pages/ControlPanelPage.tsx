@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { href, navigate, type RoutePath } from '../routes';
 import { connectorService } from '../services/connectors';
 import { publishService } from '../services/publish';
-import type { ContentSet } from '../content/types';
+import type { ContentSet } from '../../shared/content/types';
 import type { Editor } from '../useEditor';
 import { useRemote } from '../useRemote';
 import { formatUtcDateTime } from '../ui/format';

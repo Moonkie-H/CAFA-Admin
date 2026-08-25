@@ -10,7 +10,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { emptyLocalised, type ImageRef } from '../content/types';
+import { emptyLocalised, type ImageRef } from '../../shared/content/types';
 import { mediaKey } from '../images';
 import { LocalisedField } from './fields';
 

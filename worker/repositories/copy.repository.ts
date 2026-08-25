@@ -12,8 +12,8 @@
  * type has a field for it. The admin edits values and never adds or removes
  * keys — new keys arrive by migration, beside the code that reads them.
  */
-import { LOCALES, type Dictionary, type Locale } from '../../src/content/types';
-import { parseDictionary } from '../../src/content/parse';
+import { LOCALES, type Dictionary, type Locale } from '../../shared/content/types';
+import { parseDictionary } from '../../shared/content/parse';
 import type { CopyRow } from '../models/rows';
 
 /**

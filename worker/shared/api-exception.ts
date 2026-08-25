@@ -7,7 +7,7 @@
  * anything a service throws deliberately is an ApiException, and anything else
  * reaching the filter is a bug and answers 500.
  */
-import type { Problem } from '../../src/content/validate';
+import type { Problem } from '../../shared/content/validate';
 
 export class ApiException extends Error {
   constructor(

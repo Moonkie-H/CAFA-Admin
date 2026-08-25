@@ -10,7 +10,7 @@
  * are added, reordered and removed in Pages beside everything else on it. One
  * list, one owner.
  */
-import type { SiteContent } from '../content/types';
+import type { SiteContent } from '../../shared/content/types';
 import { useTranslation } from 'react-i18next';
 import type { Editor } from '../useEditor';
 import { LocalisedField, TextField } from '../ui/fields';

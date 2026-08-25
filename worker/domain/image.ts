@@ -18,7 +18,7 @@
  * shortcut around a better option, it is the only correct one.
  */
 
-import { MAX_IMAGE_EDGE } from '../../src/content/types';
+import { MAX_IMAGE_EDGE } from '../../shared/content/types';
 
 export interface Measured {
   width: number;

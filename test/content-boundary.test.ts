@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { ContentShapeError, parseContentSet } from '../src/content/parse';
-import { readCopyPath, writeCopyPath } from '../src/content/dictionary';
+import { ContentShapeError, parseContentSet } from '../shared/content/parse';
+import { readCopyPath, writeCopyPath } from '../shared/content/dictionary';
 import { content, dictionary, page } from './content-fixture';
 import { parseSaveRequest } from '../worker/models/dtos/content.dtos';
 

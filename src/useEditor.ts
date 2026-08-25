@@ -17,8 +17,8 @@ import { useTranslation } from 'react-i18next';
 import { contentService } from './services/content';
 import { ApiError } from './services/http';
 import { mediaService } from './services/media';
-import { checkContent, checkImagesInStorage, type Problem } from './content/validate';
-import type { ContentSet, MediaInfo } from './content/types';
+import { checkContent, checkImagesInStorage, type Problem } from '../shared/content/validate';
+import type { ContentSet, MediaInfo } from '../shared/content/types';
 import { prepareImage } from './images';
 import { useSay } from './ui/say';
 

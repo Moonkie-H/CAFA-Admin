@@ -14,7 +14,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { emptyLocalised, HOME_SLUG, type Page } from '../content/types';
+import { emptyLocalised, HOME_SLUG, type Page } from '../../shared/content/types';
 import type { Editor } from '../useEditor';
 import { DeleteRecord, LocalisedField, ReorderControls, Repeatable, TextField } from '../ui/fields';
 import { blankSection, SectionFields } from '../ui/SectionFields';

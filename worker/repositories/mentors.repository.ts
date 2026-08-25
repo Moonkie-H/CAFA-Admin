@@ -3,7 +3,7 @@
  * the photograph has to be uploaded before the save that names it, which is
  * what lets the foreign key stay on.
  */
-import type { Mentor } from '../../src/content/types';
+import type { Mentor } from '../../shared/content/types';
 import type { MentorRow } from '../models/rows';
 import { imageBindings, imageRef, pair } from './mapping';
 

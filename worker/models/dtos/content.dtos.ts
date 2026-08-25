@@ -7,8 +7,8 @@
  * `checkContent`, which produces the field-level problems the editor draws.
  * Two gates, two jobs: this one answers 400, that one answers 422.
  */
-import type { ContentSet, MediaInfo } from '../../../src/content/types';
-import { ContentShapeError, parseContentSet } from '../../../src/content/parse';
+import type { ContentSet, MediaInfo } from '../../../shared/content/types';
+import { ContentShapeError, parseContentSet } from '../../../shared/content/parse';
 import { ApiException } from '../../shared/api-exception';
 
 export interface ContentResponse {

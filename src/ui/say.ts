@@ -13,7 +13,7 @@
  */
 import { useTranslation } from 'react-i18next';
 
-import type { Phrase } from '../content/validate';
+import type { Phrase } from '../../shared/content/validate';
 
 export function useSay(): (phrase: Phrase) => string {
   const { t } = useTranslation();

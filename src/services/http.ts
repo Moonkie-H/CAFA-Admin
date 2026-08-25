@@ -13,7 +13,7 @@
  * whole of the auth story and why nothing worth stealing is reachable from JS.
  */
 import type { ApiResponse } from './types';
-import type { Problem } from '../content/validate';
+import type { Problem } from '../../shared/content/validate';
 
 export class ApiError extends Error {
   constructor(

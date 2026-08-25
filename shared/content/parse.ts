@@ -1,6 +1,7 @@
 /** Runtime parsing for content crossing the HTTP boundary. */
 import {
-  SECTION_KINDS,
+  isSectionKind,
+  isWorkStatus,
   WORK_STATUSES,
   type ContentSet,
   type Dictionary,
@@ -11,7 +12,6 @@ import {
   type PageSection,
   type Program,
   type SiteContent,
-  type SectionKind,
   type Work,
   type WorkStatus,
 } from './types';
@@ -84,10 +84,6 @@ function imageAt(value: unknown, path: string): ImageRef {
   };
 }
 
-function isSectionKind(value: string): value is SectionKind {
-  return SECTION_KINDS.some((candidate) => candidate === value);
-}
-
 function sectionAt(value: unknown, path: string): PageSection {
   const record = objectAt(value, path);
   const kind = stringAt(property(record, 'kind', path), `${path}.kind`);
@@ -140,10 +136,6 @@ function workStatusAt(value: unknown, path: string): WorkStatus {
     throw new ContentShapeError(path, 'a supported work status');
   }
   return value;
-}
-
-function isWorkStatus(value: string): value is WorkStatus {
-  return WORK_STATUSES.some((status) => status === value);
 }
 
 function workAt(value: unknown, path: string): Work {

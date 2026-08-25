@@ -21,6 +21,7 @@
  * looking at — so the banner and the field it points to cannot drift apart, and
  * translating one translates the other.
  */
+import { citedImages, type ImageCitation } from './images';
 import {
   HEADING_KINDS,
   HOME_SLUG,
@@ -258,42 +259,46 @@ export function checkImagesInStorage(content: ContentSet, keys: Iterable<string>
   const known = new Set(keys);
   const problems: Problem[] = [];
 
-  const check = (
-    section: keyof ContentSet,
-    record: string,
-    label: Phrase,
-    image: ImageRef,
-  ): void => {
-    if (image.src === '' || known.has(image.src)) return;
-    problems.push({ section, record, label, message: say('problems.message.notInStorage', { file: image.src }) });
-  };
-
-  for (const page of content.pages) {
-    page.sections.forEach((section, at) => {
-      if (section.kind !== 'gallery') return;
-      section.images.forEach((image, position) =>
-        check(
-          'pages',
-          page.slug,
-          say('problems.label.sectionPhotograph', { number: at + 1, position: position + 1 }),
-          image,
-        ),
-      );
+  for (const { image, cite } of citedImages(content)) {
+    if (image.src === '' || known.has(image.src)) continue;
+    problems.push({
+      ...whichRecord(cite),
+      message: say('problems.message.notInStorage', { file: image.src }),
     });
   }
 
-  for (const work of content.works) {
-    check('works', work.slug, say('fields.cover'), work.cover);
-    work.media.forEach((image, at) =>
-      check('works', work.slug, say('works.photoNumber', { number: at + 1 }), image),
-    );
-  }
-
-  for (const mentor of content.mentors) {
-    check('mentors', mentor.slug, say('fields.portrait'), mentor.portrait);
-  }
-
   return problems;
+}
+
+/**
+ * Where a citation sits, in the words the form uses for it.
+ *
+ * The walker hands over the record; naming it is this file's job, because the
+ * name has to be a phrase the banner can say in either language and nothing
+ * else that walks the content needs one.
+ */
+function whichRecord(cite: ImageCitation): Pick<Problem, 'section' | 'record' | 'label'> {
+  switch (cite.kind) {
+    case 'work-cover':
+      return { section: 'works', record: cite.work.slug, label: say('fields.cover') };
+    case 'work-photo':
+      return {
+        section: 'works',
+        record: cite.work.slug,
+        label: say('works.photoNumber', { number: cite.position + 1 }),
+      };
+    case 'mentor-portrait':
+      return { section: 'mentors', record: cite.mentor.slug, label: say('fields.portrait') };
+    case 'page-photo':
+      return {
+        section: 'pages',
+        record: cite.page.slug,
+        label: say('problems.label.sectionPhotograph', {
+          number: cite.section + 1,
+          position: cite.position + 1,
+        }),
+      };
+  }
 }
 
 export function checkContent(content: ContentSet): Problem[] {

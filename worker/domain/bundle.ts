@@ -41,7 +41,8 @@ import {
   type Program,
   type SiteContent,
   type Work,
-} from '../../src/content/types';
+} from '../../shared/content/types';
+import { citedKeys } from '../../shared/content/images';
 import type { MediaRow } from '../models/rows';
 
 /**
@@ -157,20 +158,10 @@ export function buildBundle(
 
   // Only the photographs public content actually cites. A private work's
   // originals are in the bucket and in the media table; they are not in here,
-  // so nothing published names them — not their size, not their colour.
-  const cited = new Set<string>();
-  for (const work of content.works) {
-    if (work.status === 'private') continue;
-    cited.add(work.cover.src);
-    for (const image of work.media) cited.add(image.src);
-  }
-  for (const mentor of content.mentors) cited.add(mentor.portrait.src);
-  for (const page of content.pages) {
-    for (const section of page.sections) {
-      if (section.kind !== 'gallery') continue;
-      for (const image of section.images) cited.add(image.src);
-    }
-  }
+  // so nothing published names them — not their size, not their colour. The
+  // `publicOnly` flag is that guarantee: `citationIsPublic` in the walker is the
+  // one place that knows a private work's citations do not publish.
+  const cited = citedKeys(content, true);
 
   const measured: PublishedBundle['media'] = {};
   for (const row of media) {

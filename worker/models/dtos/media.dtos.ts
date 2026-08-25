@@ -6,7 +6,7 @@
  * client writes it straight into the content set it is holding, so the upload
  * and the save that references it agree without a round trip.
  */
-import type { MediaInfo } from '../../../src/content/types';
+import type { MediaInfo } from '../../../shared/content/types';
 import { isReadableMediaKey, isWritableMediaKey } from '../../domain/image';
 import { ApiException } from '../../shared/api-exception';
 

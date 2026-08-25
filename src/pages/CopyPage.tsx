@@ -18,8 +18,8 @@
  * The table is therefore what it looks like: a list of paths and the words the
  * studio should see beside them, in the order they are worth reading.
  */
-import { LOCALES, type Locale } from '../content/types';
-import { readCopyPath, writeCopyPath, type CopyPath } from '../content/dictionary';
+import { LOCALES, type Locale } from '../../shared/content/types';
+import { readCopyPath, writeCopyPath, type CopyPath } from '../../shared/content/dictionary';
 import { useTranslation } from 'react-i18next';
 import type { Editor } from '../useEditor';
 import { LOCALE_NAMES, TextField } from '../ui/fields';

@@ -6,7 +6,7 @@
  * is parsed. Without them the same revision reads hours out, in a direction
  * that changes with where the studio is sitting.
  */
-import { type Locale } from '../content/types';
+import { type Locale } from '../../shared/content/types';
 
 /**
  * Which regional format each interface language gets. Named rather than
