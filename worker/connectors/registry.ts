@@ -15,10 +15,10 @@
  * To add one: append it below. The route registers itself in worker/index.ts,
  * the document grows an entry, the dev panel grows a card.
  */
-import { citedImages, type ImageCitation } from '../../shared/content/images';
-import { isWorkStatus, LOCALES, WORK_STATUSES, type ImageRef } from '../../shared/content/types';
+import { isWorkStatus, LOCALES, WORK_STATUSES } from '../../shared/content/types';
 import { ApiException } from '../shared/api-exception';
-import type { Connector, ConnectorGroup, ReadableBundle } from './connector';
+import type { Connector, ConnectorGroup } from './connector';
+import { photographsOf } from './photographs';
 import { list, ref, shape, text, whole } from './schema';
 
 /** Bumped when a connector's answer changes shape in a way a client would feel. */
@@ -315,68 +315,3 @@ export const CONNECTORS: readonly Connector[] = [
     read: ({ bundle }) => bundle,
   },
 ];
-
-interface Photograph {
-  key: string;
-  url: string;
-  width: number;
-  height: number;
-  tint: number | null;
-  alt: ImageRef['alt'];
-  decorative: boolean;
-  usedBy: string;
-}
-
-/**
- * The photographs, from the two halves that each know part of the answer.
- *
- * The content knows what an image is *of* and what cites it; the media map
- * knows how big it is and what colour it is. Only keys in that map are returned,
- * and that is the privacy guarantee doing its work rather than a filter of our
- * own — bundle.ts measures a photograph into it only when public content cites
- * it, so a private work's pictures cannot appear here even by accident.
- */
-function photographsOf(bundle: ReadableBundle): Photograph[] {
-  const base = bundle.mediaBase.replace(/\/$/, '');
-  const photographs: Photograph[] = [];
-  const seen = new Set<string>();
-
-  for (const { image, cite } of citedImages(bundle)) {
-    const measured = bundle.media[image.src];
-    // A private work reaches here with an empty cover and no media, because the
-    // projection emptied them — so it is already absent rather than filtered.
-    if (image.src === '' || measured === undefined || seen.has(image.src)) continue;
-    seen.add(image.src);
-
-    photographs.push({
-      key: image.src,
-      url: `${base}/${image.src}`,
-      width: measured.width,
-      height: measured.height,
-      tint: measured.tint,
-      alt: image.alt,
-      decorative: image.alt === '',
-      usedBy: citedBy(cite),
-    });
-  }
-
-  return photographs;
-}
-
-/** Which record a photograph is drawn by, as the answer names it. */
-function citedBy(cite: ImageCitation): string {
-  switch (cite.kind) {
-    case 'work-cover':
-    case 'work-photo':
-      return `work:${cite.work.slug}`;
-    case 'mentor-portrait':
-      return `mentor:${cite.mentor.slug}`;
-    case 'page-photo':
-      return `page:${cite.page.slug === '' ? '/' : cite.page.slug}`;
-  }
-}
-
-/** Path parameters, in the notation OpenAPI wants: `/works/:slug` → `/works/{slug}`. */
-export function documentedPath(path: string): string {
-  return path.replace(/:([A-Za-z0-9_]+)/g, '{$1}');
-}

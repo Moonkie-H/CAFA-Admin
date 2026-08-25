@@ -17,7 +17,7 @@
  * which is almost always what was meant, and never a hostname pasted in by hand.
  * The scheme is the one exception, and `servedOver` says why.
  */
-import { API_VERSION, CONNECTORS, documentedPath, GROUPS } from './registry';
+import { API_VERSION, CONNECTORS, GROUPS } from './registry';
 import { COMPONENTS, type JsonSchema } from './schema';
 import type { Connector } from './connector';
 
@@ -131,6 +131,11 @@ function operationOf(connector: Connector): DocumentedOperation {
     ...(parameters.length === 0 ? {} : { parameters }),
     responses,
   };
+}
+
+/** Path parameters, in the notation OpenAPI wants: `/works/:slug` → `/works/{slug}`. */
+function documentedPath(path: string): string {
+  return path.replace(/:([A-Za-z0-9_]+)/g, '{$1}');
 }
 
 /**
