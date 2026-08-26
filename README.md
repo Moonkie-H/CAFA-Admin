@@ -395,10 +395,11 @@ Until `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` are both set, sign-in answers
 
 **On brute force.** There is no attempt counter — a Worker has nowhere to keep
 one without adding storage that exists for no other reason. What stands in for
-it is the cost of a guess: ~210,000 PBKDF2 iterations per attempt, paid by the
-Worker on every try, correct or not. Choose a password long enough that this
-matters; if the admin ever has more than one user, that is the moment to add
-Cloudflare's rate limiting in front of `/auth/login`.
+it is the cost of a guess: 100,000 PBKDF2 iterations per attempt — the most the
+Workers runtime will derive — paid by the Worker on every try, correct or not.
+Choose a password long enough that this matters; if the admin ever has more than
+one user, that is the moment to add Cloudflare's rate limiting in front of
+`/auth/login`.
 
 ### 6. Deploy the admin, and publish once
 

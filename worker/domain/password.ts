@@ -12,8 +12,10 @@
  *
  * PBKDF2 rather than bcrypt or argon2 because it is what WebCrypto gives a
  * Worker natively; the alternatives are native modules that do not run here.
- * The cost is deliberate: ~210k iterations is a fraction of a second on sign-in
+ * The cost is deliberate: 100k iterations is a fraction of a second on sign-in
  * and the entire point of the exercise for anyone working through a word list.
+ * 100k is also the ceiling — `deriveBits` throws above it in this runtime, so a
+ * verifier written with a larger count is one that can never be checked.
  *
  * `scripts/set-password.mjs` writes this format. If you change it, change that.
  */

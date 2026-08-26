@@ -2,12 +2,12 @@
  * Turn a password into the line that goes in `ADMIN_PASSWORD_HASH`.
  *
  *   npm run set-password
- *   npm run set-password -- --iterations 400000
+ *   npm run set-password -- --iterations 50000
  *   printf '%s' 'the password' | npm run set-password    # non-interactive
  *
  * It prints a verifier and nothing else worth keeping:
  *
- *   pbkdf2$sha256$210000$<salt>$<derived key>
+ *   pbkdf2$sha256$100000$<salt>$<derived key>
  *
  * The password itself never touches a file, an argument list or the shell's
  * history — it is typed with the echo off, or piped in. What comes out is safe
@@ -19,7 +19,11 @@
  */
 import { createInterface } from 'node:readline';
 
-const ITERATIONS = 210_000;
+// The Workers runtime refuses PBKDF2 above 100k — `deriveBits` throws
+// "iteration counts above 100000 are not supported". A hash made with more is
+// one the Worker can never verify, so this is a ceiling and not a preference.
+const MAX_ITERATIONS = 100_000;
+const ITERATIONS = MAX_ITERATIONS;
 const SALT_BYTES = 16;
 const KEY_BITS = 256;
 const MINIMUM_LENGTH = 8;
@@ -86,6 +90,13 @@ function iterationsFromArgv() {
   const given = Number(process.argv[at + 1]);
   if (!Number.isInteger(given) || given < 1000) {
     console.error('--iterations wants a whole number of at least 1000.');
+    process.exit(1);
+  }
+  if (given > MAX_ITERATIONS) {
+    console.error(
+      `--iterations cannot exceed ${MAX_ITERATIONS}: the Workers runtime refuses to derive ` +
+        'above that, so the Worker could never verify the hash.',
+    );
     process.exit(1);
   }
   return given;
