@@ -5,9 +5,9 @@
  * projection collecting what a revision may name, the read API listing the
  * photographs, the validator checking each one is in the bucket, and the
  * control panel counting them. Four walks of the same graph, and the failure
- * mode was never a wrong answer today — it was the next image-bearing section
- * kind, which three of the four would silently stop seeing. The projection
- * would keep publishing a photograph the validator no longer checked.
+ * mode was never a wrong answer today — it was the next place a photograph
+ * could be attached, which three of the four would silently stop seeing. The
+ * projection would keep publishing a photograph the validator no longer checked.
  *
  * So the traversal is stated once and the differences stay at the call sites,
  * where they belong: each caller reads the citation and decides what it means.
@@ -15,10 +15,11 @@
  * the four want four different things from it — a slug, a phrase, a `usedBy`
  * label, a status — and a walker that guessed which would be wrong for three.
  *
- * The order is works, then mentors, then pages. It is the order
- * `/api/v1/photographs` answers in, so it is fixed here rather than incidental.
+ * The order is works, then mentors, then the front page's gallery. It is the
+ * order `/api/v1/photographs` answers in, so it is fixed here rather than
+ * incidental.
  */
-import type { ImageRef, Mentor, Page, Work } from './types';
+import type { ImageRef, Mentor, Work } from './types';
 
 /**
  * The records a photograph hangs off, and where on one it sits.
@@ -32,7 +33,7 @@ export type ImageCitation =
   | { kind: 'work-cover'; work: Work }
   | { kind: 'work-photo'; work: Work; position: number }
   | { kind: 'mentor-portrait'; mentor: Mentor }
-  | { kind: 'page-photo'; page: Page; section: number; position: number };
+  | { kind: 'home-photo'; position: number };
 
 export interface CitedImage {
   image: ImageRef;
@@ -44,12 +45,12 @@ export interface CitedImage {
  *
  * Structural rather than `ContentSet`, so the published bundle fits it too —
  * the read API walks a revision, and a revision is not a content set. Both have
- * these three collections in these three shapes, which is all the walk needs.
+ * these collections in these shapes, which is all the walk needs.
  */
 export interface ImageBearingContent {
   works: readonly Work[];
   mentors: readonly Mentor[];
-  pages: readonly Page[];
+  pages: { home: { gallery: readonly ImageRef[] } };
 }
 
 export function* citedImages(content: ImageBearingContent): Generator<CitedImage> {
@@ -64,13 +65,8 @@ export function* citedImages(content: ImageBearingContent): Generator<CitedImage
     yield { image: mentor.portrait, cite: { kind: 'mentor-portrait', mentor } };
   }
 
-  for (const page of content.pages) {
-    for (const [section, block] of page.sections.entries()) {
-      if (block.kind !== 'gallery') continue;
-      for (const [position, image] of block.images.entries()) {
-        yield { image, cite: { kind: 'page-photo', page, section, position } };
-      }
-    }
+  for (const [position, image] of content.pages.home.gallery.entries()) {
+    yield { image, cite: { kind: 'home-photo', position } };
   }
 }
 
@@ -89,7 +85,7 @@ export function citationIsPublic(cite: ImageCitation): boolean {
     case 'work-photo':
       return cite.work.status !== 'private';
     case 'mentor-portrait':
-    case 'page-photo':
+    case 'home-photo':
       return true;
   }
 }

@@ -5,6 +5,7 @@
  * `components/fields` is the answer to "what can I put on a form" without
  * anyone having to list the directory.
  */
+export { CopyFields, type CopyField } from './CopyFields';
 export { Field } from './Field';
 export { ImageField } from './ImageField';
 export { LOCALE_NAMES } from './locale-names';

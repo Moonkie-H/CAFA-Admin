@@ -23,17 +23,15 @@
  */
 import { citedImages, type ImageCitation } from './images';
 import {
-  HEADING_KINDS,
-  HOME_SLUG,
   LOCALES,
-  SECTION_KINDS,
   WORK_STATUSES,
   type ContentSet,
   type Dictionary,
   type ImageRef,
   type LocalisedText,
   type Locale,
-  type Page,
+  type PageText,
+  type SitePages,
 } from './types';
 
 /**
@@ -52,9 +50,8 @@ export interface Phrase {
 export interface Problem {
   section: keyof ContentSet;
   /**
-   * The record the problem sits in — a slug, or a dictionary group's name. Data
-   * rather than copy, so it is not a phrase. The front page's slug is the empty
-   * string, and the list names it from `problems.record.frontPage`.
+   * The record the problem sits in — a slug, a page's key, or a dictionary
+   * group's name. Data rather than copy, so it is not a phrase.
    */
   record: string;
   /** Which field, in the words the form uses for it. */
@@ -72,17 +69,13 @@ function say(key: string, values?: Phrase['values']): Phrase {
 const fault = {
   empty: say('problems.message.empty'),
   slugChars: say('problems.message.slugChars'),
-  needsHeading: say('problems.message.needsHeading'),
-  tooManyHeadings: say('problems.message.tooManyHeadings'),
-  unknownKind: say('problems.message.unknownKind'),
   needsParagraph: say('problems.message.needsParagraph'),
-  needsPhotograph: say('problems.message.needsPhotograph'),
   wholeNumber: say('problems.message.wholeNumber'),
   notAStatus: say('problems.message.notAStatus'),
   needsEntry: say('problems.message.needsEntry'),
-  needsFrontPage: say('problems.message.needsFrontPage'),
-  duplicatePage: (slug: string) => say('problems.message.duplicatePage', { slug }),
   duplicateWork: (slug: string) => say('problems.message.duplicateWork', { slug }),
+  duplicateProgram: (slug: string) => say('problems.message.duplicateProgram', { slug }),
+  duplicateMentor: (slug: string) => say('problems.message.duplicateMentor', { slug }),
 } as const;
 
 const LOCALE_LABEL: Record<Locale, Phrase> = {
@@ -135,6 +128,20 @@ class Collector {
     if (value.alt === '') return;
     this.localised(value.alt, say('problems.label.imageAlt', { field: label }));
   }
+
+  /** A page's prose: at least one paragraph, and both languages in each. */
+  paragraphs(entries: readonly LocalisedText[]): void {
+    if (entries.length === 0) this.add(say('fields.intro'), fault.needsParagraph);
+    entries.forEach((paragraph, at) =>
+      this.localised(paragraph, say('fields.paragraphNumber', { number: at + 1 })),
+    );
+  }
+
+  /** The two lines every page carries, in the words its own screen uses. */
+  pageText(page: PageText): void {
+    this.localised(page.title, say('fields.title'));
+    this.localised(page.description, say('fields.description'));
+  }
 }
 
 function duplicates(values: string[]): string[] {
@@ -178,67 +185,41 @@ function checkDictionary(dictionary: Dictionary, locale: Locale): Problem[] {
 }
 
 /**
- * A page, and the two rules about a *set* of its parts that no column can hold.
+ * The four pages, each checked against the fields it actually has.
  *
- * The h1 rule is the one worth stating out loud: `heading` sets the page's own
- * title as its h1 and `statement` sets its line as one, so exactly one of them
- * has to be on a page. Two is a broken document outline; none is a page a
- * screen reader cannot name. The template refuses to build either, and catching
- * it here means the editor is told which page rather than the build.
+ * There is no rule here about how many headings a page has or whether a front
+ * page exists, and their absence is the change: the set of pages is code now,
+ * so a site cannot be missing one and a page cannot be composed wrongly. What
+ * is left is the only thing that can go wrong — a blank where a word should be.
  */
-function checkPage(page: Page): Problem[] {
-  const check = new Collector('pages', page.slug);
+function checkPages(pages: SitePages): Problem[] {
+  const problems: Problem[] = [];
 
-  // The front page's address is the site's own, which the empty slug is the
-  // spelling of. Every other page is a segment under the locale.
-  if (page.slug !== HOME_SLUG) check.slug(page.slug, say('fields.webAddress'));
-  check.localised(page.title, say('fields.title'));
-  check.localised(page.description, say('fields.description'));
-  if (page.navLabel !== null) check.localised(page.navLabel, say('fields.menuName'));
+  const home = new Collector('pages', 'home');
+  home.pageText(pages.home);
+  home.localised(pages.home.statement, say('fields.statement'));
+  pages.home.gallery.forEach((image, at) =>
+    home.image(image, say('fields.photographNumber', { number: at + 1 })),
+  );
+  problems.push(...home.problems);
 
-  const headings = page.sections.filter((section) => HEADING_KINDS.includes(section.kind));
-  if (headings.length === 0) check.add(say('problems.label.sections'), fault.needsHeading);
-  if (headings.length > 1) check.add(say('problems.label.sections'), fault.tooManyHeadings);
+  const works = new Collector('pages', 'works');
+  works.pageText(pages.works);
+  problems.push(...works.problems);
 
-  page.sections.forEach((section, at) => {
-    const number = at + 1;
-    if (!SECTION_KINDS.includes(section.kind)) {
-      return check.add(say('problems.label.section', { number }), fault.unknownKind);
-    }
-    switch (section.kind) {
-      case 'statement':
-        return check.localised(section.text, say('problems.label.sectionLine', { number }));
-      case 'works-grid':
-      case 'mentors':
-        return check.localised(section.text, say('problems.label.sectionHeading', { number }));
-      case 'prose':
-        if (section.paragraphs.length === 0) {
-          check.add(say('problems.label.section', { number }), fault.needsParagraph);
-        }
-        return section.paragraphs.forEach((paragraph, position) =>
-          check.localised(
-            paragraph,
-            say('problems.label.sectionParagraph', { number, position: position + 1 }),
-          ),
-        );
-      case 'gallery':
-        if (section.images.length === 0) {
-          check.add(say('problems.label.section', { number }), fault.needsPhotograph);
-        }
-        return section.images.forEach((image, position) =>
-          check.image(
-            image,
-            say('problems.label.sectionPhotograph', { number, position: position + 1 }),
-          ),
-        );
-      case 'heading':
-      case 'works-index':
-      case 'programs':
-        return;
-    }
-  });
+  const programs = new Collector('pages', 'programs');
+  programs.pageText(pages.programs);
+  programs.paragraphs(pages.programs.intro);
+  problems.push(...programs.problems);
 
-  return check.problems;
+  const about = new Collector('pages', 'about');
+  about.pageText(pages.about);
+  about.paragraphs(pages.about.intro);
+  about.localised(pages.about.mentorsTitle, say('fields.mentorsTitle'));
+  about.localised(pages.about.projectsTitle, say('fields.projectsTitle'));
+  problems.push(...about.problems);
+
+  return problems;
 }
 
 /**
@@ -286,47 +267,21 @@ function whichRecord(cite: ImageCitation): Pick<Problem, 'section' | 'record' | 
       return {
         section: 'works',
         record: cite.work.slug,
-        label: say('works.photoNumber', { number: cite.position + 1 }),
+        label: say('fields.photographNumber', { number: cite.position + 1 }),
       };
     case 'mentor-portrait':
       return { section: 'mentors', record: cite.mentor.slug, label: say('fields.portrait') };
-    case 'page-photo':
+    case 'home-photo':
       return {
         section: 'pages',
-        record: cite.page.slug,
-        label: say('problems.label.sectionPhotograph', {
-          number: cite.section + 1,
-          position: cite.position + 1,
-        }),
+        record: 'home',
+        label: say('fields.photographNumber', { number: cite.position + 1 }),
       };
   }
 }
 
 export function checkContent(content: ContentSet): Problem[] {
-  const problems: Problem[] = [];
-
-  for (const page of content.pages) problems.push(...checkPage(page));
-
-  for (const slug of duplicates(content.pages.map((page) => page.slug))) {
-    problems.push({
-      section: 'pages',
-      record: slug,
-      label: say('fields.webAddress'),
-      message: fault.duplicatePage(slug),
-    });
-  }
-
-  // A site with no front page answers 404 at its own address, so this is not a
-  // preference — it is the one page that cannot be deleted.
-  const home = content.pages.filter((page) => page.slug === HOME_SLUG);
-  if (home.length === 0) {
-    problems.push({
-      section: 'pages',
-      record: HOME_SLUG,
-      label: say('pages.pages'),
-      message: fault.needsFrontPage,
-    });
-  }
+  const problems: Problem[] = [...checkPages(content.pages)];
 
   for (const work of content.works) {
     const check = new Collector('works', work.slug);
@@ -346,7 +301,7 @@ export function checkContent(content: ContentSet): Problem[] {
     });
     check.image(work.cover, say('fields.cover'));
     work.media.forEach((image, at) =>
-      check.image(image, say('works.photoNumber', { number: at + 1 })),
+      check.image(image, say('fields.photographNumber', { number: at + 1 })),
     );
     problems.push(...check.problems);
   }
@@ -370,6 +325,15 @@ export function checkContent(content: ContentSet): Problem[] {
     problems.push(...check.problems);
   }
 
+  for (const slug of duplicates(content.programs.map((program) => program.slug))) {
+    problems.push({
+      section: 'programs',
+      record: slug,
+      label: say('fields.key'),
+      message: fault.duplicateProgram(slug),
+    });
+  }
+
   for (const mentor of content.mentors) {
     const check = new Collector('mentors', mentor.slug);
     check.slug(mentor.slug, say('fields.key'));
@@ -378,6 +342,15 @@ export function checkContent(content: ContentSet): Problem[] {
     check.localised(mentor.note, say('fields.oneLine'));
     check.image(mentor.portrait, say('fields.portrait'));
     problems.push(...check.problems);
+  }
+
+  for (const slug of duplicates(content.mentors.map((mentor) => mentor.slug))) {
+    problems.push({
+      section: 'mentors',
+      record: slug,
+      label: say('fields.key'),
+      message: fault.duplicateMentor(slug),
+    });
   }
 
   const site = new Collector('site', 'site');

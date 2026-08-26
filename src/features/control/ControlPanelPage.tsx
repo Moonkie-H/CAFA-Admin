@@ -24,6 +24,7 @@ import type { Editor } from '../../hooks/useEditor';
 import { useRemote } from '../../hooks/useRemote';
 import { deploymentKey } from '../../lib/deployment';
 import { formatUtcDateTime } from '../../lib/format';
+import { at } from '../../routes';
 import { connectorCount, connectorService } from '../../services/connectors';
 import { publishService } from '../../services/publish';
 import { Tile } from './Tile';
@@ -105,12 +106,6 @@ export function ControlPanelPage({ editor }: ControlPanelPageProps) {
       <h3 className="panel-heading">{t('dashboard.contents')}</h3>
       <div className="tiles">
         <Tile
-          label={t('dashboard.pages')}
-          value={String(content.pages.length)}
-          note={t('dashboard.pagesNote')}
-          to="pages"
-        />
-        <Tile
           label={t('dashboard.works')}
           value={String(content.works.length)}
           note={
@@ -118,37 +113,37 @@ export function ControlPanelPage({ editor }: ControlPanelPageProps) {
               ? t('dashboard.allPublic')
               : t('dashboard.privateWorks', { count: privateWorks })
           }
-          to="works"
+          to={at('works')}
         />
         <Tile
           label={t('dashboard.programs')}
           value={String(content.programs.length)}
           note={t('dashboard.teaching')}
-          to="programs"
+          to={at('programs')}
         />
         <Tile
           label={t('dashboard.mentors')}
           value={String(content.mentors.length)}
           note={t('dashboard.withPortraits')}
-          to="mentors"
+          to={at('about')}
         />
         <Tile
           label={t('dashboard.photos')}
           value={String(photographs)}
           note={t('dashboard.photoNote')}
-          to="works"
+          to={at('home')}
         />
         <Tile
           label={t('dashboard.siteText')}
           value="中文 / EN"
           note={t('dashboard.bilingualNote')}
-          to="copy"
+          to={at('general')}
         />
         <Tile
           label={t('dashboard.studio')}
           value={content.site.contact.email === '' ? t('common.incomplete') : t('common.set')}
           note={t('dashboard.contactNote')}
-          to="site"
+          to={at('contact')}
         />
       </div>
 
@@ -158,14 +153,14 @@ export function ControlPanelPage({ editor }: ControlPanelPageProps) {
           label={t('dashboard.connectors')}
           value={connectors === null ? '…' : String(connectors)}
           note={t('dashboard.connectorsNote')}
-          to="dev"
+          to={at('dev')}
         />
         <Tile label="api.json" value="OpenAPI 3.1" note={t('dashboard.apiNote')} link="/api.json" />
         <Tile
           label={t('dashboard.history')}
           value={t('dashboard.historyValue')}
           note={t('dashboard.historyNote')}
-          to="history"
+          to={at('history')}
         />
       </div>
     </section>

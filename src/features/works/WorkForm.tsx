@@ -26,8 +26,10 @@ import {
   TextField,
 } from '../../components/fields';
 import { DeleteRecord, Repeatable } from '../../components/records';
+import { RouteLink } from '../../components/layout/RouteLink';
 import { mediaStem, nextMediaName } from '../../lib/media-keys';
 import type { Editor } from '../../hooks/useEditor';
+import { at as sectionAt, navigate } from '../../routes';
 
 function blankCredit(): Credit {
   return { role: emptyLocalised(), name: emptyLocalised() };
@@ -35,26 +37,32 @@ function blankCredit(): Credit {
 
 interface WorkFormProps {
   work: Work;
+  /** Where this work sits in the list, which is the whole of its identity here. */
+  at: number;
   editor: Editor;
-  onChange: (work: Work) => void;
-  onClose: () => void;
-  onDelete: () => void;
 }
 
-export function WorkForm({ work, editor, onChange, onClose, onDelete }: WorkFormProps) {
+export function WorkForm({ work, at, editor }: WorkFormProps) {
   const { t } = useTranslation();
+  const works = editor.content.works;
   const namedYet = isSlug(work.slug);
   const folder = `works/${work.slug}`;
   const named = work.title.zh || work.title.en || t('pages.newWork');
 
-  const set = <K extends keyof Work>(key: K, value: Work[K]) => onChange({ ...work, [key]: value });
+  const set = <K extends keyof Work>(key: K, value: Work[K]) =>
+    editor.update(
+      'works',
+      works.map((existing, position) =>
+        position === at ? { ...existing, [key]: value } : existing,
+      ),
+    );
 
   return (
     <section>
       <header className="section-head">
-        <button type="button" className="button button-quiet" onClick={onClose}>
+        <RouteLink to={sectionAt('works')} className="button button-quiet">
           ← {t('pages.allWorks')}
-        </button>
+        </RouteLink>
         <h2>{named}</h2>
       </header>
 
@@ -109,9 +117,9 @@ export function WorkForm({ work, editor, onChange, onClose, onDelete }: WorkForm
         addLabel={t('works.addDiscipline')}
         blank={emptyLocalised}
         onChange={(discipline) => set('discipline', discipline)}
-        renderItem={(entry, write, at) => (
+        renderItem={(entry, write, position) => (
           <LocalisedField
-            label={t('works.disciplineNumber', { number: at + 1 })}
+            label={t('works.disciplineNumber', { number: position + 1 })}
             value={entry}
             onChange={write}
           />
@@ -159,10 +167,10 @@ export function WorkForm({ work, editor, onChange, onClose, onDelete }: WorkForm
             hint={t('works.photoHint')}
             blank={blankImage}
             onChange={(media) => set('media', media)}
-            keyOf={(image, at) => image.src || `new-${at}`}
-            renderItem={(image, write, at) => (
+            keyOf={(image, position) => image.src || `new-${position}`}
+            renderItem={(image, write, position) => (
               <ImageField
-                label={t('works.photoNumber', { number: at + 1 })}
+                label={t('fields.photographNumber', { number: position + 1 })}
                 value={image}
                 onChange={write}
                 folder={folder}
@@ -190,7 +198,10 @@ export function WorkForm({ work, editor, onChange, onClose, onDelete }: WorkForm
           action={t('works.removeWork')}
           question={t('works.removeQuestion', { title: named })}
           confirm={t('works.removeIt')}
-          onDelete={onDelete}
+          onDelete={() => {
+            editor.update('works', works.filter((_, position) => position !== at));
+            navigate(sectionAt('works'));
+          }}
         />
       </footer>
     </section>

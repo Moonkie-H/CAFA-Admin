@@ -8,17 +8,20 @@
   "nav": {
     "label": "Workspace",
     "overview": "Overview",
-    "content": "Content",
+    "site": "The site",
+    "tools": "Tools",
     "control": "Control panel",
+    "home": "Home",
     "works": "Works",
     "programs": "Programmes",
+    "about": "About",
     "mentors": "Mentors",
-    "site": "Studio & contact",
-    "copy": "Site text",
+    "contact": "Contact",
+    "general": "General",
     "history": "History",
     "developer": "Developer tools",
-    "pages": "Pages",
-    "tools": "Tools"
+    "expand": "Show what is on {{name}}",
+    "collapse": "Hide what is on {{name}}"
   },
   "account": {
     "signedInAs": "Signed in as",
@@ -72,8 +75,10 @@
     "moveNamedUp": "Move {{name}} up",
     "noImage": "No image",
     "notConfigured": "Not configured",
+    "pageWords": "The words on this page",
     "remove": "Remove",
     "removeItem": "Remove {{item}} {{number}}",
+    "removeNamed": "Remove {{name}}",
     "replace": "Replace",
     "set": "Set",
     "unknown": "Unknown",
@@ -99,7 +104,7 @@
     "mentors": "Mentors",
     "photos": "Photographs",
     "siteText": "Site text",
-    "studio": "Studio & contact",
+    "studio": "Contact",
     "connectors": "Connectors",
     "history": "History",
     "problemsBlock": "{{count}} problem blocks the save",
@@ -110,16 +115,14 @@
     "allPublic": "All of them public.",
     "privateWorks": "{{count}} private — listed, no page.",
     "teaching": "Teaching.",
-    "withPortraits": "With portraits.",
-    "photoNote": "In the draft, across works, mentors and the pages.",
+    "withPortraits": "Read across the about page.",
+    "photoNote": "In the draft, across the works, the people and the front page.",
     "bilingualNote": "Both languages, always. A blank in either blocks the save.",
     "contactNote": "Address, hours, and how people reach you.",
     "connectorsNote": "Read-only endpoints serving the published revision. No writes, no drafts.",
     "apiNote": "Compiled from the connectors themselves. Hand it to whoever builds the site.",
     "historyValue": "Append-only",
     "historyNote": "Every revision that was ever live, and the way back to one.",
-    "pages": "Pages",
-    "pagesNote": "The whole site. Add one and it becomes a URL.",
     "stateFailed": "The site’s state could not be read."
   },
   "pages": {
@@ -128,23 +131,72 @@
     "allWorks": "All works",
     "newWork": "New work",
     "untitled": "Untitled",
-    "worksOrder": "The order here is the order on the site. Move rows to change what a visitor meets first.",
     "programs": "Programmes",
-    "program": "Programme",
     "addProgram": "Add a programme",
     "mentors": "Mentors",
-    "mentor": "Mentor",
     "addMentor": "Add a mentor",
-    "site": "Studio & contact",
-    "siteText": "Site text",
     "history": "History",
-    "developer": "Developer tools",
-    "pages": "Pages",
-    "addPage": "Add a page",
-    "allPages": "All pages",
-    "newPage": "New page",
-    "section": "Section",
-    "addSection": "Add a section"
+    "developer": "Developer tools"
+  },
+  "pageText": {
+    "titleHint": "The heading at the top of the page, the browser tab, and the word in the menu — all three, so they cannot disagree.",
+    "descriptionHint": "One or two sentences. It appears under the link in a search result."
+  },
+  "homePage": {
+    "intro": "The first thing anyone sees: one line, and the photographs under it.",
+    "titleHint": "Not shown on the page — the statement below is its heading. This is what the browser tab and a shared link say.",
+    "statementHint": "One line. It holds the whole first screen on its own, and it is the page’s heading.",
+    "galleryHint": "They run full width, one at a time, below the fold, in this order.",
+    "empty": "No photographs yet — the front page is the statement on its own."
+  },
+  "worksPage": {
+    "intro": "Every work on the site, in the order a visitor meets them. Move a row to change that order; open one to edit it.",
+    "empty": "No works yet."
+  },
+  "programsPage": {
+    "intro": "Every programme, in the order a reader scrolls through them. Open one to edit it.",
+    "introHint": "The paragraphs above the list.",
+    "empty": "No programmes yet.",
+    "noAudience": "No audience set",
+    "allPrograms": "All programmes",
+    "newProgram": "New programme",
+    "keyHint": "Not shown to anyone. Use lowercase letters, numbers and hyphens.",
+    "removeProgram": "Remove this programme",
+    "removeQuestion": "Remove {{name}} from the site?",
+    "removeIt": "Remove it"
+  },
+  "aboutPage": {
+    "intro": "What the studio says about itself, then the people, then the projects — in that order down the page.",
+    "introHint": "The paragraphs at the top of the page.",
+    "mentorsHint": "The heading over the band of portraits. {{count}} person is in it.",
+    "mentorsHint_other": "The heading over the band of portraits. {{count}} people are in it.",
+    "projectsHint": "The heading over the grid of covers. It shows every work that is not private.",
+    "toMentors": "Edit the people",
+    "toWorks": "Edit the works"
+  },
+  "mentorPage": {
+    "intro": "The people, as a band of portraits a third of the way down the about page, read in this order.",
+    "empty": "No people yet.",
+    "noDiscipline": "No discipline set",
+    "allMentors": "All people",
+    "newMentor": "New person",
+    "keyHint": "Not shown to anyone, but it names the portrait file.",
+    "oneLineHint": "Exactly one sentence. The layout gives it one line.",
+    "needsKey": "Give this person a key first — it names the portrait file.",
+    "removeMentor": "Remove this person",
+    "removeQuestion": "Remove {{name}} from the site? Their portrait stays in storage.",
+    "removeIt": "Remove it"
+  },
+  "contactPage": {
+    "intro": "The card the Contact button pins over whichever page the reader is on. The details, and the words that label them.",
+    "words": "The words on the card"
+  },
+  "generalPage": {
+    "intro": "What is left once every other word went to the page it appears on.",
+    "studioNameHint": "The logotype at the top of every page, and the name in the footer.",
+    "missing": "When a page cannot be found",
+    "rarely": "Words that rarely change",
+    "rarelyNote": "The site reads these by name, so they cannot be left out — but nobody changes them twice in a decade."
   },
   "fields": {
     "key": "Key",
@@ -159,6 +211,7 @@
     "credits": "Credits",
     "role": "Role",
     "photographs": "Photographs",
+    "photographNumber": "Photograph {{number}}",
     "cover": "Cover",
     "portrait": "Portrait",
     "oneLine": "One line",
@@ -170,12 +223,10 @@
     "address": "Address",
     "hours": "Opening hours",
     "description": "Description for search engines",
-    "inMenu": "Show in the menu",
-    "menuName": "Name in the menu",
-    "sectionKind": "What this section is",
-    "line": "The line",
-    "heading": "Heading",
-    "paragraph": "Paragraph",
+    "statement": "Statement",
+    "intro": "Opening paragraphs",
+    "mentorsTitle": "Heading over the people",
+    "projectsTitle": "Heading over the projects",
     "addParagraph": "Add a paragraph",
     "paragraphNumber": "Paragraph {{number}}",
     "addPhoto": "Add a photograph",
@@ -194,24 +245,16 @@
     },
     "addressReady": "The page will be at /zh/works/{{slug}}/. Changing this breaks any link already shared.",
     "addressEmpty": "Lowercase letters, numbers and hyphens. Set this before adding photographs—it decides where they are filed.",
+    "addressMissing": "No web address yet",
     "numberHint": "The running number shown in the index.",
     "addDiscipline": "Add a discipline",
     "disciplineNumber": "Discipline {{number}}",
     "addCredit": "Add a credit",
-    "photoNumber": "Photograph {{number}}",
     "photoHint": "These images run down the right of the work page, in this order.",
     "needsAddress": "Give this work a web address first—it decides where its photographs are filed.",
     "removeQuestion": "Remove {{title}} from the site? Its photographs stay in storage, so a developer can restore them.",
     "removeIt": "Remove it",
     "removeWork": "Remove this work"
-  },
-  "programPage": {
-    "keyHint": "Not shown to anyone. Use lowercase letters, numbers and hyphens."
-  },
-  "mentorPage": {
-    "keyHint": "Not shown to anyone, but it names the portrait file.",
-    "oneLineHint": "Exactly one sentence. The layout gives it one line.",
-    "needsKey": "Give this mentor a key first—it names the portrait file."
   },
   "historyPage": {
     "intro": "Each publish appends a revision. Restoring one publishes its content again as a new revision, so nothing that was ever live is lost.",
@@ -244,56 +287,10 @@
     "noAnswer": "No answer",
     "truncated": "… {{characters}} more characters. Open {{path}} in a tab for the whole of it."
   },
-  "copyPage": {
-    "intro": "Every field exists in both languages. A blank in either is caught before saving."
-  },
-  "sectionKinds": {
-    "heading": "Page heading",
-    "statement": "Statement",
-    "prose": "Paragraphs",
-    "gallery": "Photographs",
-    "works-index": "Index of works",
-    "works-grid": "Grid of works",
-    "programs": "Programmes",
-    "mentors": "Mentors"
-  },
-  "sectionHints": {
-    "heading": "The page’s title, set large at the top. Every page needs either this or a statement, and only one of the two.",
-    "statement": "One line, centred, holding the first screen on its own. It is the page’s heading, so a page with a statement needs no page heading.",
-    "prose": "Running text, one paragraph at a time.",
-    "gallery": "Photographs full width, one at a time, with a lot of space between them.",
-    "works-index": "Every work as a row of numbers and titles, with the photograph appearing on hover. Nothing to fill in — it draws the works.",
-    "works-grid": "The works that have their own page, as a grid of covers.",
-    "programs": "Every programme, one screen at a time. Nothing to fill in — it draws the programmes.",
-    "mentors": "The mentors, read across as the section holds the screen."
-  },
-  "pagePage": {
-    "order": "The order here is the order of the menu. Move a page to change where it sits in the bar.",
-    "sectionCount": "{{count}} section",
-    "sectionCount_other": "{{count}} sections",
-    "inMenu": "in the menu",
-    "notInMenu": "not in the menu",
-    "moveUp": "Move {{page}} up",
-    "moveDown": "Move {{page}} down",
-    "address": "The page will be at /zh/{{slug}}/. Changing this breaks any link already shared.",
-    "addressFront": "Left blank, so this is the front page — it is served at /zh/ and /en/. Every site needs exactly one.",
-    "titleHint": "What the browser tab says, and what a page heading draws.",
-    "descriptionHint": "One or two sentences. It appears under the link in a search result.",
-    "menuHint": "Off means the page still exists at its address; it just is not listed in the bar.",
-    "sectionsHint": "The page is these blocks, top to bottom. Move them to change the page.",
-    "galleryHint": "They run full width, one at a time, in this order.",
-    "frontPageKept": "The front page cannot be removed — it is the site’s own address.",
-    "removeQuestion": "Remove {{page}} from the site? Its address stops working and it leaves the menu. Photographs stay in storage.",
-    "removeIt": "Remove it",
-    "removePage": "Remove this page"
-  },
   "problems": {
     "title": "{{count}} thing to fix before this can be saved",
     "title_other": "{{count}} things to fix before this can be saved",
     "more": "…and {{count}} more.",
-    "record": {
-      "frontPage": "front page"
-    },
     "locale": {
       "zh": "Chinese",
       "en": "English"
@@ -302,12 +299,6 @@
       "inLocale": "{{field}} ({{locale}})",
       "imageFile": "{{field}} file",
       "imageAlt": "{{field}} description",
-      "sections": "Sections",
-      "section": "Section {{number}}",
-      "sectionLine": "Section {{number}} line",
-      "sectionHeading": "Section {{number}} heading",
-      "sectionParagraph": "Section {{number}} paragraph {{position}}",
-      "sectionPhotograph": "Section {{number}} photograph {{position}}",
       "creditRole": "Credit {{number}} role",
       "creditName": "Credit {{number}} name",
       "siteText": "Site text — {{trail}}"
@@ -315,17 +306,13 @@
     "message": {
       "empty": "is empty",
       "slugChars": "may only use lowercase letters, numbers and single hyphens",
-      "needsHeading": "needs a heading or a statement",
-      "tooManyHeadings": "has more than one heading or statement — a page may have one",
-      "unknownKind": "is a kind the site cannot draw",
       "needsParagraph": "needs at least one paragraph",
-      "needsPhotograph": "needs at least one photograph",
       "wholeNumber": "must be a whole number",
       "notAStatus": "is not one of the three states",
       "needsEntry": "needs at least one entry",
-      "needsFrontPage": "need one front page — the one whose web address is left blank",
-      "duplicatePage": "is used by more than one page (\"{{slug}}\")",
       "duplicateWork": "is used by more than one work (\"{{slug}}\")",
+      "duplicateProgram": "is used by more than one programme (\"{{slug}}\")",
+      "duplicateMentor": "is used by more than one person (\"{{slug}}\")",
       "notInStorage": "names a photograph that is not in storage ({{file}}) — upload it again, or remove the image"
     }
   }

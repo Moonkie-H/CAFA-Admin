@@ -4,11 +4,11 @@
  * Every builder returns a new object graph rather than a shared constant, so a
  * test that mutates or projects one cannot reach into another's.
  */
-import type { ContentSet, Dictionary, Page } from '../shared/content/types';
+import type { Dictionary, ContentSet, SitePages } from '../shared/content/types';
 
 export function dictionary(): Dictionary {
   return {
-    meta: { title: 'Title', titleTemplate: '%s', description: 'Description' },
+    meta: { titleTemplate: '%s' },
     a11y: {
       skipToContent: 'Skip',
       primaryNav: 'Navigation',
@@ -47,13 +47,28 @@ export function dictionary(): Dictionary {
   };
 }
 
-export function page(): Page {
+export function pages(): SitePages {
+  const both = (zh: string, en: string) => ({ zh, en });
   return {
-    slug: '',
-    title: { zh: '首页', en: 'Home' },
-    description: { zh: '描述', en: 'Description' },
-    navLabel: { zh: '首页', en: 'Home' },
-    sections: [{ kind: 'heading' }],
+    home: {
+      title: both('首页', 'Home'),
+      description: both('描述', 'Description'),
+      statement: both('一句话', 'One line'),
+      gallery: [],
+    },
+    works: { title: both('作品', 'Works'), description: both('描述', 'Description') },
+    programs: {
+      title: both('课程', 'Programmes'),
+      description: both('描述', 'Description'),
+      intro: [both('段落', 'Paragraph')],
+    },
+    about: {
+      title: both('关于', 'About'),
+      description: both('描述', 'Description'),
+      intro: [both('段落', 'Paragraph')],
+      mentorsTitle: both('导师', 'Mentors'),
+      projectsTitle: both('作品', 'Projects'),
+    },
   };
 }
 
@@ -68,7 +83,7 @@ export function content(): ContentSet {
         hours: { zh: '时间', en: 'Hours' },
       },
     },
-    pages: [page()],
+    pages: pages(),
     works: [],
     programs: [],
     mentors: [],

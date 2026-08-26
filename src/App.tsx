@@ -16,18 +16,22 @@ import { useTranslation } from 'react-i18next';
 
 import { ProblemList } from './components/ProblemList';
 import { AdminLayout } from './components/layout/AdminLayout';
+import { AboutPage } from './features/about/AboutPage';
+import { ContactPage } from './features/contact/ContactPage';
 import { ControlPanelPage } from './features/control/ControlPanelPage';
-import { CopyPage } from './features/copy/CopyPage';
 import { DevPanelPage } from './features/dev/DevPanelPage';
+import { GeneralPage } from './features/general/GeneralPage';
 import { HistoryPage } from './features/history/HistoryPage';
+import { HomePage } from './features/home/HomePage';
+import { MentorForm } from './features/mentors/MentorForm';
 import { MentorsPage } from './features/mentors/MentorsPage';
-import { PagesPage } from './features/pages/PagesPage';
+import { ProgramForm } from './features/programs/ProgramForm';
 import { ProgramsPage } from './features/programs/ProgramsPage';
 import { SignInPage } from './features/session/SignInPage';
-import { SitePage } from './features/site/SitePage';
+import { WorkForm } from './features/works/WorkForm';
 import { WorksPage } from './features/works/WorksPage';
 import { useEditor } from './hooks/useEditor';
-import { useRoute, type RoutePath } from './routes';
+import { useRoute, type Route } from './routes';
 import { contentService } from './services/content';
 import { sessionService } from './services/session';
 import type { ContentResponse } from './services/types';
@@ -125,35 +129,70 @@ function Editing({ login, content, onSignedOut }: EditingProps) {
   return (
     <AdminLayout editor={editor} login={login} route={route} onSignedOut={onSignedOut}>
       <ProblemList problems={editor.problems} />
-      <Page route={route} editor={editor} />
+      <Screen route={route} editor={editor} />
     </AdminLayout>
   );
 }
 
 /**
- * The route table's one exhaustive switch. Adding a route to `ROUTES` without
- * adding it here is a TypeScript error rather than a blank page — the return
- * type has no `undefined` in it and the switch has no default.
+ * Which record of a collection the route has open, if it has one open at all.
+ *
+ * A record is addressed by *position*, so a position can outlive what it points
+ * at: delete the last work while its form is open and the URL still says
+ * `/works/9`. Deriving the answer rather than storing it means there is no
+ * state to correct — a position with nothing at it is simply nothing open, and
+ * the screen falls back to the list it was opened from.
  */
-function Page({ route, editor }: { route: RoutePath; editor: ReturnType<typeof useEditor> }) {
-  switch (route) {
+function opened<T>(items: readonly T[], record: number | null): { item: T; at: number } | null {
+  if (record === null) return null;
+  const item = items[record];
+  return item === undefined ? null : { item, at: record };
+}
+
+/**
+ * The route table's one exhaustive switch. Adding a section to `SECTIONS`
+ * without adding it here is a TypeScript error rather than a blank page — the
+ * return type has no `undefined` in it and the switch has no default.
+ */
+function Screen({ route, editor }: { route: Route; editor: ReturnType<typeof useEditor> }) {
+  switch (route.section) {
     case 'control':
       return <ControlPanelPage editor={editor} />;
-    case 'dev':
-      return <DevPanelPage />;
-    case 'pages':
-      return <PagesPage editor={editor} />;
-    case 'works':
-      return <WorksPage editor={editor} />;
-    case 'programs':
-      return <ProgramsPage editor={editor} />;
-    case 'mentors':
-      return <MentorsPage editor={editor} />;
-    case 'site':
-      return <SitePage editor={editor} />;
-    case 'copy':
-      return <CopyPage editor={editor} />;
+    case 'home':
+      return <HomePage editor={editor} />;
+    case 'works': {
+      const open = opened(editor.content.works, route.record);
+      return open === null ? (
+        <WorksPage editor={editor} />
+      ) : (
+        <WorkForm work={open.item} at={open.at} editor={editor} />
+      );
+    }
+    case 'programs': {
+      const open = opened(editor.content.programs, route.record);
+      return open === null ? (
+        <ProgramsPage editor={editor} />
+      ) : (
+        <ProgramForm program={open.item} at={open.at} editor={editor} />
+      );
+    }
+    case 'about':
+      return <AboutPage editor={editor} />;
+    case 'mentors': {
+      const open = opened(editor.content.mentors, route.record);
+      return open === null ? (
+        <MentorsPage editor={editor} />
+      ) : (
+        <MentorForm mentor={open.item} at={open.at} editor={editor} />
+      );
+    }
+    case 'contact':
+      return <ContactPage editor={editor} />;
+    case 'general':
+      return <GeneralPage editor={editor} />;
     case 'history':
       return <HistoryPage editor={editor} />;
+    case 'dev':
+      return <DevPanelPage />;
   }
 }
