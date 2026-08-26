@@ -14,7 +14,7 @@
  * The two build-time endpoints are deliberately *not* wrapped — see
  * worker/controllers/public-content.controller.ts for why.
  */
-import type { Problem } from '../../src/content/validate';
+import type { Problem } from '../../shared/content/validate';
 
 export interface ApiResponse<T> {
   success: boolean;

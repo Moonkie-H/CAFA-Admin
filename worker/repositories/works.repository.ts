@@ -10,7 +10,7 @@
  * the whole content set is replaced in a single D1 batch. See
  * worker/repositories/content.repository.ts for the ordering that makes that safe.
  */
-import type { Work, WorkStatus } from '../../src/content/types';
+import type { Work, WorkStatus } from '../../shared/content/types';
 import type { CreditRow, DisciplineRow, WorkMediaRow, WorkRow } from '../models/rows';
 import { groupBy, imageBindings, imageRef, pair } from './mapping';
 

@@ -9,8 +9,8 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { checkContent, checkImagesInStorage, isSlug } from '../src/content/validate';
-import type { ContentSet, Page } from '../src/content/types';
+import { checkContent, checkImagesInStorage, isSlug } from '../shared/content/validate';
+import type { ContentSet, Page } from '../shared/content/types';
 import { content, page } from './content-fixture';
 
 /** The problems, as `section/label-key` pairs — enough to say which rule fired. */

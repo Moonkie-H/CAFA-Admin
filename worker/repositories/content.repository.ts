@@ -18,7 +18,7 @@
  * At roughly twenty records a whole-content replace is both simpler than
  * diffing and immune to the ordering bugs diffing invites.
  */
-import type { ContentSet } from '../../src/content/types';
+import type { ContentSet } from '../../shared/content/types';
 import { deleteCopy, insertCopy, readCopy } from './copy.repository';
 import { deleteMentors, insertMentors, readMentors } from './mentors.repository';
 import { deletePages, insertPages, readPages } from './pages.repository';

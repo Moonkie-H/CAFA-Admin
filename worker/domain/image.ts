@@ -18,7 +18,7 @@
  * shortcut around a better option, it is the only correct one.
  */
 
-import { MAX_IMAGE_EDGE } from '../../src/content/types';
+import { MAX_IMAGE_EDGE } from '../../shared/content/types';
 
 export interface Measured {
   width: number;
@@ -83,7 +83,7 @@ export function measure(buffer: ArrayBuffer): Measured {
  * today: a work, a page's gallery, and a mentor. `pages/` is the one that has
  * to be here — a page is content now, so its slug is part of the key, and the
  * front page (whose slug is the empty string) files under `pages/home`. See
- * `pageFolder` in src/pages/PagesPage.tsx, which is what builds these.
+ * `pageFolder` in src/features/pages/PageForm.tsx, which is what builds these.
  *
  * `studio/` is the fourth and is read-only. Migration 0005 folded the studio
  * photographs into a gallery section on the front page and dropped the table

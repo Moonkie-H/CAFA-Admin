@@ -11,7 +11,7 @@
  * page now (migration 0005), which is the same photographs with one owner
  * instead of two.
  */
-import type { SiteContent } from '../../src/content/types';
+import type { SiteContent } from '../../shared/content/types';
 import type { SiteRow } from '../models/rows';
 import { pair } from './mapping';
 

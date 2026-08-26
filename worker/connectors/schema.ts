@@ -8,7 +8,7 @@
  * shape beside its reader, in the same object, so the two cannot disagree
  * without a TypeScript error.
  *
- * The component schemas below mirror src/content/types.ts as the *published*
+ * The component schemas below mirror shared/content/types.ts as the *published*
  * bundle carries it — which is not quite the editable content set, and the
  * differences are deliberate. worker/domain/bundle.ts adds `url`, `locales`
  * and `localeNames` to `site`, lifts `localeName` out of each dictionary, and
@@ -284,7 +284,9 @@ export const COMPONENTS: Record<string, JsonSchema> = {
         description: 'The description in both languages, or the empty string when decorative.',
       },
       decorative: flag('True when there is no alt text because there is nothing to describe.'),
-      usedBy: text('What cites it: "work:<slug>", "mentor:<slug>" or "studio".'),
+      usedBy: text(
+        'What draws it: "work:<slug>", "mentor:<slug>", or "page:<slug>" — "page:/" for the front page. A photograph cited from more than one place is listed once, under the first that cites it.',
+      ),
     },
     'One published photograph, with everything needed to lay it out before it loads.',
   ),

@@ -14,23 +14,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { ControlPanelPage } from './pages/ControlPanelPage';
-import { CopyPage } from './pages/CopyPage';
-import { DevPanelPage } from './pages/DevPanelPage';
-import { HistoryPage } from './pages/HistoryPage';
-import { MentorsPage } from './pages/MentorsPage';
-import { PagesPage } from './pages/PagesPage';
-import { ProgramsPage } from './pages/ProgramsPage';
-import { SignInPage } from './pages/SignInPage';
-import { SitePage } from './pages/SitePage';
-import { WorksPage } from './pages/WorksPage';
+import { ProblemList } from './components/ProblemList';
+import { AdminLayout } from './components/layout/AdminLayout';
+import { ControlPanelPage } from './features/control/ControlPanelPage';
+import { CopyPage } from './features/copy/CopyPage';
+import { DevPanelPage } from './features/dev/DevPanelPage';
+import { HistoryPage } from './features/history/HistoryPage';
+import { MentorsPage } from './features/mentors/MentorsPage';
+import { PagesPage } from './features/pages/PagesPage';
+import { ProgramsPage } from './features/programs/ProgramsPage';
+import { SignInPage } from './features/session/SignInPage';
+import { SitePage } from './features/site/SitePage';
+import { WorksPage } from './features/works/WorksPage';
+import { useEditor } from './hooks/useEditor';
 import { useRoute, type RoutePath } from './routes';
 import { contentService } from './services/content';
 import { sessionService } from './services/session';
 import type { ContentResponse } from './services/types';
-import { AdminLayout } from './ui/AdminLayout';
-import { ProblemList } from './ui/ProblemList';
-import { useEditor } from './useEditor';
 
 export function App() {
   const { t } = useTranslation();

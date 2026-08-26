@@ -15,14 +15,11 @@
  * To add one: append it below. The route registers itself in worker/index.ts,
  * the document grows an entry, the dev panel grows a card.
  */
-import { LOCALES, WORK_STATUSES, type ImageRef, type Work } from '../../src/content/types';
+import { isWorkStatus, LOCALES, WORK_STATUSES } from '../../shared/content/types';
 import { ApiException } from '../shared/api-exception';
-import type { Connector, ConnectorGroup, ReadableBundle } from './connector';
+import type { Connector, ConnectorGroup } from './connector';
+import { photographsOf } from './photographs';
 import { list, ref, shape, text, whole } from './schema';
-
-function isWorkStatus(value: string): value is Work['status'] {
-  return WORK_STATUSES.some((status) => status === value);
-}
 
 /** Bumped when a connector's answer changes shape in a way a client would feel. */
 export const API_VERSION = '2.0.0';
@@ -318,65 +315,3 @@ export const CONNECTORS: readonly Connector[] = [
     read: ({ bundle }) => bundle,
   },
 ];
-
-interface Photograph {
-  key: string;
-  url: string;
-  width: number;
-  height: number;
-  tint: number | null;
-  alt: ImageRef['alt'];
-  decorative: boolean;
-  usedBy: string;
-}
-
-/**
- * The photographs, from the two halves that each know part of the answer.
- *
- * The content knows what an image is *of* and what cites it; the media map
- * knows how big it is and what colour it is. Only keys in that map are returned,
- * and that is the privacy guarantee doing its work rather than a filter of our
- * own — bundle.ts measures a photograph into it only when public content cites
- * it, so a private work's pictures cannot appear here even by accident.
- */
-function photographsOf(bundle: ReadableBundle): Photograph[] {
-  const base = bundle.mediaBase.replace(/\/$/, '');
-  const photographs: Photograph[] = [];
-  const seen = new Set<string>();
-
-  function add(image: ImageRef, usedBy: string): void {
-    const measured = bundle.media[image.src];
-    if (image.src === '' || measured === undefined || seen.has(image.src)) return;
-    seen.add(image.src);
-
-    photographs.push({
-      key: image.src,
-      url: `${base}/${image.src}`,
-      width: measured.width,
-      height: measured.height,
-      tint: measured.tint,
-      alt: image.alt,
-      decorative: image.alt === '',
-      usedBy,
-    });
-  }
-
-  for (const work of bundle.works) {
-    add(work.cover, `work:${work.slug}`);
-    for (const image of work.media) add(image, `work:${work.slug}`);
-  }
-  for (const mentor of bundle.mentors) add(mentor.portrait, `mentor:${mentor.slug}`);
-  for (const page of bundle.pages) {
-    for (const section of page.sections) {
-      if (section.kind !== 'gallery') continue;
-      for (const image of section.images) add(image, `page:${page.slug === '' ? '/' : page.slug}`);
-    }
-  }
-
-  return photographs;
-}
-
-/** Path parameters, in the notation OpenAPI wants: `/works/:slug` → `/works/{slug}`. */
-export function documentedPath(path: string): string {
-  return path.replace(/:([A-Za-z0-9_]+)/g, '{$1}');
-}

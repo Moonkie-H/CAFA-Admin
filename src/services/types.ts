@@ -8,8 +8,8 @@
  * (`ContentSet`, `Work`, `MediaInfo`) *are* shared — they are the domain, not
  * the transport.
  */
-import type { ContentSet, MediaInfo } from '../content/types';
-import type { Problem } from '../content/validate';
+import type { ContentSet, MediaInfo } from '../../shared/content/types';
+import type { Problem } from '../../shared/content/validate';
 
 /** The envelope every authenticated endpoint answers in. */
 export interface ApiResponse<T> {

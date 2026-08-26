@@ -10,9 +10,9 @@
  * again here is not belt-and-braces — it is the only copy that cannot be
  * skipped by a client that has been edited, replaced or scripted.
  */
-import type { ContentSet } from '../../src/content/types';
+import type { ContentSet } from '../../shared/content/types';
 import type { ContentResponse } from '../models/dtos/content.dtos';
-import { checkContent, checkImagesInStorage } from '../../src/content/validate';
+import { checkContent, checkImagesInStorage } from '../../shared/content/validate';
 import { readContent, writeContent } from '../repositories/content.repository';
 import { readMedia } from '../repositories/media.repository';
 import { ApiException } from '../shared/api-exception';

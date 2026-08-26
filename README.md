@@ -495,6 +495,18 @@ exactly one thing.** A controller knows HTTP and no SQL. A service knows the
 rules and never builds a `Response`. A repository knows rows and has never heard
 of a `Request`.
 
+The editor is arranged on the same principle, one axis over. `components/` is
+everything drawn more than once — the form vocabulary, the shapes a record is
+edited in, the chrome — and none of it knows what a work is. `features/` is one
+folder per screen, holding that screen and the components only it uses, and a
+screen composes rather than draws. Data is behind `hooks/` and `services/`, and
+no component fetches its own.
+
+`shared/content/` is neither half's. It is the shape of the content and the
+rules a save must satisfy, and both the browser and the Worker import it —
+which is what keeps the arrow pointing one way on both sides rather than the
+Worker reaching into the editor's folder for its own types.
+
 ```
 migrations/
   0001_initial.sql          the schema, and the constraints that are really rules
@@ -524,7 +536,7 @@ worker/
 
   connectors/               the public read API, declared once
     registry.ts             every connector: path, prose, shape, and reader
-    schema.ts               the shapes, as JSON Schema — mirrors src/content/types.ts
+    schema.ts               the shapes, as JSON Schema — mirrors shared/content/
     openapi.ts              api.json, compiled from the registry on the way out
     connector.ts            what a connector is
 
@@ -551,24 +563,51 @@ worker/
     password.ts             PBKDF2 verification, and the one hash format
     base64url.ts            bytes ⇄ text, and a comparison that does not leak
 
+shared/content/             owned by neither half; imported by both
+  types.ts                  the records, and the blank ones every form starts from
+  parse.ts                  an untrusted body into the exact editable shape
+  validate.ts               every rule a save must satisfy, as phrases not sentences
+  dictionary.ts             one word inside a dictionary, by a path the compiler checks
+  images.ts                 the one walk of every photograph the content cites
+
 src/
-  content/                  the shape of the content, and the rules a save must satisfy
-    types.ts                the records, and the blank ones every form starts from
-    parse.ts                an untrusted body into the exact editable shape
-    validate.ts             every rule a save must satisfy, as phrases not sentences
-    dictionary.ts           one word inside a dictionary, by a path the compiler checks
+  App.tsx                   session, then content, then route — the three states
+  routes.ts                 the route table, and the whole of the client router
+
+  components/               drawn more than once; none of it knows what a work is
+    fields/                 the form vocabulary — one control per file
+      Field · TextField · NumberField · LocalisedField · SelectField · ImageField
+    records/                the shapes a *record* is edited in, not the fields in one
+      Repeatable            a list that owns add, reorder, remove and replace
+      RecordIndex           the numbered list a form is opened from, and one row
+      ReorderControls · DeleteRecord
+    layout/                 the chrome: header, sidebar, publish bar
+      AdminLayout · PublishBar · LanguageToggle
+      RouteLink             a real <a> whose click is intercepted, in one place
+    ProblemList.tsx         what has to be fixed before this can be saved
+
+  features/                 one folder per screen: the page, and what only it uses
+    control/                ControlPanelPage · Tile
+    pages/                  PagesPage · PageForm · SectionFields
+    works/                  WorksPage · WorkForm
+    dev/                    DevPanelPage · ConnectorCard · markdown
+    copy · history · mentors · programs · session · site
+
+  hooks/                    where data and the state around it live
+    useEditor.ts            what has changed, and how it gets sent
+    useRemote.ts            something read from the Worker, and its stale guard
+    useRecordForms.ts       which record is open, derived rather than corrected
+
+  lib/                      pure helpers, no React
+    image-prepare.ts        resize, strip EXIF, and read the dominant hue
+    media-keys.ts           where a photograph is filed, as a key
+    deployment.ts           whether an origin is serving what it should be
+    format.ts · say.ts
+
   services/                 the only place the browser talks to the Worker
     http.ts                 unwraps the envelope; nothing else knows about fetch
     session · content · media · publish
     connectors.ts           reads api.json — the dev panel keeps no list of its own
-  pages/                    one per route: the control panel, six editors,
-                            history and the dev panel, plus sign-in
-  ui/                       the layout, the form vocabulary, the publish bar
-    fields.tsx              the form vocabulary — and the list that owns add,
-                            reorder, remove and replace, so no page spells them out
-  routes.ts                 the route table, and the whole of the client router
-  useEditor.ts              what has changed, and how it gets sent
-  useRemote.ts              something read from the Worker, and its stale guard
 ```
 
 ### Why the envelope stops at the build endpoints
@@ -605,7 +644,7 @@ the bucket, which costs nothing at this volume and is the deliberate trade.
 
 ### The copy of the content types
 
-`src/content/types.ts` mirrors the template's `src/lib/types.ts` rather than
+`shared/content/types.ts` mirrors the template's `src/lib/types.ts` rather than
 importing it, because the two repositories deploy separately and a shared
 package for six interfaces would cost more than it saves. It diverges in two
 places on purpose — `SiteContent` has no `locales` or `localeNames`, and
@@ -620,8 +659,8 @@ it is the one maintenance job this repository has. When the template changes
 what it reads — a heading that moved to another page, a form that grew four
 labels — the sequence is always the same four edits:
 
-1. `src/content/types.ts`, so `Dictionary` says what the template's says.
-2. `src/pages/CopyPage.tsx`, so the studio can reach the new field.
+1. `shared/content/types.ts`, so `Dictionary` says what the template's says.
+2. `src/features/copy/CopyPage.tsx`, so the studio can reach the new field.
 3. A migration, because copy keys are schema: the old ones are deleted and the
    new ones inserted with a default, since the template refuses to build on a
    blank.

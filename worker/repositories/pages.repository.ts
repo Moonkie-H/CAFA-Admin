@@ -14,13 +14,12 @@
  * three queries and a lookup, rather than a query per section.
  */
 import {
-  SECTION_KINDS,
+  isSectionKind,
   type ImageRef,
   type LocalisedText,
   type Page,
   type PageSection,
-  type SectionKind,
-} from '../../src/content/types';
+} from '../../shared/content/types';
 import type {
   PageRow,
   PageSectionRow,
@@ -32,10 +31,6 @@ import { groupBy, imageBindings, imageRef, pair } from './mapping';
 /** `slug|position`: a section's whole identity, as a key its children group by. */
 function sectionKey(pageSlug: string, position: number): string {
   return `${pageSlug}|${position}`;
-}
-
-function isSectionKind(value: string): value is SectionKind {
-  return SECTION_KINDS.some((known) => known === value);
 }
 
 /**

@@ -6,7 +6,7 @@
  * five times — which is also the only place the `decorative` convention is
  * explained.
  */
-import type { ImageRef, LocalisedText } from '../../src/content/types';
+import type { ImageRef, LocalisedText } from '../../shared/content/types';
 
 export function pair(zh: string, en: string): LocalisedText {
   return { zh, en };

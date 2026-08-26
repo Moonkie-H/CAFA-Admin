@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 
 import { buildBundle, transformsOn } from '../worker/domain/bundle';
 import type { MediaRow } from '../worker/models/rows';
-import type { ContentSet, Work } from '../src/content/types';
+import type { ContentSet, Work } from '../shared/content/types';
 import { content } from './content-fixture';
 
 function work(slug: string, status: Work['status']): Work {

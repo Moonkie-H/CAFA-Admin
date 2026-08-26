@@ -22,7 +22,7 @@
  * a slightly wrong ground behind one row of the works index, which is not what
  * the CLS budget is made of.
  */
-import type { MediaInfo } from '../../src/content/types';
+import type { MediaInfo } from '../../shared/content/types';
 import { contentTypeOf, measure } from '../domain/image';
 import { recordMedia } from '../repositories/media.repository';
 import { ApiException } from '../shared/api-exception';
