@@ -15,10 +15,10 @@
  */
 import type { MouseEvent, ReactNode } from 'react';
 
-import { href, navigate, type RoutePath } from '../../routes';
+import { href, navigate, type Route } from '../../routes';
 
 interface RouteLinkProps {
-  to: RoutePath;
+  to: Route;
   className?: string;
   /** Marks the link to the page already showing, for styling and for a11y. */
   current?: boolean;

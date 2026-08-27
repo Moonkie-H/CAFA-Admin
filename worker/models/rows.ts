@@ -23,34 +23,27 @@ export interface SiteRow {
 }
 
 export interface PageRow {
-  slug: string;
+  page: string;
   title_zh: string;
   title_en: string;
   description_zh: string;
   description_en: string;
-  in_nav: number;
-  nav_zh: string;
-  nav_en: string;
 }
 
-export interface PageSectionRow {
-  page_slug: string;
-  position: number;
-  kind: string;
-  text_zh: string;
-  text_en: string;
-}
-
-export interface SectionParagraphRow {
-  page_slug: string;
-  section_position: number;
+export interface PageLineRow {
+  page: string;
+  name: string;
   zh: string;
   en: string;
 }
 
-export interface SectionMediaRow {
-  page_slug: string;
-  section_position: number;
+export interface PageParagraphRow {
+  page: string;
+  zh: string;
+  en: string;
+}
+
+export interface HomeGalleryRow {
   media_key: string;
   alt_zh: string;
   alt_en: string;

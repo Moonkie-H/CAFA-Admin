@@ -1,17 +1,19 @@
 /** Runtime parsing for content crossing the HTTP boundary. */
 import {
-  isSectionKind,
   isWorkStatus,
   WORK_STATUSES,
+  type AboutPage,
   type ContentSet,
   type Dictionary,
+  type HomePage,
   type ImageRef,
   type LocalisedText,
   type Mentor,
-  type Page,
-  type PageSection,
+  type PageText,
   type Program,
+  type ProgramsPage,
   type SiteContent,
+  type SitePages,
   type Work,
   type WorkStatus,
 } from './types';
@@ -84,50 +86,65 @@ function imageAt(value: unknown, path: string): ImageRef {
   };
 }
 
-function sectionAt(value: unknown, path: string): PageSection {
-  const record = objectAt(value, path);
-  const kind = stringAt(property(record, 'kind', path), `${path}.kind`);
-  if (!isSectionKind(kind)) {
-    throw new ContentShapeError(`${path}.kind`, 'a supported section kind');
-  }
-
-  switch (kind) {
-    case 'heading':
-    case 'works-index':
-    case 'programs':
-      return { kind };
-    case 'statement':
-    case 'works-grid':
-    case 'mentors':
-      return { kind, text: localisedAt(property(record, 'text', path), `${path}.text`) };
-    case 'prose':
-      return {
-        kind,
-        paragraphs: arrayAt(property(record, 'paragraphs', path), `${path}.paragraphs`).map(
-          (paragraph, index) => localisedAt(paragraph, `${path}.paragraphs[${index}]`),
-        ),
-      };
-    case 'gallery':
-      return {
-        kind,
-        images: arrayAt(property(record, 'images', path), `${path}.images`).map((image, index) =>
-          imageAt(image, `${path}.images[${index}]`),
-        ),
-      };
-  }
+/** The list of paragraphs a page's prose is authored in. */
+function paragraphsAt(value: unknown, path: string): LocalisedText[] {
+  return arrayAt(value, path).map((paragraph, index) =>
+    localisedAt(paragraph, `${path}[${index}]`),
+  );
 }
 
-function pageAt(value: unknown, path: string): Page {
-  const record = objectAt(value, path);
-  const rawNavLabel = property(record, 'navLabel', path);
+/** The two lines every page carries. */
+function pageTextAt(record: Record<string, unknown>, path: string): PageText {
   return {
-    slug: stringAt(property(record, 'slug', path), `${path}.slug`),
     title: localisedAt(property(record, 'title', path), `${path}.title`),
     description: localisedAt(property(record, 'description', path), `${path}.description`),
-    navLabel: rawNavLabel === null ? null : localisedAt(rawNavLabel, `${path}.navLabel`),
-    sections: arrayAt(property(record, 'sections', path), `${path}.sections`).map((section, index) =>
-      sectionAt(section, `${path}.sections[${index}]`),
+  };
+}
+
+function homeAt(value: unknown, path: string): HomePage {
+  const record = objectAt(value, path);
+  return {
+    ...pageTextAt(record, path),
+    statement: localisedAt(property(record, 'statement', path), `${path}.statement`),
+    gallery: arrayAt(property(record, 'gallery', path), `${path}.gallery`).map((image, index) =>
+      imageAt(image, `${path}.gallery[${index}]`),
     ),
+  };
+}
+
+function programsPageAt(value: unknown, path: string): ProgramsPage {
+  const record = objectAt(value, path);
+  return {
+    ...pageTextAt(record, path),
+    intro: paragraphsAt(property(record, 'intro', path), `${path}.intro`),
+  };
+}
+
+function aboutAt(value: unknown, path: string): AboutPage {
+  const record = objectAt(value, path);
+  return {
+    ...pageTextAt(record, path),
+    intro: paragraphsAt(property(record, 'intro', path), `${path}.intro`),
+    mentorsTitle: localisedAt(property(record, 'mentorsTitle', path), `${path}.mentorsTitle`),
+    projectsTitle: localisedAt(property(record, 'projectsTitle', path), `${path}.projectsTitle`),
+  };
+}
+
+/**
+ * The four pages, by name. Spelled out rather than looped over `PAGE_KEYS`,
+ * because each one has different fields — which is the whole reason the set is
+ * a type and not a list.
+ */
+function pagesAt(value: unknown, path: string): SitePages {
+  const record = objectAt(value, path);
+  return {
+    home: homeAt(property(record, 'home', path), `${path}.home`),
+    works: pageTextAt(
+      objectAt(property(record, 'works', path), `${path}.works`),
+      `${path}.works`,
+    ),
+    programs: programsPageAt(property(record, 'programs', path), `${path}.programs`),
+    about: aboutAt(property(record, 'about', path), `${path}.about`),
   };
 }
 
@@ -216,7 +233,7 @@ export function parseDictionary(value: unknown, path = 'dictionary'): Dictionary
   const footer = group('footer');
 
   return {
-    meta: stringsAt(meta, `${path}.meta`, ['title', 'titleTemplate', 'description']) as Dictionary['meta'],
+    meta: stringsAt(meta, `${path}.meta`, ['titleTemplate']) as Dictionary['meta'],
     a11y: stringsAt(a11y, `${path}.a11y`, [
       'skipToContent', 'primaryNav', 'localeSwitch', 'worksList', 'worksRail', 'workPager', 'close',
     ]) as Dictionary['a11y'],
@@ -240,9 +257,7 @@ export function parseContentSet(value: unknown): ContentSet {
   const root = objectAt(value, 'content');
   return {
     site: siteAt(property(root, 'site', 'content'), 'content.site'),
-    pages: arrayAt(property(root, 'pages', 'content'), 'content.pages').map((page, index) =>
-      pageAt(page, `content.pages[${index}]`),
-    ),
+    pages: pagesAt(property(root, 'pages', 'content'), 'content.pages'),
     works: arrayAt(property(root, 'works', 'content'), 'content.works').map((work, index) =>
       workAt(work, `content.works[${index}]`),
     ),

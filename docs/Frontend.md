@@ -155,26 +155,29 @@ do not need defensive defaults.
 before a revision is written, so no URL for them ever leaves the database. Render
 the listing; do not generate a route for it.
 
-**The pages are the site's structure, and they are content.** `/api/v1/pages`
-answers with every page in order: a `slug`, the words that name it, and an
-ordered list of `sections`. Generate one route per entry — the empty slug is the
-front page, served at the locale's own address — and render each section by its
-`kind`. The studio adds, removes and reorders both pages and sections, so treat
-the list as data, not as a fixture.
+**The site has four pages, and the set is fixed.** `/api/v1/pages` answers with
+an object, not a list: `home`, `works`, `programs`, `about`. Each is a design of
+its own — the front page's statement holding a screen, the mentors read sideways,
+the programmes stacking one at a time — so a fifth page is a route you write,
+not a row the studio can add. What the studio owns is every word on the four:
+each page's `title` and `description`, the front page's `statement` and
+`gallery`, the `intro` paragraphs on programmes and about, and the
+`mentorsTitle` and `projectsTitle` about sets over the people and the projects.
 
-**A section kind is a component you write.** There are eight; three take no
-fields at all and simply mean "the works", "the programmes", "the mentors". The
-enum is in `api.json`, so a generated client fails to compile when a kind is
-added rather than rendering a hole.
+**The collections are not on the pages.** The works index is `/api/v1/works`,
+the programme list is `/api/v1/programs`, the band of portraits is
+`/api/v1/mentors`. A page names a collection rather than carrying one, so adding
+a work changes three pages and nothing in `pages` moves.
 
-**The nav is the pages.** There is no `site.nav`: the bar is the pages whose
-`navLabel` is not null, in `pages` order. The one item that is not a page is
-Contact, which opens a panel over the current page rather than leading anywhere —
-its label is `contact.nav` in the dictionary.
+**The nav is the pages' own titles.** There is no `site.nav` and no separate nav
+label: the bar is Works, Programmes and About, in that order, each labelled by
+`pages.<key>.title`. The one item that is not a page is Contact, which opens a
+panel over the current page rather than leading anywhere — its label is
+`contact.nav` in the dictionary.
 
 **A page's own words are on the page, not in the dictionary.** Its title, its
-prose and the headings over its sections belong to a page that can be deleted.
-`/api/v1/copy/{locale}` is the chrome that outlives every page — the labels on a
+prose and the headings over its parts belong to that page. `/api/v1/copy/{locale}`
+is the chrome that appears on every page and belongs to none — the labels on a
 work, the accessibility strings, the contact card, the footer, the 404.
 
 **`site.url` is the site's own origin**, without a trailing slash, and every

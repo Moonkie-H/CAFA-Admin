@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ContentShapeError, parseContentSet } from '../shared/content/parse';
 import { readCopyPath, writeCopyPath } from '../shared/content/dictionary';
-import { content, dictionary, page } from './content-fixture';
+import { content, dictionary } from './content-fixture';
 import { parseSaveRequest } from '../worker/models/dtos/content.dtos';
 
 describe('content HTTP boundary', () => {
@@ -34,24 +34,24 @@ describe('content HTTP boundary', () => {
     );
   });
 
-  it('rejects an unsupported discriminant before validation runs', () => {
+  it('names the page a missing field is on', () => {
     const source = content();
     const malformed = {
       ...source,
-      pages: [{ ...page(), sections: [{ kind: 'video' }] }],
+      pages: { ...source.pages, about: { ...source.pages.about, mentorsTitle: undefined } },
     };
 
-    expect(() => parseContentSet(malformed)).toThrow(/content\.pages\[0\]\.sections\[0\]\.kind/);
+    expect(() => parseContentSet(malformed)).toThrow(/content\.pages\.about\.mentorsTitle/);
   });
 
   it('caps collection sizes at the boundary', () => {
     const source = content();
-    expect(() => parseContentSet({ ...source, pages: Array.from({ length: 1_001 }, page) }))
-      .toThrow(/at most 1,000 items/);
+    const work = { ...source, works: Array.from({ length: 1_001 }, () => ({})) };
+    expect(() => parseContentSet(work)).toThrow(/at most 1,000 items/);
   });
 
   it('turns malformed saves into a 400 ApiException', () => {
-    expect(() => parseSaveRequest({ content: { ...content(), pages: 'not-an-array' } }))
+    expect(() => parseSaveRequest({ content: { ...content(), pages: 'not-an-object' } }))
       .toThrow(expect.objectContaining({ code: 400 }));
   });
 });

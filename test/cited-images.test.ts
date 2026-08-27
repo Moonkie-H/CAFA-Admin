@@ -18,8 +18,8 @@ import {
   citedKeys,
   type ImageCitation,
 } from '../shared/content/images';
-import type { ContentSet, ImageRef, Mentor, Page, Work } from '../shared/content/types';
-import { content, page } from './content-fixture';
+import type { ContentSet, ImageRef, Mentor, Work } from '../shared/content/types';
+import { content, pages } from './content-fixture';
 
 function image(src: string): ImageRef {
   return { src, alt: { zh: '照片', en: 'Photograph' } };
@@ -50,16 +50,17 @@ function mentor(slug: string): Mentor {
   };
 }
 
-function gallery(slug: string, ...srcs: string[]): Page {
-  return { ...page(), slug, sections: [{ kind: 'heading' }, { kind: 'gallery', images: srcs.map(image) }] };
+/** The content set with the front page carrying these photographs. */
+function withGallery(...srcs: string[]): ContentSet {
+  const base = content();
+  return { ...base, pages: { ...base.pages, home: { ...base.pages.home, gallery: srcs.map(image) } } };
 }
 
 function populated(): ContentSet {
   return {
-    ...content(),
+    ...withGallery('pages/home/01.jpg'),
     works: [work('edible-house')],
     mentors: [mentor('shen-zhibai')],
-    pages: [gallery('about', 'pages/about/01.jpg')],
   };
 }
 
@@ -72,7 +73,7 @@ describe('citedImages', () => {
       'works/edible-house/01.jpg',
       'works/edible-house/02.jpg',
       'mentors/shen-zhibai.jpg',
-      'pages/about/01.jpg',
+      'pages/home/01.jpg',
     ]);
   });
 
@@ -84,7 +85,7 @@ describe('citedImages', () => {
       'work-photo',
       'work-photo',
       'mentor-portrait',
-      'page-photo',
+      'home-photo',
     ]);
 
     // The position travels with the citation because three callers number a
@@ -93,23 +94,13 @@ describe('citedImages', () => {
     const second = cites[2];
     expect(second?.kind === 'work-photo' && second.position).toBe(1);
 
-    const onPage = cites[4];
-    expect(onPage?.kind === 'page-photo' && onPage.section).toBe(1);
-    expect(onPage?.kind === 'page-photo' && onPage.position).toBe(0);
+    const onHome = cites[4];
+    expect(onHome?.kind === 'home-photo' && onHome.position).toBe(0);
   });
 
-  it('walks a page’s galleries and skips the sections that hold no photographs', () => {
-    const mixed: Page = {
-      ...page(),
-      sections: [
-        { kind: 'heading' },
-        { kind: 'gallery', images: [image('pages/home/01.jpg')] },
-        { kind: 'prose', paragraphs: [{ zh: '文', en: 'Text' }] },
-        { kind: 'gallery', images: [image('pages/home/02.jpg')] },
-      ],
-    };
+  it('walks the front page’s gallery in order', () => {
+    const found = [...citedImages(withGallery('pages/home/01.jpg', 'pages/home/02.jpg'))];
 
-    const found = [...citedImages({ ...content(), pages: [mixed] })];
     expect(found.map((cited) => cited.image.src)).toEqual([
       'pages/home/01.jpg',
       'pages/home/02.jpg',
@@ -128,7 +119,7 @@ describe('citationIsPublic', () => {
       { kind: 'work-photo', work: work('open-house', 'private'), position: 0 },
       { kind: 'work-cover', work: work('edible-house') },
       { kind: 'mentor-portrait', mentor: mentor('shen-zhibai') },
-      { kind: 'page-photo', page: page(), section: 0, position: 0 },
+      { kind: 'home-photo', position: 0 },
     ];
 
     expect(cites.map(citationIsPublic)).toEqual([false, false, true, true, true]);
@@ -139,10 +130,13 @@ describe('citedKeys', () => {
   it('counts a photograph cited twice once', () => {
     const twice: ContentSet = {
       ...content(),
-      pages: [gallery('about', 'pages/shared.jpg'), gallery('studio', 'pages/shared.jpg')],
+      pages: pages(),
+      works: [{ ...work('edible-house'), cover: image('works/edible-house/01.jpg') }],
     };
 
-    expect(citedKeys(twice)).toEqual(new Set(['pages/shared.jpg']));
+    expect(citedKeys(twice)).toEqual(
+      new Set(['works/edible-house/01.jpg', 'works/edible-house/02.jpg']),
+    );
   });
 
   it('leaves out a photograph that has not been chosen yet', () => {

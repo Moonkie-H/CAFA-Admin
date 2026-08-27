@@ -24,7 +24,42 @@
   --gap-lg: 1.75rem;
   --tap: 2.75rem;
 
+  /*
+   * One duration scale and one easing, both tokens, because a tool that
+   * animates four things at four speeds reads as four tools. Nothing here is
+   * longer than a third of a second: this is furniture moving out of the way,
+   * not a transition anybody should watch.
+   */
+  --motion: 150ms;
+  --motion-slow: 260ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /*
+   * How tall the header and workflow bar are together. Measured and published
+   * by AdminLayout, because the bar wraps at narrow widths and grows a line
+   * when it has something to say — so this is the one number the two sticky
+   * things below it read instead of guessing. The fallback is what they use for
+   * the single frame before the observer first fires.
+   */
+  --chrome: 7rem;
+
   color-scheme: light;
+}
+
+/*
+ * One mechanism, in one place. Everything below animates by transition or by
+ * one entrance keyframe, so switching them all off is this block rather than a
+ * check sprinkled through the stylesheet.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 * {
@@ -125,36 +160,54 @@ h3 {
 /* ---------- shell ---------- */
 
 /*
- * The window is the frame: a header, a scrolling middle, and the workflow bar,
- * as three grid rows that add up to exactly the viewport. Only the middle row
- * scrolls.
+ * **The document is the only thing that scrolls.**
  *
- * Which means no part of this layout has to guess how tall another part is.
- * A header of fixed height with the page sliding under it needs every sticky
- * thing below to name the same number and keep naming it; this needs none —
- * the header cannot cover the page because the page is not behind it, and the
- * bar cannot cover the page for the same reason.
+ * This used to be a viewport-height grid with a scrolling middle row, which
+ * meant two scroll containers on every screen: a wheel gesture that finished
+ * the inner one carried on into the outer, a short screen still had a scrollbar
+ * because the sidebar was taller than it, and a long form scrolled underneath a
+ * frame that never moved. None of that is a bug you can fix in one place, so
+ * the container is gone. The page is a page — it starts at the top, it stops
+ * where its content stops, and the momentum on a trackpad is the browser's.
+ *
+ * Two things stick: the chrome, to the top of the window, and the sidebar, to
+ * just under it. `--chrome` is what tells the second where the first ends.
  */
 .shell {
-  height: 100dvh;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  overflow: hidden;
+  min-block-size: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/*
+ * Who you are, and where the draft stands — one block, at the top, on every
+ * screen.
+ *
+ * The workflow used to be a bar along the foot of the window. Save, preview and
+ * publish are the three things the studio is here to do, and down there they
+ * were below a long form and above a short one; up here they are in the same
+ * place on every screen, and it is the place the eye already goes when it wants
+ * to know whether anything is unsaved.
+ */
+.chrome {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 10;
+  background: var(--field);
+  border-block-end: 1px solid var(--rule);
 }
 
 /* One row of plain text: where you are, who you are, and the way out. Nothing
    here opens over the page, and nothing is reachable only through a menu — the
-   developer panel moved to the sidebar, where the destinations already were. */
+   developer panel is in the sidebar, where the destinations already were. */
 .top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--gap);
-  min-height: 3.25rem;
+  min-block-size: 3.25rem;
   padding: 0.35rem clamp(1rem, 2.5vw, 2rem);
-  padding-top: max(0.35rem, env(safe-area-inset-top));
-  background: var(--field);
-  border-bottom: 1px solid var(--rule);
+  padding-block-start: max(0.35rem, env(safe-area-inset-top));
 }
 
 .brand {
@@ -167,11 +220,11 @@ h3 {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  min-width: 0;
+  min-inline-size: 0;
 }
 
 .account-name {
-  max-width: 10rem;
+  max-inline-size: 10rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -180,27 +233,32 @@ h3 {
 }
 
 .body {
-  min-height: 0;
-  overflow-y: auto;
+  flex: 1;
   display: grid;
-  grid-template-columns: minmax(11rem, 13rem) minmax(0, 1fr);
+  grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
+  align-items: start;
 }
 
 /*
- * Sticky to the top of the scrolling region, and only as tall as it needs to
- * be. The rule between the columns belongs to `.main` rather than to this: main
- * is always the taller of the two, so the line runs the whole height of the
- * page instead of stopping where the navigation happens to end.
+ * Sticky under the chrome, and only as tall as the window leaves it. The
+ * overflow is a floor rather than a design: a studio with forty works has a
+ * taller tree than the screen, and the alternative to scrolling it is cutting
+ * it off. `overscroll-behavior` keeps that scroll to itself, so reaching the
+ * bottom of the tree does not throw the page down with it.
+ *
+ * The rule between the columns belongs to `.main` rather than to this: main is
+ * always the taller of the two, so the line runs the whole height of the page.
  */
 .sidebar {
   position: sticky;
-  top: 0;
-  align-self: start;
+  inset-block-start: var(--chrome);
+  max-block-size: calc(100dvh - var(--chrome));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   display: grid;
   align-content: start;
   gap: var(--gap-lg);
   padding: var(--gap-lg) var(--gap);
-  background: var(--paper);
 }
 
 .sidebar-group {
@@ -217,22 +275,36 @@ h3 {
   text-transform: uppercase;
 }
 
-.sidebar-list {
+.sidebar-list,
+.sidebar-sublist {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
+  gap: 0.05rem;
+}
+
+/* The branch's own line: the link to its screen, and the twist that opens it. */
+.sidebar-row {
+  display: flex;
+  align-items: center;
   gap: 0.1rem;
 }
 
 .sidebar-link {
+  flex: 1;
   display: flex;
   align-items: center;
-  min-height: 2.4rem;
+  gap: 0.5rem;
+  min-inline-size: 0;
+  min-block-size: 2.4rem;
   padding: 0.35rem 0.55rem;
   border-radius: 0.4rem;
   color: var(--ink-60);
   text-decoration: none;
+  transition:
+    background var(--motion) var(--ease),
+    color var(--motion) var(--ease);
 }
 
 .sidebar-link:hover {
@@ -246,12 +318,99 @@ h3 {
   font-weight: 600;
 }
 
+/* How many records are behind the twist, so the tree answers "how many works"
+   without being opened. */
+.sidebar-count {
+  margin-inline-start: auto;
+  color: var(--ink-30);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.sidebar-twist {
+  display: grid;
+  place-items: center;
+  min-inline-size: 1.9rem;
+  min-block-size: 2.4rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0.4rem;
+  background: none;
+  color: var(--ink-30);
+  font: inherit;
+  cursor: pointer;
+}
+
+.sidebar-twist:hover {
+  color: var(--ink);
+  background: var(--soft);
+}
+
+.sidebar-twist span {
+  display: block;
+  transition: transform var(--motion-slow) var(--ease);
+}
+
+.sidebar-twist.is-open span {
+  transform: rotate(90deg);
+}
+
+/*
+ * Open and shut as a height, from nothing to whatever the list needs. `0fr` to
+ * `1fr` is the one way to transition to a height nobody has measured; the child
+ * carries the overflow, because a grid row shorter than its content only clips
+ * if something says so.
+ */
+.sidebar-branch {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--motion-slow) var(--ease);
+}
+
+.sidebar-branch > * {
+  overflow: hidden;
+}
+
+.sidebar-branch.is-open {
+  grid-template-rows: 1fr;
+}
+
+.sidebar-sublist {
+  margin-inline-start: 1.1rem;
+  padding-inline-start: 0.5rem;
+  border-inline-start: 1px solid var(--rule);
+}
+
+.sidebar-entry {
+  min-block-size: 2.1rem;
+  font-size: 0.85rem;
+}
+
+.sidebar-entry > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .main {
-  width: 100%;
-  min-width: 0;
-  max-width: 72rem;
-  border-left: 1px solid var(--rule);
-  padding: var(--gap-lg) clamp(1rem, 3vw, 3rem) 4rem;
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 72rem;
+  /* Enough to hold the rule down the left of a short screen, and enough room
+     under a long one that the last field is not against the window's edge. */
+  min-block-size: calc(100dvh - var(--chrome));
+  border-inline-start: 1px solid var(--rule);
+  padding: var(--gap-lg) clamp(1rem, 3vw, 3rem) 6rem;
+  /* Arriving somewhere is one movement. The screen is keyed by route, so it
+     remounts and this runs once. Opacity and transform only. */
+  animation: arrive var(--motion-slow) var(--ease) both;
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
 }
 
 @media (max-width: 48rem) {
@@ -263,27 +422,23 @@ h3 {
     grid-template-columns: 1fr;
   }
 
-  /* Across rather than down, and no longer sticky: on a narrow screen the
-     navigation is a strip at the top of the page and scrolls away with it. */
+  /*
+   * Not sticky on a narrow screen — the tree scrolls away with the page — but
+   * capped, because a tree with three folders open is taller than a phone and
+   * the screen you came for would start below it. Two fifths of the viewport
+   * shows four or five rows and puts the form within one flick.
+   */
   .sidebar {
     position: static;
-    gap: var(--gap);
+    max-block-size: 40svh;
+    overscroll-behavior: contain;
     padding: var(--gap);
-    border-bottom: 1px solid var(--rule);
-  }
-
-  .sidebar-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-  }
-
-  .sidebar-link {
-    border: 1px solid var(--rule);
+    border-block-end: 1px solid var(--rule);
   }
 
   .main {
-    border-left: 0;
+    min-block-size: 0;
+    border-inline-start: 0;
   }
 }
 
@@ -309,11 +464,13 @@ h3 {
 /* ---------- the workflow bar ---------- */
 
 /*
- * The last row of the frame: where the draft stands on the left, what can be
+ * The second row of the chrome: where the draft stands on the left, what can be
  * done about it on the right, and one sentence underneath when there is
- * something to say. Save and publish are wanted from the bottom of a long form
- * as often as from the top, and this is below the scrolling region rather than
- * over it, so it is always both visible and out of the way.
+ * something to say.
+ *
+ * Set on the soft grey rather than on the header's white, so the two rows of
+ * the chrome read as two things and the row of buttons has a ground of its own
+ * to sit on.
  */
 .publish-bar {
   display: flex;
@@ -321,10 +478,9 @@ h3 {
   align-items: center;
   justify-content: space-between;
   gap: 0.4rem var(--gap);
-  padding: 0.6rem clamp(1rem, 2.5vw, 2rem);
-  padding-bottom: max(0.6rem, env(safe-area-inset-bottom));
-  background: var(--field);
-  border-top: 1px solid var(--rule);
+  padding: 0.5rem clamp(1rem, 2.5vw, 2rem) 0.6rem;
+  background: var(--soft);
+  border-block-start: 1px solid var(--rule);
 }
 
 .publish-state {
@@ -353,10 +509,12 @@ h3 {
 }
 
 .state-dot {
-  width: 0.4rem;
-  height: 0.4rem;
+  inline-size: 0.4rem;
+  block-size: 0.4rem;
   border-radius: 50%;
   background: currentColor;
+  /* The one thing in here that keeps moving: a build in flight, breathing. */
+  transition: background var(--motion) var(--ease);
 }
 
 .publish-actions {
@@ -367,18 +525,17 @@ h3 {
 }
 
 /*
- * The bar is white and so is a button's own face, which on this one row left
- * every control as a hairline and nothing else. Filling them with the paper the
- * rest of the app is printed on gives each one an edge to be seen by, and keeps
- * the single primary button the only coloured thing in the row.
+ * A button's own face is white and so is the header above it; on the soft grey
+ * of this row they need the white back to have an edge to be seen by, which
+ * also keeps the single primary button the only coloured thing in the row.
  */
 .publish-bar .button {
-  min-height: 2.4rem;
-  background: var(--paper);
+  min-block-size: 2.4rem;
+  background: var(--field);
 }
 
 .publish-bar .button:hover:not(:disabled) {
-  background: var(--soft);
+  border-color: var(--ink-30);
 }
 
 .publish-bar .button-primary {
@@ -393,7 +550,7 @@ h3 {
 /* A primary button with nothing to do is just a disabled button: the grey fill
    it carries elsewhere would out-weigh the live ones standing next to it. */
 .publish-bar .button-primary:disabled {
-  background: var(--soft);
+  background: var(--paper);
   border-color: var(--rule);
 }
 
@@ -403,7 +560,7 @@ h3 {
  * cheaper than a rule that would have to survive the row wrapping.
  */
 .publish-live {
-  margin-left: 0.5rem;
+  margin-inline-start: 0.5rem;
 }
 
 .publish-notice {
@@ -691,7 +848,14 @@ textarea.input {
   padding-top: 0.5rem;
 }
 
-/* ---------- works index ---------- */
+/* ---------- the index a record is opened from ---------- */
+
+/* No rule of its own: on the two screens that lead with a list there is
+   nothing above it to be separated from, and on every other the heading below
+   it carries the line. */
+.record-section {
+  margin-block-start: var(--gap-lg);
+}
 
 .record-list {
   list-style: none;
@@ -703,45 +867,45 @@ textarea.input {
   overflow: hidden;
 }
 
+/*
+ * A row is a flex line rather than fixed grid columns, because what is on one
+ * varies — a work has a year and a badge, a mentor has a discipline, and every
+ * row grows a confirmation the moment its remove button is pressed. Columns
+ * would have to be declared per list and re-declared for the confirmation;
+ * a wrapping line simply takes the extra content.
+ */
 .record-row {
-  display: grid;
-  grid-template-columns: 2.5rem 1fr auto auto auto;
-  gap: var(--gap);
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  border-top: 1px solid var(--rule);
-  padding: 0.55rem 0.8rem;
+  gap: 0.35rem var(--gap);
+  border-block-start: 1px solid var(--rule);
+  padding: 0.4rem 0.5rem 0.4rem 0.8rem;
+  transition: background var(--motion) var(--ease);
+}
+
+.record-row:hover {
+  background: var(--soft);
 }
 
 .record-row:first-child {
-  border-top: 0;
-}
-
-.record-row:last-child {
-  border-bottom: 0;
-}
-
-@media (max-width: 40rem) {
-  .record-row {
-    grid-template-columns: 2.5rem 1fr auto;
-  }
-
-  .record-meta {
-    display: none;
-  }
+  border-block-start: 0;
 }
 
 .record-number {
   font-variant-numeric: tabular-nums;
   color: var(--ink-30);
   font-size: 0.85rem;
+  min-inline-size: 1.6rem;
 }
 
 .record-open {
+  flex: 1 1 11rem;
   display: flex;
   flex-direction: column;
   align-items: start;
   gap: 0.1rem;
-  min-height: var(--tap);
+  min-block-size: var(--tap);
   justify-content: center;
   background: none;
   border: 0;
@@ -768,8 +932,17 @@ textarea.input {
 }
 
 .record-controls {
+  margin-inline-start: auto;
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 0.15rem;
+}
+
+@media (max-width: 40rem) {
+  .record-meta {
+    display: none;
+  }
 }
 
 .badge {
@@ -864,12 +1037,43 @@ textarea.input {
   margin: 0.35rem 0 0;
 }
 
+/*
+ * The question, and the two answers, on one wrapping line — so the same
+ * component fits at the foot of a form and inside a row of the list above it.
+ */
 .confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
   border: 1px solid var(--danger);
-  padding: var(--gap);
-  display: grid;
-  gap: 0.5rem;
-  justify-items: start;
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.4rem 0.35rem 0.7rem;
+  background: var(--field);
+}
+
+/* Both the question and, where a screen has one, the warning under it. */
+.confirm > p {
+  margin: 0;
+  font-size: 0.9rem;
+  max-inline-size: 42ch;
+}
+
+/* A second line rather than a third item on the first: a warning that has to
+   be read should not sit between the question and the answers. */
+.confirm > .problem {
+  flex-basis: 100%;
+}
+
+/* The two buttons already have the row's gap; the rule and the padding this
+   carries inside a repeatable item would be a second border inside a border. */
+.confirm .repeatable-controls {
+  border-block-start: 0;
+  padding-block-start: 0;
+}
+
+.confirm .button {
+  min-block-size: 2.2rem;
 }
 
 .form-footer {
@@ -987,7 +1191,12 @@ textarea.input {
 
 .dev-index {
   position: sticky;
-  top: var(--gap);
+  /* Under the chrome, like the sidebar: the page is what scrolls now, so a
+     sticky column inside it has to stop where the chrome ends. */
+  inset-block-start: calc(var(--chrome) + var(--gap));
+  max-block-size: calc(100dvh - var(--chrome) - var(--gap) * 2);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   display: grid;
   gap: var(--gap);
   border-right: 1px solid var(--rule);
@@ -997,6 +1206,8 @@ textarea.input {
 @media (max-width: 44rem) {
   .dev-index {
     position: static;
+    max-block-size: none;
+    overflow: visible;
     border-right: 0;
     border-bottom: 1px solid var(--rule);
     padding: 0 0 var(--gap);
@@ -1056,9 +1267,9 @@ textarea.input {
   background: var(--field);
   padding: var(--gap);
   margin-bottom: var(--gap);
-  /* Anchored from the index, which is sticky, so the target needs somewhere to
-     land other than under it. */
-  scroll-margin-top: var(--gap);
+  /* Anchored from the index, so the target needs somewhere to land other than
+     under the chrome that is stuck over it. */
+  scroll-margin-block-start: calc(var(--chrome) + var(--gap));
 }
 
 .connector-head {
@@ -1159,18 +1370,38 @@ textarea.input {
   align-items: center;
 }
 
-/* ---------- site text ---------- */
+/* ---------- disclosure, and links onward ---------- */
 
-.copy-group {
-  border-top: 1px solid var(--rule);
-  padding-top: var(--gap);
-  margin-bottom: var(--gap-lg);
+/*
+ * The words nobody changes twice in a decade. They are still copy — the site
+ * reads them by name and the template may not hardcode them — so they are here
+ * and editable; shut by default so that the four fields above them, which do
+ * change, are not four of forty.
+ */
+.disclosure {
+  border-block-start: 1px solid var(--rule);
+  margin-block-start: var(--gap-lg);
+  padding-block-start: var(--gap);
 }
 
-.copy-group-title {
+.disclosure-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-block-size: var(--tap);
+  cursor: pointer;
   font-size: 0.8rem;
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--ink-60);
-  margin-bottom: var(--gap);
+}
+
+.disclosure-summary::marker {
+  color: var(--ink-30);
+}
+
+/* "The thing this heading names is edited over there." A line of its own rather
+   than a hint, because it is a destination and not an explanation. */
+.field-onward {
+  margin: 0 0 var(--gap-lg);
 }

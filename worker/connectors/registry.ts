@@ -22,7 +22,7 @@ import { photographsOf } from './photographs';
 import { list, ref, shape, text, whole } from './schema';
 
 /** Bumped when a connector's answer changes shape in a way a client would feel. */
-export const API_VERSION = '2.0.0';
+export const API_VERSION = '3.0.0';
 
 /** Where the compiled document is served. */
 export const DOCUMENT_PATH = '/api.json';
@@ -48,7 +48,7 @@ export const GROUPS: readonly ConnectorGroup[] = [
   {
     name: 'Site',
     description:
-      'The studio itself, its pages, and how fresh what you are reading is. Start here: `/api/v1/pages` is the site’s structure — every page, in order, each a list of blocks — and `/api/v1/site` carries the studio’s details, the locales and the media origin.',
+      'The studio itself, the words on its four pages, and how fresh what you are reading is. Start here: `/api/v1/pages` is what is written on each page, and `/api/v1/site` carries the studio’s details, the locales and the media origin.',
   },
   {
     name: 'Works',
@@ -83,45 +83,20 @@ export const CONNECTORS: readonly Connector[] = [
     path: '/api/v1/site',
     summary: 'The studio, its origin and its locales',
     description:
-      'The chrome around every page: the studio’s name and contact details, the site’s own origin and the languages it is published in. The navigation is not here — it is `/api/v1/pages`, filtered to the pages that carry a `navLabel`, in that order.',
+      'The chrome around every page: the studio’s name and contact details, the site’s own origin and the languages it is published in. The navigation is not here — the bar is Works, Programmes and About, in that order, each labelled by its own page title from `/api/v1/pages`.',
     returns: ref('Site'),
     read: ({ bundle }) => bundle.site,
   },
 
   {
-    id: 'listPages',
+    id: 'getPages',
     group: 'Site',
     path: '/api/v1/pages',
-    summary: 'Every page, in order',
+    summary: 'What is written on each of the four pages',
     description:
-      'The structure of the site: one entry per page, each a slug, the words that name it and an ordered list of the blocks it is made of. This *is* the set of pages — there is one route behind all of them — so a page added here is a URL and a page removed is not one. The navigation bar is this list filtered to the entries with a `navLabel`, in this order.',
-    returns: list(ref('Page'), 'The pages, in the studio’s order.'),
+      'The site has four pages — home, works, programs, about — and the set is fixed: each is a route in the frontend with its own layout and its own motion, so a fifth is a design rather than a row. This answers with what is *written* on them: every page’s title and description, the front page’s statement and photographs, the paragraphs that open Programmes and About, and the two headings About sets over the mentors and the projects. The collections those pages draw are endpoints of their own.',
+    returns: ref('Pages'),
     read: ({ bundle }) => bundle.pages,
-  },
-
-  {
-    id: 'getPage',
-    group: 'Site',
-    path: '/api/v1/pages/:slug',
-    summary: 'One page',
-    description:
-      'A single page by its slug. The front page has none — its address is the locale’s own — so ask for it as `-`, which is the one spelling an empty path segment has.',
-    params: [
-      {
-        name: 'slug',
-        in: 'path',
-        required: true,
-        description: 'The page’s slug, or `-` for the front page.',
-        example: 'about',
-      },
-    ],
-    returns: ref('Page'),
-    read: ({ bundle }, { params }) => {
-      const asked = params.slug ?? '';
-      // `-` is the one spelling an empty path segment has, and the front page's
-      // slug is empty — so the 404 names what was asked for, not what it became.
-      return bySlug(bundle.pages, asked === '-' ? '' : asked, () => `No page called ${asked}.`);
-    },
   },
 
   {
@@ -257,7 +232,7 @@ export const CONNECTORS: readonly Connector[] = [
     path: '/api/v1/copy/:locale',
     summary: 'The dictionary for one language',
     description:
-      'Every fixed word on the *chrome* in the language asked for: the labels on a work, the accessibility strings, the contact card, the footer, the 404 page. A page’s own title, its prose and the headings over its sections are on the page, in `/api/v1/pages`, because they belong to a page that can be deleted.',
+      'Every fixed word on the *chrome* in the language asked for: the labels on a work, the accessibility strings, the contact card, the footer, the 404 page. A page’s own title, its prose and the headings over its parts are in `/api/v1/pages`, because they belong to that page rather than to the site around it.',
     params: [
       {
         name: 'locale',
@@ -310,7 +285,7 @@ export const CONNECTORS: readonly Connector[] = [
     path: '/api/v1/bundle',
     summary: 'The whole revision',
     description:
-      'Site, pages, works, programmes, mentors, both dictionaries and every photograph’s dimensions, in one answer — around 40 KB. This is the same projection the site’s own build reads from /api/content/published; that endpoint keeps its unwrapped `{ revision, bundle }` shape because a build script in another repository parses it, and this one wears the envelope every other connector wears.',
+      'The four pages, the works, the programmes, the mentors, the studio, both dictionaries and every photograph’s dimensions, in one answer — around 40 KB. This is the same projection the site’s own build reads from /api/content/published; that endpoint keeps its unwrapped `{ revision, bundle }` shape because a build script in another repository parses it, and this one wears the envelope every other connector wears.',
     returns: ref('Bundle'),
     read: ({ bundle }) => bundle,
   },

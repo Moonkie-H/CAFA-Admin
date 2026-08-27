@@ -15,8 +15,6 @@
  * empties a private work's cover and media. What is written here is what a
  * client will actually receive.
  */
-import { PAGE_SECTION_KINDS } from '../domain/bundle';
-
 export interface JsonSchema {
   type?: 'object' | 'array' | 'string' | 'integer' | 'number' | 'boolean' | 'null';
   description?: string;
@@ -171,29 +169,52 @@ export const COMPONENTS: Record<string, JsonSchema> = {
     portrait: ref('Image'),
   }),
 
-  PageSection: some(
+  PageText: shape(
     {
-      kind: choice(PAGE_SECTION_KINDS, 'What this block is. Each kind is one component on the site.'),
-      text: ref('LocalisedText'),
-      paragraphs: list(ref('LocalisedText'), 'One entry per paragraph. Present on `prose`.'),
-      images: list(ref('Image'), 'The photographs, in order. Present on `gallery`.'),
-    },
-    ['kind'],
-    'One block on a page. Only `kind` is always present: `text` comes with `statement`, `works-grid` and `mentors`, `paragraphs` with `prose`, `images` with `gallery`, and `heading`, `works-index` and `programs` carry none of them — they draw the page’s own title, the works and the programmes respectively.',
-  ),
-
-  Page: shape(
-    {
-      slug: text('The single path segment under the locale. The empty string is the front page, served at the locale’s own address.'),
       title: ref('LocalisedText'),
       description: ref('LocalisedText'),
-      navLabel: {
-        anyOf: [ref('LocalisedText'), { type: 'null' }],
-        description: 'The word in the navigation bar, or null for a page the bar does not carry.',
-      },
-      sections: list(ref('PageSection'), 'The blocks of the page, top to bottom.'),
     },
-    'One page of the site. The set of pages *is* this array — there is one route behind all of them — and the navigation bar is the pages that carry a `navLabel`, in this order.',
+    'The two lines every page carries: its title — which is its `h1`, its document title and its word in the navigation bar at once — and the meta description under it in a search result.',
+  ),
+
+  HomePage: shape(
+    {
+      title: ref('LocalisedText'),
+      description: ref('LocalisedText'),
+      statement: ref('LocalisedText'),
+      gallery: list(ref('Image'), 'The studio photographs below the statement, in order. May be empty.'),
+    },
+    'The front page: one line holding the first screen, and the photographs under it.',
+  ),
+
+  ProgramsPage: shape(
+    {
+      title: ref('LocalisedText'),
+      description: ref('LocalisedText'),
+      intro: list(ref('LocalisedText'), 'The paragraphs above the list, one entry each.'),
+    },
+    'The programmes page. The list itself is `/api/v1/programs`.',
+  ),
+
+  AboutPage: shape(
+    {
+      title: ref('LocalisedText'),
+      description: ref('LocalisedText'),
+      intro: list(ref('LocalisedText'), 'The paragraphs at the top, one entry each.'),
+      mentorsTitle: ref('LocalisedText'),
+      projectsTitle: ref('LocalisedText'),
+    },
+    'The about page, read downwards: the prose, the mentors under `mentorsTitle`, then the published works as a grid under `projectsTitle`. Both collections are endpoints of their own.',
+  ),
+
+  Pages: shape(
+    {
+      home: ref('HomePage'),
+      works: ref('PageText'),
+      programs: ref('ProgramsPage'),
+      about: ref('AboutPage'),
+    },
+    'The four pages the site has. The set is fixed and so is what each is composed of — each one is a route in the frontend with its own layout and its own motion. What varies is the words, which are these.',
   ),
 
   Site: shape(
@@ -212,15 +233,13 @@ export const COMPONENTS: Record<string, JsonSchema> = {
         hours: ref('LocalisedText'),
       }),
     },
-    'The studio itself: who it is and where it is. The navigation is not here — it is the pages that carry a `navLabel`, in `pages` order.',
+    'The studio itself: who it is and where it is. The navigation is not here — the bar is Works, Programmes and About, in that order, each labelled by its own page title.',
   ),
 
   Dictionary: shape(
     {
       meta: words({
-        title: 'The default document title.',
-        titleTemplate: 'How a page title is composed. Contains a placeholder.',
-        description: 'The default meta description.',
+        titleTemplate: 'How an inner page’s document title is composed. `%s` is that page’s own title.',
       }),
       a11y: words({
         skipToContent: 'The skip link.',
@@ -267,7 +286,7 @@ export const COMPONENTS: Record<string, JsonSchema> = {
       }),
       footer: words({ note: 'The line in the footer.' }),
     },
-    'The words on the chrome — everything that is not a page, a work, a programme or a mentor — for one language. A page’s title, its prose and the headings over its sections are on the page record, because they belong to a page that can be deleted; these outlive every page. The navigation labels are on the pages, except Contact’s, which is here because the panel it opens is not a page.',
+    'The words on the chrome — everything that is not a page, a work, a programme or a mentor — for one language. A page’s title, its description, its prose and the headings over its parts are in `/api/v1/pages`, because they belong to that page; these appear on every page and belong to none. The navigation labels are the page titles, except Contact’s, which is here because the panel it opens is not a page.',
   ),
 
   Photograph: shape(
@@ -285,7 +304,7 @@ export const COMPONENTS: Record<string, JsonSchema> = {
       },
       decorative: flag('True when there is no alt text because there is nothing to describe.'),
       usedBy: text(
-        'What draws it: "work:<slug>", "mentor:<slug>", or "page:<slug>" — "page:/" for the front page. A photograph cited from more than one place is listed once, under the first that cites it.',
+        'What draws it: "work:<slug>", "mentor:<slug>", or "page:home" for the front page’s gallery. A photograph cited from more than one place is listed once, under the first that cites it.',
       ),
     },
     'One published photograph, with everything needed to lay it out before it loads.',
@@ -294,7 +313,7 @@ export const COMPONENTS: Record<string, JsonSchema> = {
   Bundle: shape(
     {
       site: ref('Site'),
-      pages: list(ref('Page'), 'Every page, in the studio’s order — which is also the order of the navigation bar.'),
+      pages: ref('Pages'),
       works: list(ref('Work'), 'Every work, in index order.'),
       programs: list(ref('Program'), 'Every programme.'),
       mentors: list(ref('Mentor'), 'Every mentor.'),

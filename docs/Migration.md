@@ -9,13 +9,16 @@ checked in beside its code.
 
 > **Status: implemented, and since superseded in one place.** This document is
 > the record of that migration, and the schema it prints is the schema as it
-> stood at the end of it. Pages became content afterwards — migration
-> `0005_pages.sql` — which added the `pages`, `page_section`,
-> `section_paragraph` and `section_media` tables, dropped `site_studio`, and
-> moved a page's title, prose and section headings out of the copy table onto
-> the page that owns them. The nav went with them: it is the pages that carry a
-> `navLabel`, so §4's "the nav's labels became editable copy" now reads "the nav
-> *is* the pages". README.md § *Pages are content* is the current description.
+> stood at the end of it. The pages moved twice afterwards, and ended up half
+> way: `0005_pages.sql` made a page a row with an ordered list of section rows,
+> and `0006_pages_are_code.sql` took the *structure* back to the template while
+> keeping every **word** here. The tables now are `pages` (four rows, each with
+> a title and a description), `page_line`, `page_paragraph` and `home_gallery`;
+> `site_studio` is gone, and so are the copy keys that used to hold a page's
+> title, prose and section headings. The nav went the same way: it is the three
+> inner pages' own titles, so §4's "the nav's labels became editable copy" now
+> reads "the nav *is* the page titles". README.md § *The four pages, and the
+> tree* is the current description.
 >
 > All five phases below are in the code. What still needs
 > hands on a Cloudflare account is the provisioning in §8 — creating the

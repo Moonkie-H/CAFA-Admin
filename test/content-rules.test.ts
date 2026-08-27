@@ -10,16 +10,22 @@
 import { describe, expect, it } from 'vitest';
 
 import { checkContent, checkImagesInStorage, isSlug } from '../shared/content/validate';
-import type { ContentSet, Page } from '../shared/content/types';
-import { content, page } from './content-fixture';
+import type { ContentSet, ImageRef, SitePages } from '../shared/content/types';
+import { content } from './content-fixture';
 
 /** The problems, as `section/label-key` pairs — enough to say which rule fired. */
 function keys(problems: ReturnType<typeof checkContent>): string[] {
   return problems.map((problem) => `${problem.section}/${problem.message.key}`);
 }
 
-function withPages(...pages: Page[]): ContentSet {
-  return { ...content(), pages };
+/** The content set with one page rewritten. */
+function withPages(patch: (pages: SitePages) => SitePages): ContentSet {
+  const base = content();
+  return { ...base, pages: patch(base.pages) };
+}
+
+function withGallery(...images: ImageRef[]): ContentSet {
+  return withPages((pages) => ({ ...pages, home: { ...pages.home, gallery: images } }));
 }
 
 describe('slugs', () => {
@@ -42,11 +48,13 @@ describe('checkContent', () => {
   });
 
   it('names both languages when a localised field is half filled', () => {
-    const half = { ...page(), title: { zh: '首页', en: '' } };
-    const problems = checkContent(withPages(half));
+    const problems = checkContent(
+      withPages((pages) => ({ ...pages, home: { ...pages.home, title: { zh: '首页', en: '' } } })),
+    );
 
     expect(problems).toHaveLength(1);
     expect(problems[0]?.section).toBe('pages');
+    expect(problems[0]?.record).toBe('home');
     expect(problems[0]?.message.key).toBe('problems.message.empty');
     // The label nests the field inside the locale rather than concatenating —
     // the two do not join in the same order in Chinese and English.
@@ -54,33 +62,56 @@ describe('checkContent', () => {
     expect(problems[0]?.label.values?.locale).toEqual({ key: 'problems.locale.en' });
   });
 
-  it('requires exactly one heading on a page', () => {
-    const none = { ...page(), sections: [{ kind: 'works-index' as const }] };
-    expect(keys(checkContent(withPages(none)))).toContain('pages/problems.message.needsHeading');
-
-    const two = {
-      ...page(),
-      sections: [{ kind: 'heading' as const }, { kind: 'statement' as const, text: { zh: '一', en: 'One' } }],
-    };
-    expect(keys(checkContent(withPages(two)))).toContain('pages/problems.message.tooManyHeadings');
-  });
-
-  it('insists on a front page, and refuses two pages at one address', () => {
-    const elsewhere = { ...page(), slug: 'about' };
-    expect(keys(checkContent(withPages(elsewhere)))).toContain(
-      'pages/problems.message.needsFrontPage',
+  /*
+   * There is no rule here about a page having exactly one heading, or about the
+   * site having a front page, and their absence is the change rather than an
+   * omission: the four pages are code now, so neither can go wrong. What is
+   * left is a blank where a word should be, on the page that is missing it.
+   */
+  it('names the page a blank is on', () => {
+    const problems = checkContent(
+      withPages((pages) => ({
+        ...pages,
+        about: { ...pages.about, mentorsTitle: { zh: '', en: '' } },
+      })),
     );
 
-    const twice = checkContent(withPages(page(), page()));
-    expect(keys(twice)).toContain('pages/problems.message.duplicatePage');
+    expect(problems).toHaveLength(2);
+    expect(problems.every((problem) => problem.record === 'about')).toBe(true);
+    expect(problems[0]?.label.values?.field).toEqual({ key: 'fields.mentorsTitle' });
   });
 
-  it('refuses an empty prose or gallery section', () => {
-    const empty = { ...page(), sections: [{ kind: 'heading' as const }, { kind: 'prose' as const, paragraphs: [] }] };
-    expect(keys(checkContent(withPages(empty)))).toContain('pages/problems.message.needsParagraph');
+  it('asks the two pages that open with prose for at least one paragraph', () => {
+    expect(
+      keys(checkContent(withPages((pages) => ({ ...pages, about: { ...pages.about, intro: [] } })))),
+    ).toContain('pages/problems.message.needsParagraph');
 
-    const bare = { ...page(), sections: [{ kind: 'heading' as const }, { kind: 'gallery' as const, images: [] }] };
-    expect(keys(checkContent(withPages(bare)))).toContain('pages/problems.message.needsPhotograph');
+    expect(
+      keys(
+        checkContent(
+          withPages((pages) => ({ ...pages, programs: { ...pages.programs, intro: [] } })),
+        ),
+      ),
+    ).toContain('pages/problems.message.needsParagraph');
+  });
+
+  it('lets the front page carry no photographs at all', () => {
+    expect(checkContent(withGallery())).toEqual([]);
+  });
+
+  it('refuses two records at one address', () => {
+    const base = content();
+    const program = {
+      slug: 'summer-atelier',
+      name: { zh: '课程', en: 'Programme' },
+      audience: { zh: '人群', en: 'Audience' },
+      duration: { zh: '两周', en: 'Two weeks' },
+      summary: { zh: '摘要', en: 'Summary' },
+    };
+
+    expect(keys(checkContent({ ...base, programs: [program, program] }))).toContain(
+      'programs/problems.message.duplicateProgram',
+    );
   });
 
   it('collects every problem rather than stopping at the first', () => {
@@ -94,61 +125,31 @@ describe('checkContent', () => {
   });
 
   it('treats a decorative photograph as described, and a half-filled alt as not', () => {
-    const decorative = {
-      ...page(),
-      sections: [
-        { kind: 'heading' as const },
-        { kind: 'gallery' as const, images: [{ src: 'pages/home/01.jpg', alt: '' as const }] },
-      ],
-    };
-    expect(checkContent(withPages(decorative))).toEqual([]);
+    expect(checkContent(withGallery({ src: 'pages/home/01.jpg', alt: '' }))).toEqual([]);
 
-    const halfAlt = {
-      ...page(),
-      sections: [
-        { kind: 'heading' as const },
-        {
-          kind: 'gallery' as const,
-          images: [{ src: 'pages/home/01.jpg', alt: { zh: '照片', en: '' } }],
-        },
-      ],
-    };
-    expect(keys(checkContent(withPages(halfAlt)))).toContain('pages/problems.message.empty');
+    expect(
+      keys(checkContent(withGallery({ src: 'pages/home/01.jpg', alt: { zh: '照片', en: '' } }))),
+    ).toContain('pages/problems.message.empty');
   });
 });
 
 describe('checkImagesInStorage', () => {
-  const cited = {
-    ...page(),
-    sections: [
-      { kind: 'heading' as const },
-      {
-        kind: 'gallery' as const,
-        images: [{ src: 'pages/home/01.jpg', alt: { zh: '照片', en: 'Photograph' } }],
-      },
-    ],
-  };
+  const cited = withGallery({ src: 'pages/home/01.jpg', alt: { zh: '照片', en: 'Photograph' } });
 
   it('says which file is missing when the bucket has not got it', () => {
-    const problems = checkImagesInStorage(withPages(cited), []);
+    const problems = checkImagesInStorage(cited, []);
 
     expect(problems).toHaveLength(1);
+    expect(problems[0]?.record).toBe('home');
     expect(problems[0]?.message.key).toBe('problems.message.notInStorage');
     expect(problems[0]?.message.values?.file).toBe('pages/home/01.jpg');
   });
 
   it('is satisfied once the key is in storage', () => {
-    expect(checkImagesInStorage(withPages(cited), ['pages/home/01.jpg'])).toEqual([]);
+    expect(checkImagesInStorage(cited, ['pages/home/01.jpg'])).toEqual([]);
   });
 
   it('ignores a photograph that has not been chosen yet', () => {
-    const blank = {
-      ...page(),
-      sections: [
-        { kind: 'heading' as const },
-        { kind: 'gallery' as const, images: [{ src: '', alt: '' as const }] },
-      ],
-    };
-    expect(checkImagesInStorage(withPages(blank), [])).toEqual([]);
+    expect(checkImagesInStorage(withGallery({ src: '', alt: '' }), [])).toEqual([]);
   });
 });

@@ -10,14 +10,14 @@
 import type { ReactNode } from 'react';
 
 import { RouteLink } from '../../components/layout/RouteLink';
-import type { RoutePath } from '../../routes';
+import type { Route } from '../../routes';
 
 interface TileProps {
   label: string;
   value: string;
   note: string;
   /** An admin route this tile leads to. */
-  to?: RoutePath;
+  to?: Route;
   /** An address outside the admin. Opens in a new tab. */
   link?: string;
   /** Draws the value as something that wants attention rather than as a fact. */

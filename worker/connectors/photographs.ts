@@ -63,7 +63,7 @@ function citedBy(cite: ImageCitation): string {
       return `work:${cite.work.slug}`;
     case 'mentor-portrait':
       return `mentor:${cite.mentor.slug}`;
-    case 'page-photo':
-      return `page:${cite.page.slug === '' ? '/' : cite.page.slug}`;
+    case 'home-photo':
+      return 'page:home';
   }
 }

@@ -14,10 +14,6 @@
  *    should be able to change it without a deploy. It is stored as a copy row
  *    and lifted back out into `site` by worker/domain/bundle.ts.
  *
- * The nav used to be the third divergence and is not one any more: it is a
- * projection of the pages now, built by the template from `navLabel`, so
- * nothing here or there holds a second list that could disagree with the first.
- *
  * The copy cannot drift dangerously in either direction: the template re-parses
  * every field at build time, so a mismatch fails the build and never reaches
  * the live site.
@@ -104,85 +100,79 @@ export interface Mentor {
 }
 
 /**
- * A block on a page, and the unit a page is composed out of.
+ * The four pages the site has, and the words the studio fills them with.
  *
- * **Every kind is exactly one component in CAFA-Template, and every component
- * that can stand on a page is exactly one kind.** That correspondence is what
- * makes this editor worth having: a page is a row with a list of these under it
- * rather than a file in a git repository, so adding a block, reordering two or
- * deleting one is a save here. Adding a *kind* is still code over there, and
- * correctly so — a kind nothing draws is a blank on a page.
+ * **The set of pages is code, and so is what each one is composed of.** Each
+ * page in CAFA-Template is its own route with its own layout, its own choreo-
+ * graphy and its own view transitions; a fifth page is not a row somebody adds
+ * on a Tuesday, it is a design and the motion that goes with it. So this type
+ * says which pages exist, and every field on it is a thing that can be edited
+ * without anyone drawing anything new.
  *
- * A discriminated union rather than one shape with eight optional fields, so
- * every form below knows exactly which fields the kind it is editing has.
- *
- * `text` is the section's own line of copy, and the kinds that carry one mean
- * different things by it — a front page's statement is a sentence, a grid's
- * heading is a word or two. They share the field because they share the shape.
+ * The lists are not here. The works index *is* `works`, the programme list is
+ * `programs`, the mentor strip is `mentors` — a page names a collection rather
+ * than carrying one, so adding a work still changes three pages and touches
+ * nothing in this file.
  */
-export type PageSection =
-  /** The page's own title, set as its h1. */
-  | { kind: 'heading' }
-  /** One line, centred, holding the first screen on its own. */
-  | { kind: 'statement'; text: LocalisedText }
-  /** Prose, one entry per paragraph. */
-  | { kind: 'prose'; paragraphs: LocalisedText[] }
-  /** Photographs, full bleed, one at a time. */
-  | { kind: 'gallery'; images: ImageRef[] }
-  /** Every work as a row of numbers and titles. */
-  | { kind: 'works-index' }
-  /** The published works as a grid of covers. */
-  | { kind: 'works-grid'; text: LocalisedText }
-  /** Every programme, one screen at a time. */
-  | { kind: 'programs' }
-  /** The mentors, read across a pinned window. */
-  | { kind: 'mentors'; text: LocalisedText };
+const PAGE_KEYS = ['home', 'works', 'programs', 'about'] as const;
 
-export type SectionKind = PageSection['kind'];
+export type PageKey = (typeof PAGE_KEYS)[number];
 
-/**
- * The kinds, in the order the "add a section" menu offers them, which is
- * roughly the order a page is built in. Derived nowhere: this is the list, and
- * `satisfies` is what keeps it the same list the union is.
- */
-export const SECTION_KINDS = [
-  'heading',
-  'statement',
-  'prose',
-  'gallery',
-  'works-index',
-  'works-grid',
-  'programs',
-  'mentors',
-] as const satisfies readonly SectionKind[];
-
-/** The same narrowing as `isWorkStatus`, for the kind on a section row or body. */
-export function isSectionKind(value: string): value is SectionKind {
-  return SECTION_KINDS.some((kind) => kind === value);
+/** The same narrowing as `isWorkStatus`, for a page key off the wire or a row. */
+export function isPageKey(value: string): value is PageKey {
+  return PAGE_KEYS.some((key) => key === value);
 }
 
-/** The two kinds that set a page's h1. Exactly one per page — see validate.ts. */
-export const HEADING_KINDS: readonly SectionKind[] = ['heading', 'statement'];
-
-/** The front page's slug. It is a page like the others, at the site's own address. */
-export const HOME_SLUG = '';
-
-export interface Page {
-  slug: string;
+/** What every page carries: the words that name it to a reader and to a crawler. */
+export interface PageText {
+  /**
+   * The page's own title. It is three things at once and deliberately so: the
+   * `h1` at the top of the page, the document title in the browser tab, and the
+   * word in the navigation bar. A page called one thing in the bar and another
+   * at the top of itself is a page the reader has to reconcile.
+   */
   title: LocalisedText;
+  /** The meta description — the sentence under the link in a search result. */
   description: LocalisedText;
-  /** The word in the nav bar, or null for a page the bar does not carry. */
-  navLabel: LocalisedText | null;
-  sections: PageSection[];
+}
+
+/** The front page: one line, and the studio's photographs under it. */
+export interface HomePage extends PageText {
+  statement: LocalisedText;
+  /** The photographs below the statement. Empty is a page with one line on it. */
+  gallery: ImageRef[];
+}
+
+/** Programmes: the words above the list, which is the programmes themselves. */
+export interface ProgramsPage extends PageText {
+  intro: LocalisedText[];
+}
+
+/**
+ * About: what the studio says about itself, the people, and the projects.
+ *
+ * Read down the page: the prose, then the mentors under `mentorsTitle`, then
+ * the published works as a grid under `projectsTitle`. The mentors and the
+ * works are collections of their own — this page only names them.
+ */
+export interface AboutPage extends PageText {
+  intro: LocalisedText[];
+  mentorsTitle: LocalisedText;
+  projectsTitle: LocalisedText;
+}
+
+export interface SitePages {
+  home: HomePage;
+  /** The index of works needs nothing but the words that title the page. */
+  works: PageText;
+  programs: ProgramsPage;
+  about: AboutPage;
 }
 
 /**
  * No `url`. The site's origin is deployment configuration rather than content —
  * it comes from the PRODUCTION_URL var and is stamped into the published bundle
  * by worker/domain/bundle.ts, which is also where the reasoning lives.
- *
- * No `studio` either. The studio photographs are a `gallery` section on the
- * front page now, which is the same photographs with one owner instead of two.
  */
 export interface SiteContent {
   name: LocalisedText;
@@ -198,15 +188,17 @@ export interface SiteContent {
  * The words on the chrome — everything that is not a page, a work, a programme
  * or a person.
  *
- * What is *not* here is as deliberate as what is. A page's title, its prose and
- * the headings over its sections belong to a page that can be deleted, so they
- * are fields on `Page`; the pager on a work, the labels a screen reader hears,
- * the contact card and the footer outlive every page, so they are copy. A key
+ * What is *not* here is as deliberate as what is. A page's title, its
+ * description, its prose and the headings over its parts belong to that page,
+ * so they are fields on `SitePages` and are edited on the page's own screen;
+ * the pager on a work, the labels a screen reader hears, the contact card and
+ * the footer appear on every page and belong to none, so they are copy. A key
  * exists because a component in the template reads it by name, which is why the
  * set is fixed: the admin edits values and never adds or removes keys.
  */
 export interface Dictionary {
-  meta: { title: string; titleTemplate: string; description: string };
+  /** How an inner page's title is composed. `%s` is the page's own title. */
+  meta: { titleTemplate: string };
   a11y: {
     skipToContent: string;
     primaryNav: string;
@@ -253,7 +245,7 @@ export interface Dictionary {
 /** Everything the admin holds in memory. */
 export interface ContentSet {
   site: SiteContent;
-  pages: Page[];
+  pages: SitePages;
   works: Work[];
   programs: Program[];
   mentors: Mentor[];

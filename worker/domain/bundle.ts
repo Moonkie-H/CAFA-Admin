@@ -15,12 +15,10 @@
  * itself in the switch is a word on a screen, so it lives in the copy table as
  * `localeName` and is lifted out into `site` here.
  *
- * The nav used to be here too, as a hardcoded array of four items whose labels
- * were looked up from `nav.*` copy keys. It is gone, and that is the point of
- * this change: the bar is a projection of the pages now, derived by the
- * template from each page's `navLabel`, so nothing in this repository decides
- * which pages the site has or which of them the bar carries. Adding a page adds
- * a URL and, if it has a label, an item — with no deploy on either side.
+ * The nav is not here, and does not need to be: the bar is the three inner
+ * pages, in the order the template lays them out, each labelled by its own
+ * title. So nothing in this repository holds a second list of words that could
+ * disagree with the first.
  *
  * `url` is the same kind of thing as the locales, and arrives the same way. It
  * is the origin the site is deployed on — every canonical, hreflang, og:url and
@@ -30,29 +28,19 @@
  * once. Migration 0002 dropped the column it used to have.
  */
 import {
-  SECTION_KINDS,
   LOCALES,
   type ContentSet,
   type Dictionary,
   type Locale,
   type LocalisedText,
   type Mentor,
-  type Page,
   type Program,
   type SiteContent,
+  type SitePages,
   type Work,
 } from '../../shared/content/types';
 import { citedKeys } from '../../shared/content/images';
 import type { MediaRow } from '../models/rows';
-
-/**
- * The section kinds, for the document api.json compiles.
- *
- * Re-exported rather than retyped: a client generating types from the document
- * gets the real set, and a kind added to `PageSection` widens the document in
- * the same edit that widens the union.
- */
-export const PAGE_SECTION_KINDS: readonly string[] = SECTION_KINDS;
 
 /**
  * Copy that describes the chrome rather than a page, and is lifted into `site`
@@ -66,11 +54,8 @@ export interface PublishedBundle {
     locales: Locale[];
     localeNames: LocalisedText;
   };
-  /**
-   * Every page, in the studio's order — which is also the order of the nav bar,
-   * since the template derives the bar from the pages that carry a `navLabel`.
-   */
-  pages: Page[];
+  /** The four pages, by name, each carrying the words written on it. */
+  pages: SitePages;
   works: Work[];
   programs: Program[];
   mentors: Mentor[];

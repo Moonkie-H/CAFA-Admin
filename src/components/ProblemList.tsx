@@ -13,7 +13,7 @@
  */
 import { useTranslation } from 'react-i18next';
 
-import { HOME_SLUG } from '../../shared/content/types';
+import { isPageKey } from '../../shared/content/types';
 import type { Problem } from '../../shared/content/validate';
 import { useSay } from '../lib/say';
 
@@ -34,13 +34,12 @@ export function ProblemList({ problems }: { problems: Problem[] }) {
           // identity, not just its key.
           <li key={`${problem.section}/${problem.record}/${JSON.stringify(problem.label)}`}>
             {/* A record is a slug — the studio's own word for the thing, so it
-                is not translated. The front page has no slug to show, which is
-                exactly what makes it the front page; a *programme* with no key
-                yet is a blank field rather than the front page, so the section
-                has to agree before the empty string means anything. */}
+                is not translated. A page is the exception: its record is one of
+                the four names this admin gave them, and the sidebar already has
+                a word for each in the studio's own language. */}
             <strong>
-              {problem.section === 'pages' && problem.record === HOME_SLUG
-                ? t('problems.record.frontPage')
+              {problem.section === 'pages' && isPageKey(problem.record)
+                ? t(`nav.${problem.record}`)
                 : problem.record}
             </strong>{' '}
             — {say(problem.label)} {say(problem.message)}

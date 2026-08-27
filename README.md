@@ -1,9 +1,9 @@
 # CAFA-Admin
 
 The editor and the backend for [CAFA-Template](https://github.com/Adventnl/CAFA-Template) —
-the c.a.f.a atelier site. It lets the studio build the site's pages, add works,
-change text and replace photographs without touching code, then preview the
-result and publish it.
+the c.a.f.a atelier site. It lets the studio write every word on the site, add
+works, programmes and people, and replace photographs without touching code,
+then preview the result and publish it.
 
 ## How it works
 
@@ -65,56 +65,48 @@ schema, rather than discovered at build time:
   template's `lib/routes.ts` and to the deployment — the site URL literally so:
   it is the `PRODUCTION_URL` var, stamped into each published revision by
   `worker/domain/bundle.ts`.
-- **A page needs exactly one heading, and the site needs exactly one front
-  page.** Both are rules about a set of rows rather than about one, so neither
-  is a column constraint: the form refuses the save and the site refuses the
-  build. A page with two headings is a broken document outline; a site with no
-  front page answers 404 at its own address.
-- **A section can only be a kind the site can draw.** The kinds are components
-  in the template — a gallery, a works index, a mentor strip — so a new one is a
-  deploy over there. How many of them a page has, in what order, and on which
-  page, is not.
+- **You cannot add a page, and cannot rearrange one.** The site has four, and
+  each is a design in CAFA-Template with its own layout and its own motion — the
+  front page's statement holding a screen on its own, the mentors read sideways
+  through a pinned window. A fifth page is that much drawing and that much
+  animation, so it is a deploy over there. Every *word* on the four is here.
 
 If a save would still produce content the site cannot build, the build fails and
 the previous deploy keeps serving. The live site cannot be broken from here.
 
-## Pages are content
+## The four pages, and the tree
 
-The site's pages are rows in this database, not files in the template. Each one
-is a slug, the words that name it, and an ordered list of **sections**; the
-template has a single route behind all of them and one component that turns a
-section list into a page.
+The site has four pages, and the sidebar is those pages in the order a visitor
+meets them. Each one is a screen holding the words written on it; the things a
+page *shows* hang under it as a folder, because that is where they appear:
 
-So the things that used to need a developer no longer do:
+```
+Home                       the statement, and the photographs under it
+Works            ▸ 12      the words at the top, and every work
+Programmes       ▸ 4       the words at the top, and every programme
+About            ▸         the prose, the two headings
+  Mentors        ▸ 6       the people, who are a band across About
+Contact                    the studio's details, and the words on the card
+General                    the footer, the missing-page notice, the rest
+```
 
-| | Before | Now |
-|---|---|---|
-| A new page | a route file, a commit, a deploy | **Pages → Add a page** |
-| Deleting a page | the same, in reverse | **Remove this page** |
-| Moving the mentors above the prose | a commit | the ↑ button |
-| A page in or out of the menu | a commit | a checkbox |
-| The order of the menu | a commit | the order of this list |
+That is also the answer to "where do I change this word": the same place you
+would look for it on the site. The three status words a work can carry are on
+Works, because that is where they are read; the labels on the contact card are
+on Contact, beside the address they label. What is left on **General** is what
+belongs to no page — and the words nobody changes twice in a decade (the labels
+down a work, the strings a screen reader hears) are shut behind one disclosure
+there rather than mixed in with the four that do change.
 
-The eight section kinds, and what each draws:
-
-| Kind | What appears |
+| | Where |
 |---|---|
-| Page heading | the page's own title, set large at the top |
-| Statement | one line, centred, holding the first screen |
-| Paragraphs | running text, one paragraph at a time |
-| Photographs | full-width images, one at a time |
-| Index of works | every work as a row, with the cover on hover |
-| Grid of works | the works that have a page, as covers |
-| Programmes | every programme, one screen at a time |
-| Mentors | the people, read across a pinned window |
-
-The last four take no fields: they draw a collection, so adding a mentor puts a
-face on every page that carries a mentors section. That is the same rule the
-works index always followed, applied to the rest.
-
-A **kind** is still code — it is one component in CAFA-Template, and a kind
-nothing draws would be a blank on a page. Everything about *where and how often*
-each kind appears is here.
+| The line on the front page | **Home** |
+| A new work, or removing one | **Works → Add a work**, or Remove on its row |
+| The paragraphs above the programmes | **Programmes** |
+| What About says about the studio | **About** |
+| The heading over the people | **About**; the people themselves are under it |
+| The footer | **General** |
+| A fifth page | a design and a deploy in CAFA-Template |
 
 ## The two panels
 
@@ -136,7 +128,8 @@ Alongside the editor's own authenticated routes there is a public, read-only
 API — one GET per view of the content, no writes and no verbs but GET:
 
 ```
-GET /api/v1/site              the studio, the nav, the locales, the media origin
+GET /api/v1/site              the studio, the locales, the media origin
+GET /api/v1/pages             what is written on each of the four pages
 GET /api/v1/revision          which snapshot you are reading, and when it went live
 GET /api/v1/works             ?status=completed|in-progress|private
 GET /api/v1/works/{slug}
@@ -314,45 +307,22 @@ npm run media -- --fix
 
 ### 3. The content
 
-The content is a one-shot import from the JSON the template used to carry and
-the photographs it still does. **The JSON is in the template's git history
-rather than its working tree** — it was deleted when this database became the
-source of truth, and a checked-in copy would be a second one, quietly going
-stale. So restore it, import, and throw it away again:
+There is nothing to import. The migrations create the four pages blank, and the
+studio fills them in: **Home**, **Works**, **Programmes** and **About** each
+want a title and a description, the front page wants its statement, and the two
+pages that open with prose want at least one paragraph. Until they have them the
+save is refused and says which field is empty, which is the same list you would
+have had to write an importer against.
 
-```sh
-cd ../CAFA-Template
-git checkout 19dadde -- src/content/    # the last commit that had them
-cd ../CAFA-Admin
+Works, programmes and mentors are added the same way, and their photographs are
+uploaded through the form — which is where they get resized, stripped of their
+EXIF block and measured, so a photograph put in the bucket by hand would be
+missing the dimensions the site's layout rests on.
 
-node scripts/import.mjs ../CAFA-Template
-npx wrangler d1 execute cafa-content --remote --file import/seed.sql
-sh import/upload.sh
-
-cd ../CAFA-Template && git reset -q -- src/content && rm -rf src/content
-```
-
-(`git checkout <commit> -- <path>` stages what it restores, so the last line has
-to unstage before deleting, or the next commit resurrects the files.)
-
-That should report *10 works, 4 programmes, 6 mentors, 4 pages, 32 copy keys,
-71 images*, and it will name one section it left out — the about page's grid of
-works, whose heading arrived in migration 0003, after the snapshot it reads.
-Anything else the snapshot predates is added in the admin afterwards.
-
-The importer emits rather than executes, so both artefacts can be read before
-they are run. Both are re-runnable: the seed clears the tables it fills, and an
-object put over an existing key replaces it.
-
-The one table it does not clear is `copy`. A copy *key* exists because the
-template reads it by name, so keys arrive by migration and this snapshot is
-older than some of them; clearing the table would delete keys it has no values
-for and leave the site unbuildable. It replaces the values it has and leaves the
-rest alone.
-
-**Only after `upload.sh` has succeeded** is it safe to delete `media-source/`
-from the template repository — until then it is the only copy of the
-photographs outside git history, and the importer reads from it.
+The one-shot importer that moved the original six JSON files into this database
+has been deleted. It was a script that ran once, against a shape neither
+repository has any more; the record of what it did is
+`migrations/0001_initial.sql` and the migrations after it.
 
 ### 4. The password
 
@@ -516,10 +486,9 @@ migrations/
   0004_media_tint.sql       a photograph's dominant hue, beside its dimensions
   0005_pages.sql            pages become content: the schema, and the four the
                             site already had, lifted out of the copy table
+  0006_pages_are_code.sql   and back: the set of pages is the template's again,
+                            every word on them still a row here
 scripts/
-  import.mjs                the one-shot move from files to database, pages
-                            included — 0005 does the same for a database that
-                            was seeded before pages existed
   media-delivery.mjs        does the zone transform, and does the bucket answer
   set-password.mjs          a password in, the ADMIN_PASSWORD_HASH line out
 
@@ -551,6 +520,7 @@ worker/
   repositories/             D1: rows in, domain objects out
     content.repository.ts   the unit of work — one batch, one transaction
     site · pages · works · programs · mentors · copy    one aggregate each
+    pages.repository.ts     the four pages, and the words on each
     media · revision
     mapping.ts              paired columns ⇄ LocalisedText, four columns ⇄ ImageRef
 
@@ -578,26 +548,32 @@ src/
   components/               drawn more than once; none of it knows what a work is
     fields/                 the form vocabulary — one control per file
       Field · TextField · NumberField · LocalisedField · SelectField · ImageField
+      CopyFields            a run of dictionary words, edited where they appear
     records/                the shapes a *record* is edited in, not the fields in one
       Repeatable            a list that owns add, reorder, remove and replace
       RecordIndex           the numbered list a form is opened from, and one row
       ReorderControls · DeleteRecord
-    layout/                 the chrome: header, sidebar, publish bar
-      AdminLayout · PublishBar · LanguageToggle
+    layout/                 the chrome: header, workflow bar, the site as a tree
+      AdminLayout · PublishBar · SiteNav · LanguageToggle
       RouteLink             a real <a> whose click is intercepted, in one place
+    PageTextFields.tsx      the title and description every page carries
     ProblemList.tsx         what has to be fixed before this can be saved
 
   features/                 one folder per screen: the page, and what only it uses
     control/                ControlPanelPage · Tile
-    pages/                  PagesPage · PageForm · SectionFields
+    home/                   HomePage — the statement, and the photographs under it
     works/                  WorksPage · WorkForm
+    programs/               ProgramsPage · ProgramForm
+    about/                  AboutPage — the prose, and the two headings
+    mentors/                MentorsPage · MentorForm — the band across About
+    contact/                ContactPage — the details, and the card's own words
+    general/                GeneralPage — the footer, the 404, the rest
     dev/                    DevPanelPage · ConnectorCard · markdown
-    copy · history · mentors · programs · session · site
+    history · session
 
   hooks/                    where data and the state around it live
     useEditor.ts            what has changed, and how it gets sent
     useRemote.ts            something read from the Worker, and its stale guard
-    useRecordForms.ts       which record is open, derived rather than corrected
 
   lib/                      pure helpers, no React
     image-prepare.ts        resize, strip EXIF, and read the dominant hue

@@ -1,46 +1,69 @@
 /**
- * The frame every page sits in: a header, the navigation, the page, and the
- * draft workflow along the bottom.
+ * The frame every screen sits in: who you are, where the draft stands, the
+ * site as a tree, and the screen itself.
  *
- * Three regions, none of them on top of another. The header is one row of plain
- * text and holds nothing that needs a menu to reach; the sidebar is editorial
- * navigation and the two utilities that are not editorial; the workflow — save,
- * preview, publish — sits in a bar at the foot of the window, where it is on
- * every page and never competes with the page's own heading for the top of the
- * screen. The main column reserves the bar's height, so the bar covers nothing.
+ * **One scrolling thing, and it is the document.** The shell used to be a
+ * viewport-height grid with a scrolling middle row, which meant two scroll
+ * containers on every screen and a wheel that carried on past the end of one
+ * into the other. Now the page is a page: it scrolls the way every other page
+ * does, it stops where its content stops, and the momentum on a trackpad is the
+ * browser's rather than something we re-implemented.
  *
- * Navigation renders from the route table rather than a list of its own. Each
- * item is a real `<a href>` that the click handler intercepts — which means
- * middle-click, ⌘-click and "copy link" all behave, and the keyboard gets
- * anchor semantics for free rather than a button pretending to be a link.
+ * What used to be at the foot of the window is at the top of it. Save, preview
+ * and publish are the three things the studio is here to do, and they were
+ * below the fold of a long form and above the fold of a short one; sticking
+ * them under the header puts them in the same place on every screen and in the
+ * place the eye already goes.
+ *
+ * The chrome measures itself. Two things below it stick to the top of the
+ * scrolling page — the sidebar, and the dev panel's index — and both need to
+ * stop where the chrome ends. That distance is not a constant we can write down
+ * (the bar wraps at narrow widths and grows a line when it has something to
+ * say), so it is observed once here and published as `--chrome`, which is the
+ * one number the rest of the stylesheet reads rather than guesses.
  */
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { ROUTES, type RouteGroup, type RoutePath } from '../../routes';
+import { at, type Route } from '../../routes';
 import { sessionService } from '../../services/session';
 import type { Editor } from '../../hooks/useEditor';
 import { LanguageToggle } from './LanguageToggle';
 import { PublishBar } from './PublishBar';
 import { RouteLink } from './RouteLink';
-
-/** The order of the sidebar, and the heading each run of links sits under. */
-const GROUPS: { group: RouteGroup; labelKey: string }[] = [
-  { group: 'overview', labelKey: 'nav.overview' },
-  { group: 'content', labelKey: 'nav.content' },
-  { group: 'utility', labelKey: 'nav.tools' },
-];
+import { SiteNav } from './SiteNav';
 
 interface AdminLayoutProps {
   editor: Editor;
   login: string;
-  route: RoutePath;
+  route: Route;
   onSignedOut: () => void;
   children: ReactNode;
 }
 
 export function AdminLayout({ editor, login, route, onSignedOut, children }: AdminLayoutProps) {
   const { t } = useTranslation();
+  const chrome = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const element = chrome.current;
+    if (element === null) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const height = entry?.borderBoxSize?.[0]?.blockSize ?? element.offsetHeight;
+      document.documentElement.style.setProperty('--chrome', `${height}px`);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  // Arriving somewhere new starts at the top of it. The document is what
+  // scrolls now, so this is the browser's own scroll rather than a container's,
+  // and `instant` because the entrance below is the motion — a smooth scroll
+  // underneath it would be two things moving at once.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [route.section, route.record]);
+
   /**
    * A button rather than a link, because signing out is a POST now.
    *
@@ -62,51 +85,36 @@ export function AdminLayout({ editor, login, route, onSignedOut, children }: Adm
 
   return (
     <div className="shell">
-      <header className="top">
-        <RouteLink to="control" className="brand">
-          {t('app.editor')}
-        </RouteLink>
+      <div className="chrome" ref={chrome}>
+        <header className="top">
+          <RouteLink to={at('control')} className="brand">
+            {t('app.editor')}
+          </RouteLink>
 
-        <div className="top-account">
-          <LanguageToggle />
-          <span className="account-name" title={t('account.signedInAs')}>
-            {login}
-          </span>
-          <button className="link-button" type="button" onClick={() => void signOut()}>
-            {t('account.signOut')}
-          </button>
-        </div>
-      </header>
+          <div className="top-account">
+            <LanguageToggle />
+            <span className="account-name" title={t('account.signedInAs')}>
+              {login}
+            </span>
+            <button className="link-button" type="button" onClick={() => void signOut()}>
+              {t('account.signOut')}
+            </button>
+          </div>
+        </header>
 
-      <div className="body">
-        <nav className="sidebar" aria-label={t('nav.label')}>
-          {GROUPS.map(({ group, labelKey }) => (
-            <div className="sidebar-group" key={group}>
-              <h2 className="sidebar-heading">{t(labelKey)}</h2>
-              <ul className="sidebar-list">
-                {ROUTES.filter((entry) => entry.group === group).map((entry) => {
-                  const current = route === entry.path;
-                  return (
-                    <li key={entry.path}>
-                      <RouteLink
-                        to={entry.path}
-                        current={current}
-                        className={`sidebar-link${current ? ' is-current' : ''}`}
-                      >
-                        {t(entry.labelKey)}
-                      </RouteLink>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
-        </nav>
-
-        <main className="main">{children}</main>
+        <PublishBar editor={editor} />
       </div>
 
-      <PublishBar editor={editor} />
+      <div className="body">
+        <SiteNav editor={editor} route={route} />
+        {/* Keyed by the screen, so leaving one and arriving at another is a
+            remount — which is what gives the arrival its entrance and what
+            drops a form's scroll position instead of carrying it into the next
+            form. */}
+        <main className="main" key={`${route.section}/${route.record ?? ''}`}>
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
