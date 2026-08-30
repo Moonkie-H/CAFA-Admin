@@ -44,7 +44,14 @@ function measured(...keys: string[]): MediaRow[] {
 
 function published(set: ContentSet, media: MediaRow[]) {
   return photographsOf(
-    buildBundle(set, media, 'https://media.example.com', 'https://example.com', undefined),
+    buildBundle(
+      set,
+      media,
+      'https://media.example.com',
+      'https://example.com',
+      undefined,
+      'https://admin.example.com',
+    ),
   );
 }
 

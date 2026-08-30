@@ -2,9 +2,14 @@
  * One endpoint, with a box to try it from.
  *
  * Every connector is a GET over published content, so "try it" is a real
- * request to the real endpoint rather than a mock. There is nothing here that
- * can change anything: the writing half of the API is behind the session and is
- * not in the document at all.
+ * request to the real endpoint rather than a mock. There is nothing there that
+ * can change anything: the studio's own editing endpoints are behind the
+ * session and are not in the document at all.
+ *
+ * The contact endpoint is the exception in both directions. It is a POST, and
+ * pressing a button here would put a real email in the studio's inbox — so it
+ * is described like everything else and has no try-it box. A card that will not
+ * fire is the honest shape for the one endpoint whose whole effect is off-site.
  *
  * The card owns the values in its own boxes and the answer to its own request,
  * because nothing outside it needs either — a dozen of these are on the page at
@@ -66,7 +71,7 @@ export function ConnectorCard({ connector, server }: ConnectorCardProps) {
   return (
     <article className="connector" id={connector.id}>
       <div className="connector-head">
-        <span className="method">GET</span>
+        <span className="method">{connector.method}</span>
         <code className="connector-path">{connector.path}</code>
       </div>
 
@@ -115,12 +120,17 @@ export function ConnectorCard({ connector, server }: ConnectorCardProps) {
 
       <div className="connector-run">
         <code className="connector-curl">
-          curl {server}
+          curl {connector.method === 'GET' ? '' : `-X ${connector.method} `}
+          {server}
           {path}
         </code>
-        <button type="button" className="button" disabled={busy} onClick={() => void send()}>
-          {busy ? t('devPage.sending') : t('devPage.send')}
-        </button>
+        {connector.method === 'GET' ? (
+          <button type="button" className="button" disabled={busy} onClick={() => void send()}>
+            {busy ? t('devPage.sending') : t('devPage.send')}
+          </button>
+        ) : (
+          <span className="field-hint">{t('devPage.notProbed')}</span>
+        )}
       </div>
 
       {result !== null && (

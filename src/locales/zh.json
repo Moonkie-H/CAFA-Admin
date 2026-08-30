@@ -296,6 +296,7 @@
     "connectors": "{{count}} 个接口",
     "connectors_other": "{{count}} 个接口",
     "send": "发送请求",
+    "notProbed": "此处不提供试发——发送会向工作室邮箱投递一封真实邮件。",
     "sending": "请求中…",
     "response": "响应结构",
     "documentFailed": "无法读取 API 文档。",

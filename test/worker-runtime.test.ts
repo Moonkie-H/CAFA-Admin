@@ -44,6 +44,7 @@ describe('Worker runtime boundaries', () => {
       'pages/about/01.jpg',
       'pages/home/01.jpg',
       'mentors/shen-zhibai.jpg',
+      'projects/salt-and-scaffold.jpg',
     ]) {
       expect(isWritableMediaKey(key), key).toBe(true);
       expect(isReadableMediaKey(key), key).toBe(true);

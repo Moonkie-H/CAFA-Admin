@@ -341,6 +341,11 @@ export const COMPONENTS: Record<string, JsonSchema> = {
         'What was measured, by object key, for every photograph public content cites.',
       ),
       mediaBase: text('The origin the photographs are served from.'),
+      contactEndpoint: {
+        anyOf: [{ type: 'string' }, { type: 'null' }],
+        description:
+          'Where the contact form posts a message, or null where the site has none configured. Null is a site that should offer a `mailto:` draft instead, not an error.',
+      },
       mediaTransform: flag(
         'Whether photographs may be requested through `/cdn-cgi/image/…` on the site’s own zone. False means the zone cannot transform and the originals must be rendered as they are — the URLs in `mediaBase` still resolve, they are simply full size.',
       ),

@@ -296,6 +296,7 @@
     "connectors": "{{count}} connector",
     "connectors_other": "{{count}} connectors",
     "send": "Send request",
+    "notProbed": "Not tried from here — sending one would put a real message in the studio’s inbox.",
     "sending": "Asking…",
     "response": "Response shape",
     "documentFailed": "The API document could not be read.",

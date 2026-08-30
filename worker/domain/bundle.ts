@@ -20,6 +20,15 @@
  * title. So nothing in this repository holds a second list of words that could
  * disagree with the first.
  *
+ * `contactEndpoint` is a third thing of the same kind, and the reason it is
+ * here rather than an environment variable on the template's side is worth
+ * stating: CAFA-Template has exactly one module that knows the admin exists,
+ * and that module runs at build time. The contact card's form has to reach the
+ * admin from a *browser*, so the address has to be in something the build
+ * writes into the page — and the content bundle already is that thing. It comes
+ * from ADMIN_URL. Absent means the site has no form and offers a `mailto:`
+ * draft instead, which is what it did before this endpoint existed.
+ *
  * `url` is the same kind of thing as the locales, and arrives the same way. It
  * is the origin the site is deployed on — every canonical, hreflang, og:url and
  * sitemap entry in the template is resolved against it — so it belongs to the
@@ -41,6 +50,7 @@ import {
   type Work,
 } from '../../shared/content/types';
 import { citedKeys } from '../../shared/content/images';
+import { CONTACT_PATH } from './contact';
 import type { MediaRow } from '../models/rows';
 
 /**
@@ -79,6 +89,16 @@ export interface PublishedBundle {
   media: Record<string, { width: number; height: number; tint: number | null }>;
   /** Where the originals live, so the template can build transform URLs. */
   mediaBase: string;
+  /**
+   * Where the contact card posts a message, or null where it cannot.
+   *
+   * Null is not a failure state, it is a site without a working form: the
+   * template falls back to composing a `mailto:` and handing the reader a draft,
+   * which is what it did before there was anywhere to post to. Making that the
+   * documented shape rather than an empty string means a frontend has to decide
+   * what to do about it rather than posting to "".
+   */
+  contactEndpoint: string | null;
   /**
    * Whether those URLs may go through `/cdn-cgi/image/`. False is not a
    * preference — it is a zone that cannot transform, and it tells the site to
@@ -140,12 +160,25 @@ export function transformsOn(value: string | undefined): boolean {
   return said !== 'off' && said !== 'false' && said !== '0';
 }
 
+/**
+ * The address the contact card posts to, built from the admin's own origin.
+ *
+ * The path is `domain/contact`'s own constant, which the router also serves
+ * from; a bundle that named a path the router does not answer would be a form
+ * that posts into nothing.
+ */
+function contactEndpointFor(adminUrl: string | undefined): string | null {
+  const origin = (adminUrl ?? '').trim().replace(/\/$/, '');
+  return origin === '' ? null : `${origin}${CONTACT_PATH}`;
+}
+
 export function buildBundle(
   content: ContentSet,
   media: MediaRow[],
   mediaBase: string,
   siteUrl: string,
   mediaTransform: string | undefined,
+  adminUrl: string | undefined,
 ): PublishedBundle {
   const works = content.works.map(project);
 
@@ -182,5 +215,6 @@ export function buildBundle(
     media: measured,
     mediaBase,
     mediaTransform: transformsOn(mediaTransform),
+    contactEndpoint: contactEndpointFor(adminUrl),
   };
 }

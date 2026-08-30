@@ -17,6 +17,13 @@
  * which is almost always what was meant, and never a hostname pasted in by hand.
  * The scheme is the one exception, and `servedOver` says why.
  */
+import {
+  CONTACT_DESCRIPTION,
+  CONTACT_PATH,
+  CONTACT_REQUEST,
+  CONTACT_RESPONSE,
+  CONTACT_SUMMARY,
+} from './contact-endpoint';
 import { API_VERSION, CONNECTORS, GROUPS } from './registry';
 import { COMPONENTS, type JsonSchema } from './schema';
 import type { Connector } from './connector';
@@ -35,14 +42,30 @@ interface DocumentedResponse {
   content: { 'application/json': { schema: JsonSchema } };
 }
 
+interface DocumentedBody {
+  required: true;
+  content: { 'application/json': { schema: JsonSchema } };
+}
+
 interface DocumentedOperation {
   operationId: string;
   tags: string[];
   summary: string;
   description: string;
   parameters?: DocumentedParameter[];
+  /** Only the one write has a body. Every connector is a GET. */
+  requestBody?: DocumentedBody;
   responses: Record<string, DocumentedResponse>;
 }
+
+/**
+ * A path, and the verbs it answers.
+ *
+ * Both optional because the document holds one path with a POST and no GET and
+ * a dozen with a GET and no POST — writing it as a partial record means neither
+ * has to pretend to the other's shape.
+ */
+type DocumentedPath = Partial<Record<'get' | 'post', DocumentedOperation>>;
 
 export interface OpenApiDocument {
   openapi: string;
@@ -55,16 +78,16 @@ export interface OpenApiDocument {
   security: never[];
   servers: { url: string; description: string }[];
   tags: { name: string; description: string }[];
-  paths: Record<string, { get: DocumentedOperation }>;
+  paths: Record<string, DocumentedPath>;
   components: { schemas: Record<string, JsonSchema> };
 }
 
-const OVERVIEW = `The c.a.f.a atelier's content, read-only.
+const OVERVIEW = `The c.a.f.a atelier's content.
 
-Everything here answers the newest **published** revision — what is on the public
-site right now. There is no way to write through this API and no way to read an
-unpublished edit: the studio's own editing endpoints sit behind a session cookie
-and are not described here.
+Every read here answers the newest **published** revision — what is on the public
+site right now. There is no way to *change* content through this API and no way to
+read an unpublished edit: the studio's own editing endpoints sit behind a session
+cookie and are not described here.
 
 Every successful answer has the same two fields:
 
@@ -80,7 +103,12 @@ of \`/api/v1/photographs\` — resolves that key against the media origin, so an
 whether those URLs may go through \`/cdn-cgi/image/…\` first; when it is false
 the zone cannot transform and the originals are what the site renders.
 
-Any origin may read these endpoints. They carry only what is already public.`;
+Any origin may read these endpoints. They carry only what is already public.
+
+There is exactly one thing here that is not a read. \`POST /api/v1/contact\`
+sends a message to the studio, and it is on this surface because a frontend has
+to be able to call it. It cannot be pointed anywhere: the recipient is the
+published \`site.contact.email\` and is read fresh on every request.`;
 
 /** A successful answer: the envelope, with this connector's shape inside it. */
 function answerSchema(connector: Connector): JsonSchema {
@@ -133,6 +161,42 @@ function operationOf(connector: Connector): DocumentedOperation {
   };
 }
 
+/**
+ * The one write, as an operation.
+ *
+ * Spelled out rather than generated from a list of one, and kept beside the
+ * loop over the connectors so that the document plainly has two sources and not
+ * a source and an exception hidden in a helper.
+ */
+function contactOperation(): DocumentedOperation {
+  const refusal = (description: string): DocumentedResponse => ({
+    description,
+    content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+  });
+
+  return {
+    operationId: 'sendContactMessage',
+    tags: ['Contact'],
+    summary: CONTACT_SUMMARY,
+    description: CONTACT_DESCRIPTION,
+    requestBody: {
+      required: true,
+      content: { 'application/json': { schema: CONTACT_REQUEST } },
+    },
+    responses: {
+      '200': {
+        description: 'The message was sent — or was silently dropped as spam, which answers alike.',
+        content: { 'application/json': { schema: CONTACT_RESPONSE } },
+      },
+      '400': refusal('Something the sender can fix: a malformed address, an empty message.'),
+      '429': refusal('Too many messages from one address in a short window.'),
+      '503': refusal(
+        'The studio has not finished setting the form up, or nothing has been published yet. Fall back to a mailto: link rather than dropping the message.',
+      ),
+    },
+  };
+}
+
 /** Path parameters, in the notation OpenAPI wants: `/works/:slug` → `/works/{slug}`. */
 function documentedPath(path: string): string {
   return path.replace(/:([A-Za-z0-9_]+)/g, '{$1}');
@@ -159,10 +223,11 @@ function servedOver(origin: string): string {
 }
 
 export function buildDocument(origin: string): OpenApiDocument {
-  const paths: Record<string, { get: DocumentedOperation }> = {};
+  const paths: Record<string, DocumentedPath> = {};
   for (const connector of CONNECTORS) {
     paths[documentedPath(connector.path)] = { get: operationOf(connector) };
   }
+  paths[CONTACT_PATH] = { post: contactOperation() };
 
   return {
     openapi: '3.1.0',
@@ -173,7 +238,14 @@ export function buildDocument(origin: string): OpenApiDocument {
     },
     security: [],
     servers: [{ url: servedOver(origin), description: 'The admin, which is also the API.' }],
-    tags: GROUPS.map((group) => ({ name: group.name, description: group.description })),
+    tags: [
+      ...GROUPS.map((group) => ({ name: group.name, description: group.description })),
+      {
+        name: 'Contact',
+        description:
+          'The one endpoint here that is not a read: a message from a visitor to the studio’s published address.',
+      },
+    ],
     paths,
     components: { schemas: COMPONENTS },
   };
