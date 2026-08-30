@@ -286,8 +286,12 @@ export const COMPONENTS: Record<string, JsonSchema> = {
         note: 'The line under them.',
         from: 'The label on the message form’s address field.',
         message: 'The label on its message field.',
-        subject: 'The subject line the reader’s own mail client opens with.',
+        subject: 'The subject line the message arrives under in the studio’s inbox.',
         send: 'The word on its button.',
+        sending: 'The word on the button while the message is in flight.',
+        sent: 'What replaces the form once the message has gone.',
+        failed: 'What is said when the message could not be sent and the endpoint gave no reason — a network failure. A refusal carries its own sentence in `msg`, and that is shown instead.',
+        draft: 'The offer of a mailto: draft after a failure, so it is never a dead end.',
       }),
       notFound: words({
         title: 'The 404 heading.',

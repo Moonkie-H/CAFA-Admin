@@ -255,7 +255,8 @@ export function parseDictionary(value: unknown, path = 'dictionary'): Dictionary
       'index', 'status', 'year', 'discipline', 'credits', 'previous', 'next',
     ]) as Dictionary['work'],
     contact: stringsAt(contact, `${path}.contact`, [
-      'nav', 'title', 'email', 'wechat', 'address', 'hours', 'note', 'from', 'message', 'subject', 'send',
+      'nav', 'title', 'email', 'wechat', 'address', 'hours', 'note', 'from', 'message', 'subject',
+      'send', 'sending', 'sent', 'failed', 'draft',
     ]) as Dictionary['contact'],
     notFound: stringsAt(notFound, `${path}.notFound`, ['title', 'body', 'home']) as Dictionary['notFound'],
     footer: stringsAt(footer, `${path}.footer`, ['note']) as Dictionary['footer'],

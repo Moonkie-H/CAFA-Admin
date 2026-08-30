@@ -258,12 +258,31 @@ export interface Dictionary {
     address: string;
     hours: string;
     note: string;
-    /** The message form: two field labels, the subject the reader's mail client
-        opens with, and the word on the button. */
+    /** The message form: two field labels, the subject the message arrives
+        under, and the word on the button. */
     from: string;
     message: string;
     subject: string;
     send: string;
+    /**
+     * The form in its other three states, and the way out of the third.
+     *
+     * These arrived with the endpoint. While Send only composed a `mailto:`
+     * there was nothing to wait for and nothing that could fail — the reader's
+     * own mail client took over and the card was done. A form that posts has a
+     * mid-flight, a done and a failed, and a card that does not say which of the
+     * three it is in is a card that looks broken while it is working.
+     *
+     * `failed` is the fallback rather than the usual case: a refusal from the
+     * Worker carries its own sentence for whoever typed the message, and the
+     * card shows that instead. This is what is said when the network went and
+     * there is nothing to relay. `draft` labels the offer of a `mailto:`
+     * afterwards, so a failure is never a dead end.
+     */
+    sending: string;
+    sent: string;
+    failed: string;
+    draft: string;
   };
   notFound: { title: string; body: string; home: string };
   footer: { note: string };

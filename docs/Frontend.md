@@ -166,8 +166,16 @@ each page's `title` and `description`, the front page's `statement` and
 
 **The collections are not on the pages.** The works index is `/api/v1/works`,
 the programme list is `/api/v1/programs`, the band of portraits is
-`/api/v1/mentors`. A page names a collection rather than carrying one, so adding
-a work changes three pages and nothing in `pages` moves.
+`/api/v1/mentors`, and the grid at the foot of About is `/api/v1/projects`. A
+page names a collection rather than carrying one, so adding a work changes three
+pages and nothing in `pages` moves.
+
+**The projects are not the works**, and `projectsTitle` used to head a second
+drawing of the works index. It heads `/api/v1/projects` now: a picture, a title
+and a short summary each, with no status, no year, no disciplines and no page.
+Nothing routes to a project, so render its cards as figures rather than links,
+and expect the list to be legitimately empty — a studio that has not filled it
+in yet wants a shorter About page, not an empty frame under a heading.
 
 **The nav is the pages' own titles.** There is no `site.nav` and no separate nav
 label: the bar is Works, Programmes and About, in that order, each labelled by
@@ -179,6 +187,22 @@ panel over the current page rather than leading anywhere — its label is
 prose and the headings over its parts belong to that page. `/api/v1/copy/{locale}`
 is the chrome that appears on every page and belongs to none — the labels on a
 work, the accessibility strings, the contact card, the footer, the 404.
+
+**`contactEndpoint` is where the contact card posts**, or `null` where it has
+nowhere to. It is on the bundle beside `mediaBase`, and for the same reason: it
+is a fact about the deployment that a *browser* needs, so it travels with the
+content rather than as a second environment variable on the frontend's side.
+`POST` it `{ from, message, locale }` and it emails the studio at the address
+printed on the card. `null` is not an error — it is a site whose admin has not
+been told its own origin, or a revision published before the endpoint existed —
+and the right answer to it is the one the card gave before: compose a `mailto:`
+and hand the reader a draft. Do the same when a `POST` fails, carrying what was
+already typed, so a message is never silently dropped.
+
+A refusal comes back in the admin's `{ success, code, msg }` envelope with a
+sentence written for whoever typed the message — "that does not look like an
+email address". Show it. `429` is too many messages in a short window; `503` is
+the studio's own configuration and means fall back to the draft.
 
 **`site.url` is the site's own origin**, without a trailing slash, and every
 canonical, hreflang, `og:url` and sitemap entry should resolve against it. It
