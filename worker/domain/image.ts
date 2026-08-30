@@ -79,11 +79,13 @@ export function measure(buffer: ArrayBuffer): Measured {
  * Which keys the admin may write, and which it may read.
  *
  * Two predicates rather than one, because the answers genuinely differ and
- * collapsing them costs something either way. Three folders carry a photograph
- * today: a work, a page's gallery, and a mentor. `pages/` is the one that has
- * to be here — a page is content now, so its slug is part of the key, and the
- * front page (whose slug is the empty string) files under `pages/home`. See
- * `pageFolder` in src/features/pages/PageForm.tsx, which is what builds these.
+ * collapsing them costs something either way. Four folders carry a photograph
+ * today: a work, a page's gallery, a mentor, and a project. `pages/` is the one
+ * that has to be here — a page is content now, so its slug is part of the key,
+ * and the front page (whose slug is the empty string) files under `pages/home`.
+ * `mentors/` and `projects/` are flat for the same reason as each other: one
+ * record carries exactly one photograph, so the record's own slug names the
+ * file and there is no folder to number inside.
  *
  * `studio/` is the fourth and is read-only. Migration 0005 folded the studio
  * photographs into a gallery section on the front page and dropped the table
@@ -93,8 +95,8 @@ export function measure(buffer: ArrayBuffer): Measured {
  *
  * Neither may climb out of the bucket with "..".
  */
-const WRITABLE = /^(?:(?:works|pages)\/[a-z0-9-]+|mentors)\/[a-z0-9-]+\.(?:jpg|png)$/;
-const READABLE = /^(?:(?:works|pages)\/[a-z0-9-]+|mentors|studio)\/[a-z0-9-]+\.(?:jpg|png)$/;
+const WRITABLE = /^(?:(?:works|pages)\/[a-z0-9-]+|mentors|projects)\/[a-z0-9-]+\.(?:jpg|png)$/;
+const READABLE = /^(?:(?:works|pages)\/[a-z0-9-]+|mentors|projects|studio)\/[a-z0-9-]+\.(?:jpg|png)$/;
 
 /** A key a photograph may be uploaded under. */
 export function isWritableMediaKey(key: string): boolean {

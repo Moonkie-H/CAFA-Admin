@@ -15,8 +15,10 @@
  *
  * The order below is the order of the sidebar, and it is meant. The control
  * panel is where you land; then the site, page by page, in the order a visitor
- * meets them; then the two tools for looking backwards, at what has been
- * published and at what the site's own frontend can read.
+ * meets them — with the two collections About draws, the mentors and the
+ * projects, sitting under it in the order the page reads them; then the two
+ * tools for looking backwards, at what has been published and at what the
+ * site's own frontend can read.
  */
 import { useSyncExternalStore } from 'react';
 
@@ -27,6 +29,7 @@ export const SECTIONS = [
   'programs',
   'about',
   'mentors',
+  'projects',
   'contact',
   'general',
   'history',
@@ -38,11 +41,12 @@ export type Section = (typeof SECTIONS)[number];
 /**
  * The sections whose entries open a form of their own.
  *
- * These are the three collections the studio adds to — the works, the
- * programmes and the people. Every other section is one screen, and asking for
- * `/about/2` lands on About rather than on a form that does not exist.
+ * These are the four collections the studio adds to — the works, the
+ * programmes, the people and the projects. Every other section is one screen,
+ * and asking for `/about/2` lands on About rather than on a form that does not
+ * exist.
  */
-const COLLECTIONS = ['works', 'programs', 'mentors'] as const;
+const COLLECTIONS = ['works', 'programs', 'mentors', 'projects'] as const;
 
 export type Collection = (typeof COLLECTIONS)[number];
 

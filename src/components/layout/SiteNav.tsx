@@ -4,9 +4,10 @@
  * It is the *site's* shape rather than the database's, and that is the whole
  * design. The four pages are the four branches, in the order a visitor meets
  * them, and what a page draws hangs under it: the works under Works, the
- * programmes under Programmes, the people under About — because on the site
- * the mentors are a band across the about page, not a collection of their own.
- * So finding where a word is edited is the same problem as remembering where it
+ * programmes under Programmes, the people and the projects under About —
+ * because on the site the mentors are a band across the about page and the
+ * projects are the grid at the end of it, not collections of their own. So
+ * finding where a word is edited is the same problem as remembering where it
  * appears, which is a problem the studio already knows the answer to.
  *
  * A branch is a link *and* a disclosure, not one or the other: the section's own
@@ -81,6 +82,11 @@ export function SiteNav({ editor, route }: SiteNavProps) {
               section: 'mentors',
               labelKey: 'nav.mentors',
               entries: entries('mentors', content.mentors, (mentor) => named(mentor.name)),
+            },
+            {
+              section: 'projects',
+              labelKey: 'nav.projects',
+              entries: entries('projects', content.projects, (project) => named(project.title)),
             },
           ],
         },

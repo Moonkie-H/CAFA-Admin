@@ -63,6 +63,8 @@ function citedBy(cite: ImageCitation): string {
       return `work:${cite.work.slug}`;
     case 'mentor-portrait':
       return `mentor:${cite.mentor.slug}`;
+    case 'project-image':
+      return `project:${cite.project.slug}`;
     case 'home-photo':
       return 'page:home';
   }

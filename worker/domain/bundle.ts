@@ -35,6 +35,7 @@ import {
   type LocalisedText,
   type Mentor,
   type Program,
+  type Project,
   type SiteContent,
   type SitePages,
   type Work,
@@ -59,6 +60,13 @@ export interface PublishedBundle {
   works: Work[];
   programs: Program[];
   mentors: Mentor[];
+  /**
+   * The grid on About. Its own collection rather than a second reading of
+   * `works`: the heading over it always said projects, and now the records
+   * under it are projects too. May be empty, which the site draws as no
+   * section at all rather than as an empty frame.
+   */
+  projects: Project[];
   dictionaries: { zh: PageDictionary; en: PageDictionary };
   /**
    * What was measured about each photograph the published content cites, and
@@ -169,6 +177,7 @@ export function buildBundle(
     works,
     programs: content.programs,
     mentors: content.mentors,
+    projects: content.projects,
     dictionaries: { zh: pageCopy(content.zh), en: pageCopy(content.en) },
     media: measured,
     mediaBase,

@@ -16,6 +16,7 @@
     "programs": "课程",
     "about": "关于",
     "mentors": "导师",
+    "projects": "项目",
     "contact": "联系",
     "general": "通用文字",
     "history": "发布记录",
@@ -116,6 +117,8 @@
     "privateWorks": "{{count}} 个私密作品——仅在列表显示，没有详情页。",
     "teaching": "教学内容。",
     "withPortraits": "在关于页面横向阅读。",
+    "projects": "项目",
+    "projectsNote": "关于页面末尾的网格。",
     "photoNote": "草稿中作品、导师与首页用到的照片。",
     "bilingualNote": "始终同时维护中文和英文，任何一项留空都会阻止保存。",
     "contactNote": "地址、开放时间与联系方式。",
@@ -135,6 +138,7 @@
     "addProgram": "添加课程",
     "mentors": "导师",
     "addMentor": "添加导师",
+    "addProject": "添加项目",
     "history": "发布记录",
     "developer": "开发者工具"
   },
@@ -170,9 +174,10 @@
     "introHint": "页面顶部的段落。",
     "mentorsHint": "肖像横带上方的标题，目前包含 {{count}} 位导师。",
     "mentorsHint_other": "肖像横带上方的标题，目前包含 {{count}} 位导师。",
-    "projectsHint": "封面网格上方的标题。网格会显示所有非私密的作品。",
+    "projectsHint": "项目网格上方的标题，目前包含 {{count}} 个项目。",
+    "projectsHint_other": "项目网格上方的标题，目前包含 {{count}} 个项目。",
     "toMentors": "编辑导师",
-    "toWorks": "编辑作品"
+    "toProjects": "编辑项目"
   },
   "mentorPage": {
     "intro": "导师，以肖像横带的形式出现在关于页面约三分之一处，按此顺序阅读。",
@@ -185,6 +190,19 @@
     "needsKey": "请先为导师设置标识，它会用作肖像文件名。",
     "removeMentor": "删除此导师",
     "removeQuestion": "从网站删除“{{name}}”吗？肖像仍会保留在存储中。",
+    "removeIt": "确认删除"
+  },
+  "projectsPage": {
+    "intro": "关于页面末尾的网格：每项一张图片、一个名称和一两句话，按此顺序排列。它们不是作品——项目是独立的记录，在这里新增不会影响作品列表。",
+    "empty": "还没有项目。在添加之前，关于页面会止于导师，整个板块不会出现。",
+    "noSummary": "尚未填写简介",
+    "allProjects": "所有项目",
+    "newProject": "新项目",
+    "keyHint": "不会向访客显示，也不是网址——项目没有独立页面。它会用作图片文件名。",
+    "summaryHint": "图片下方的一两句话。卡片的位置只够一句，放不下整段。",
+    "needsKey": "请先为项目设置标识，它会用作图片文件名。",
+    "removeProject": "删除此项目",
+    "removeQuestion": "从关于页面删除“{{name}}”吗？图片仍会保留在存储中。",
     "removeIt": "确认删除"
   },
   "contactPage": {
@@ -214,6 +232,7 @@
     "photographNumber": "照片 {{number}}",
     "cover": "封面",
     "portrait": "肖像",
+    "picture": "图片",
     "oneLine": "一句话简介",
     "audience": "适合人群",
     "duration": "时长",
@@ -313,6 +332,7 @@
       "duplicateWork": "被多个作品使用（“{{slug}}”）",
       "duplicateProgram": "被多个课程使用（“{{slug}}”）",
       "duplicateMentor": "被多位导师使用（“{{slug}}”）",
+      "duplicateProject": "被多个项目使用（“{{slug}}”）",
       "notInStorage": "指向了不在存储中的照片（{{file}}）——请重新上传，或删除这张图片"
     }
   }

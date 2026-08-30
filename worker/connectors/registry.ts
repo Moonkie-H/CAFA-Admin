@@ -22,7 +22,7 @@ import { photographsOf } from './photographs';
 import { list, ref, shape, text, whole } from './schema';
 
 /** Bumped when a connector's answer changes shape in a way a client would feel. */
-export const API_VERSION = '3.0.0';
+export const API_VERSION = '4.0.0';
 
 /** Where the compiled document is served. */
 export const DOCUMENT_PATH = '/api.json';
@@ -61,6 +61,11 @@ export const GROUPS: readonly ConnectorGroup[] = [
   },
   { name: 'Mentors', description: 'The people, and their portraits.' },
   {
+    name: 'Projects',
+    description:
+      'The grid at the foot of the about page. A project is a picture, a name and a line or two — it has no page of its own, so nothing here resolves one by URL.',
+  },
+  {
     name: 'Text',
     description:
       'Every word on the site that is not a work, a programme or a mentor — one dictionary per language.',
@@ -94,7 +99,7 @@ export const CONNECTORS: readonly Connector[] = [
     path: '/api/v1/pages',
     summary: 'What is written on each of the four pages',
     description:
-      'The site has four pages — home, works, programs, about — and the set is fixed: each is a route in the frontend with its own layout and its own motion, so a fifth is a design rather than a row. This answers with what is *written* on them: every page’s title and description, the front page’s statement and photographs, the paragraphs that open Programmes and About, and the two headings About sets over the mentors and the projects. The collections those pages draw are endpoints of their own.',
+      'The site has four pages — home, works, programs, about — and the set is fixed: each is a route in the frontend with its own layout and its own motion, so a fifth is a design rather than a row. This answers with what is *written* on them: every page’s title and description, the front page’s statement and photographs, the paragraphs that open Programmes and About, and the two headings About sets over the mentors and the projects. The collections those pages draw — including `/api/v1/projects`, which is what sits under `projectsTitle` — are endpoints of their own.',
     returns: ref('Pages'),
     read: ({ bundle }) => bundle.pages,
   },
@@ -227,6 +232,38 @@ export const CONNECTORS: readonly Connector[] = [
   },
 
   {
+    id: 'listProjects',
+    group: 'Projects',
+    path: '/api/v1/projects',
+    summary: 'Every project',
+    description:
+      'The projects, in the order they are read across the foot of the about page. Each is a picture, a title and a short summary, and that is the whole record — a project has no status, no year and no page, because it is not a work. The grid may legitimately be empty, in which case the site omits the section rather than drawing an empty one.',
+    returns: list(ref('Project'), 'The projects, in the studio’s order.'),
+    read: ({ bundle }) => bundle.projects,
+  },
+
+  {
+    id: 'getProject',
+    group: 'Projects',
+    path: '/api/v1/projects/:slug',
+    summary: 'One project',
+    description:
+      'A single project by its slug. The slug is a stable key rather than a URL segment — the site never routes to a project — so this is for a client that already holds one and wants the record again.',
+    params: [
+      {
+        name: 'slug',
+        in: 'path',
+        required: true,
+        description: 'The project’s slug.',
+        example: 'edible-house',
+      },
+    ],
+    returns: ref('Project'),
+    read: ({ bundle }, { params }) =>
+      bySlug(bundle.projects, params.slug ?? '', (slug) => `No project called ${slug}.`),
+  },
+
+  {
     id: 'getCopy',
     group: 'Text',
     path: '/api/v1/copy/:locale',
@@ -259,7 +296,7 @@ export const CONNECTORS: readonly Connector[] = [
     path: '/api/v1/photographs',
     summary: 'Every published photograph',
     description:
-      'One flat list of everything the published content cites — the works’ covers and pages, the mentors’ portraits, the galleries on the pages — each with an absolute URL, its intrinsic dimensions, its dominant hue and its alt text. A private work’s photographs are absent, because a published revision does not name them. The dimensions are measured from the file at upload rather than taken from the client, so they can be trusted as an aspect box.',
+      'One flat list of everything the published content cites — the works’ covers and pages, the mentors’ portraits, the projects’ pictures, the galleries on the pages — each with an absolute URL, its intrinsic dimensions, its dominant hue and its alt text. A private work’s photographs are absent, because a published revision does not name them. The dimensions are measured from the file at upload rather than taken from the client, so they can be trusted as an aspect box.',
     params: [
       {
         name: 'prefix',
@@ -285,7 +322,7 @@ export const CONNECTORS: readonly Connector[] = [
     path: '/api/v1/bundle',
     summary: 'The whole revision',
     description:
-      'The four pages, the works, the programmes, the mentors, the studio, both dictionaries and every photograph’s dimensions, in one answer — around 40 KB. This is the same projection the site’s own build reads from /api/content/published; that endpoint keeps its unwrapped `{ revision, bundle }` shape because a build script in another repository parses it, and this one wears the envelope every other connector wears.',
+      'The four pages, the works, the programmes, the mentors, the projects, the studio, both dictionaries and every photograph’s dimensions, in one answer — around 40 KB. This is the same projection the site’s own build reads from /api/content/published; that endpoint keeps its unwrapped `{ revision, bundle }` shape because a build script in another repository parses it, and this one wears the envelope every other connector wears.',
     returns: ref('Bundle'),
     read: ({ bundle }) => bundle,
   },

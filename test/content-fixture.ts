@@ -87,6 +87,7 @@ export function content(): ContentSet {
     works: [],
     programs: [],
     mentors: [],
+    projects: [],
     zh: dictionary(),
     en: dictionary(),
   };

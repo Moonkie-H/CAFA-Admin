@@ -2,7 +2,7 @@
  * The whole content set, as one unit of work.
  *
  * Each aggregate repository beside this one knows its own tables and nothing
- * else. This file is the only place that knows there are six of them, and it
+ * else. This file is the only place that knows there are seven of them, and it
  * exists for one reason: a save has to be atomic. D1 has no interactive
  * transactions, so a write is one `batch()` — which means the aggregates cannot
  * each run their own, they have to hand over statements and let this compose
@@ -23,20 +23,22 @@ import { deleteCopy, insertCopy, readCopy } from './copy.repository';
 import { deleteMentors, insertMentors, readMentors } from './mentors.repository';
 import { deletePages, insertPages, readPages } from './pages.repository';
 import { deletePrograms, insertPrograms, readPrograms } from './programs.repository';
+import { deleteProjects, insertProjects, readProjects } from './projects.repository';
 import { deleteSite, insertSite, readSite } from './site.repository';
 import { deleteWorks, insertWorks, readWorks } from './works.repository';
 
 export async function readContent(db: D1Database): Promise<ContentSet> {
-  const [site, pages, works, programs, mentors, copy] = await Promise.all([
+  const [site, pages, works, programs, mentors, projects, copy] = await Promise.all([
     readSite(db),
     readPages(db),
     readWorks(db),
     readPrograms(db),
     readMentors(db),
+    readProjects(db),
     readCopy(db),
   ]);
 
-  return { site, pages, works, programs, mentors, zh: copy.zh, en: copy.en };
+  return { site, pages, works, programs, mentors, projects, zh: copy.zh, en: copy.en };
 }
 
 export async function writeContent(db: D1Database, content: ContentSet): Promise<void> {
@@ -46,6 +48,7 @@ export async function writeContent(db: D1Database, content: ContentSet): Promise
     ...deleteSite(db),
     ...deletePrograms(db),
     ...deleteMentors(db),
+    ...deleteProjects(db),
     ...deleteCopy(db),
 
     ...insertSite(db, content.site),
@@ -53,6 +56,7 @@ export async function writeContent(db: D1Database, content: ContentSet): Promise
     ...insertWorks(db, content.works),
     ...insertPrograms(db, content.programs),
     ...insertMentors(db, content.mentors),
+    ...insertProjects(db, content.projects),
     ...insertCopy(db, { zh: content.zh, en: content.en }),
   ]);
 }

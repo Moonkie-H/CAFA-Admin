@@ -114,6 +114,38 @@ describe('checkContent', () => {
     );
   });
 
+  it('holds a project to its key, its words and its picture', () => {
+    const blank = {
+      slug: '',
+      title: { zh: '', en: '' },
+      summary: { zh: '简介', en: 'Summary' },
+      image: { src: '', alt: '' } as ImageRef,
+    };
+
+    const problems = keys(checkContent({ ...content(), projects: [blank] }));
+
+    // The key, both halves of the title, and the missing file — a project is
+    // four required fields and nothing else, which is the point of it.
+    expect(problems.filter((problem) => problem.startsWith('projects/'))).toHaveLength(4);
+  });
+
+  it('accepts a site with no projects at all', () => {
+    expect(checkContent({ ...content(), projects: [] })).toEqual([]);
+  });
+
+  it('refuses two projects at one key', () => {
+    const project = {
+      slug: 'salt-and-scaffold',
+      title: { zh: '项目', en: 'Project' },
+      summary: { zh: '简介', en: 'Summary' },
+      image: { src: 'projects/salt-and-scaffold.jpg', alt: { zh: '照片', en: 'Photograph' } },
+    };
+
+    expect(keys(checkContent({ ...content(), projects: [project, project] }))).toContain(
+      'projects/problems.message.duplicateProject',
+    );
+  });
+
   it('collects every problem rather than stopping at the first', () => {
     const broken = {
       ...content(),

@@ -169,6 +169,16 @@ export const COMPONENTS: Record<string, JsonSchema> = {
     portrait: ref('Image'),
   }),
 
+  Project: shape(
+    {
+      slug: text('Stable id. Not a URL segment — a project has no page of its own.'),
+      title: ref('LocalisedText'),
+      summary: ref('LocalisedText'),
+      image: ref('Image'),
+    },
+    'One card in the grid at the foot of the about page: a picture, a name and a line or two. Deliberately the smallest record here — a project is not a work, so it carries no status, no year, no disciplines and no credits, and nothing routes to one.',
+  ),
+
   PageText: shape(
     {
       title: ref('LocalisedText'),
@@ -204,7 +214,7 @@ export const COMPONENTS: Record<string, JsonSchema> = {
       mentorsTitle: ref('LocalisedText'),
       projectsTitle: ref('LocalisedText'),
     },
-    'The about page, read downwards: the prose, the mentors under `mentorsTitle`, then the published works as a grid under `projectsTitle`. Both collections are endpoints of their own.',
+    'The about page, read downwards: the prose, the mentors under `mentorsTitle`, then the projects as a grid under `projectsTitle`. Both collections are endpoints of their own — `/api/v1/mentors` and `/api/v1/projects`. The grid under `projectsTitle` used to be a second drawing of the works index; it is its own collection now, so the heading names what is actually beneath it.',
   ),
 
   Pages: shape(
@@ -304,7 +314,7 @@ export const COMPONENTS: Record<string, JsonSchema> = {
       },
       decorative: flag('True when there is no alt text because there is nothing to describe.'),
       usedBy: text(
-        'What draws it: "work:<slug>", "mentor:<slug>", or "page:home" for the front page’s gallery. A photograph cited from more than one place is listed once, under the first that cites it.',
+        'What draws it: "work:<slug>", "mentor:<slug>", "project:<slug>", or "page:home" for the front page’s gallery. A photograph cited from more than one place is listed once, under the first that cites it.',
       ),
     },
     'One published photograph, with everything needed to lay it out before it loads.',
@@ -317,6 +327,7 @@ export const COMPONENTS: Record<string, JsonSchema> = {
       works: list(ref('Work'), 'Every work, in index order.'),
       programs: list(ref('Program'), 'Every programme.'),
       mentors: list(ref('Mentor'), 'Every mentor.'),
+      projects: list(ref('Project'), 'Every project. May be empty.'),
       dictionaries: shape(
         { zh: ref('Dictionary'), en: ref('Dictionary') },
         'The site’s words, one dictionary per language.',

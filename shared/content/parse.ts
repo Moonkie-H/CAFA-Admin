@@ -12,6 +12,7 @@ import {
   type PageText,
   type Program,
   type ProgramsPage,
+  type Project,
   type SiteContent,
   type SitePages,
   type Work,
@@ -193,6 +194,16 @@ function programAt(value: unknown, path: string): Program {
   };
 }
 
+function projectAt(value: unknown, path: string): Project {
+  const record = objectAt(value, path);
+  return {
+    slug: stringAt(property(record, 'slug', path), `${path}.slug`),
+    title: localisedAt(property(record, 'title', path), `${path}.title`),
+    summary: localisedAt(property(record, 'summary', path), `${path}.summary`),
+    image: imageAt(property(record, 'image', path), `${path}.image`),
+  };
+}
+
 function mentorAt(value: unknown, path: string): Mentor {
   const record = objectAt(value, path);
   return {
@@ -266,6 +277,9 @@ export function parseContentSet(value: unknown): ContentSet {
     ),
     mentors: arrayAt(property(root, 'mentors', 'content'), 'content.mentors').map(
       (mentor, index) => mentorAt(mentor, `content.mentors[${index}]`),
+    ),
+    projects: arrayAt(property(root, 'projects', 'content'), 'content.projects').map(
+      (project, index) => projectAt(project, `content.projects[${index}]`),
     ),
     zh: parseDictionary(property(root, 'zh', 'content'), 'content.zh'),
     en: parseDictionary(property(root, 'en', 'content'), 'content.en'),

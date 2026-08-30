@@ -27,6 +27,8 @@ import { MentorForm } from './features/mentors/MentorForm';
 import { MentorsPage } from './features/mentors/MentorsPage';
 import { ProgramForm } from './features/programs/ProgramForm';
 import { ProgramsPage } from './features/programs/ProgramsPage';
+import { ProjectForm } from './features/projects/ProjectForm';
+import { ProjectsPage } from './features/projects/ProjectsPage';
 import { SignInPage } from './features/session/SignInPage';
 import { WorkForm } from './features/works/WorkForm';
 import { WorksPage } from './features/works/WorksPage';
@@ -184,6 +186,14 @@ function Screen({ route, editor }: { route: Route; editor: ReturnType<typeof use
         <MentorsPage editor={editor} />
       ) : (
         <MentorForm mentor={open.item} at={open.at} editor={editor} />
+      );
+    }
+    case 'projects': {
+      const open = opened(editor.content.projects, route.record);
+      return open === null ? (
+        <ProjectsPage editor={editor} />
+      ) : (
+        <ProjectForm project={open.item} at={open.at} editor={editor} />
       );
     }
     case 'contact':

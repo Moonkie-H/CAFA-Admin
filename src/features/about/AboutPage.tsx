@@ -3,10 +3,15 @@
  *
  * The screen is in the order of the page: the prose the studio opens with, then
  * the heading over the people, then the heading over the projects. The two
- * things under those headings are not edited here, because they are not this
- * page's — the people are the mentors and the projects are the works, and both
- * appear elsewhere on the site as well. So each heading carries a link to the
- * list it names rather than a second copy of it.
+ * things under those headings are not edited here, because each is a collection
+ * of its own — the people are the mentors, the projects are the projects. So
+ * each heading carries a link to the list it names rather than a second copy of
+ * it.
+ *
+ * `projectsTitle` used to link to the works, because the grid under it *was*
+ * the works index drawn a second time. That was the defect: the studio could
+ * not put anything under this heading that was not a work, or keep a work off
+ * it. The projects are their own records now, and this link goes to them.
  */
 import { useTranslation } from 'react-i18next';
 
@@ -69,11 +74,11 @@ export function AboutPage({ editor }: AboutPageProps) {
         label={t('fields.projectsTitle')}
         value={page.projectsTitle}
         onChange={(projectsTitle) => set({ ...page, projectsTitle })}
-        hint={t('aboutPage.projectsHint')}
+        hint={t('aboutPage.projectsHint', { count: editor.content.projects.length })}
       />
       <p className="field-onward">
-        <RouteLink to={sectionAt('works')} className="link-button">
-          {t('aboutPage.toWorks')} →
+        <RouteLink to={sectionAt('projects')} className="link-button">
+          {t('aboutPage.toProjects')} →
         </RouteLink>
       </p>
 

@@ -76,6 +76,7 @@ const fault = {
   duplicateWork: (slug: string) => say('problems.message.duplicateWork', { slug }),
   duplicateProgram: (slug: string) => say('problems.message.duplicateProgram', { slug }),
   duplicateMentor: (slug: string) => say('problems.message.duplicateMentor', { slug }),
+  duplicateProject: (slug: string) => say('problems.message.duplicateProject', { slug }),
 } as const;
 
 const LOCALE_LABEL: Record<Locale, Phrase> = {
@@ -271,6 +272,8 @@ function whichRecord(cite: ImageCitation): Pick<Problem, 'section' | 'record' | 
       };
     case 'mentor-portrait':
       return { section: 'mentors', record: cite.mentor.slug, label: say('fields.portrait') };
+    case 'project-image':
+      return { section: 'projects', record: cite.project.slug, label: say('fields.picture') };
     case 'home-photo':
       return {
         section: 'pages',
@@ -350,6 +353,24 @@ export function checkContent(content: ContentSet): Problem[] {
       record: slug,
       label: say('fields.key'),
       message: fault.duplicateMentor(slug),
+    });
+  }
+
+  for (const project of content.projects) {
+    const check = new Collector('projects', project.slug);
+    check.slug(project.slug, say('fields.key'));
+    check.localised(project.title, say('fields.title'));
+    check.localised(project.summary, say('fields.summary'));
+    check.image(project.image, say('fields.picture'));
+    problems.push(...check.problems);
+  }
+
+  for (const slug of duplicates(content.projects.map((project) => project.slug))) {
+    problems.push({
+      section: 'projects',
+      record: slug,
+      label: say('fields.key'),
+      message: fault.duplicateProject(slug),
     });
   }
 
