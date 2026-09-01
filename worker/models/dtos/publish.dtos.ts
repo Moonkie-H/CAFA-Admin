@@ -12,6 +12,13 @@ export interface DeployedOrigin {
   url: string | null;
   /** What that origin says it was built from, or null if it cannot be read. */
   revision: number | null;
+  /**
+   * Whether anything rebuilds it. False means the deploy hook for this origin
+   * is not configured, so it stays on whatever it last built — which the admin
+   * has to be able to say, because otherwise it reads as a build that never
+   * finishes.
+   */
+  rebuilds: boolean;
 }
 
 export interface StatusResponse {

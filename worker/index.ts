@@ -59,8 +59,8 @@ function compose(env: Env, ctx: ExecutionContext): Router {
   const media = new MediaService(env.DB, env.MEDIA);
   const publishing = new PublishService(env, deploy);
 
-  const authController = new AuthController(auth, env.SESSION_SECRET);
-  const sessionController = new SessionController();
+  const authController = new AuthController(auth, content, env.SESSION_SECRET);
+  const sessionController = new SessionController(content);
   const contentController = new ContentController(content);
   const mediaController = new MediaController(media);
   const publishController = new PublishController(publishing);
@@ -86,9 +86,11 @@ function compose(env: Env, ctx: ExecutionContext): Router {
       .allowAnonymous('GET', '/api/content/published', publicController.published)
       .allowAnonymous('GET', '/api/content/draft', publicController.draft)
 
-      // Everything the editor does.
+      // Everything the editor does. `/api/session` answers the login and the
+      // content together — one round trip from opening the admin to being able
+      // to edit it, rather than a read that could not start until a session
+      // check had answered.
       .authorize('GET', '/api/session', sessionController.whoami)
-      .authorize('GET', '/api/content', contentController.get)
       .authorize('POST', '/api/save', contentController.save)
       .authorize('GET', '/api/media', mediaController.get)
       .authorize('POST', '/api/media', mediaController.upload)

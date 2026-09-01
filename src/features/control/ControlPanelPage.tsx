@@ -83,7 +83,13 @@ export function ControlPanelPage({ editor }: ControlPanelPageProps) {
           value={
             status === null
               ? '…'
-              : t(deploymentKey(status.latestRevision, status.production.revision))
+              : t(
+                  deploymentKey(
+                    status.latestRevision,
+                    status.production.revision,
+                    status.production.rebuilds,
+                  ),
+                )
           }
           note={status?.production.url ?? t('dashboard.noProduction')}
           warn={status !== null && status.unpublished}
@@ -96,7 +102,13 @@ export function ControlPanelPage({ editor }: ControlPanelPageProps) {
               ? '…'
               : status.preview.url === null
                 ? t('common.notConfigured')
-                : t(deploymentKey(status.draftRevision, status.preview.revision))
+                : t(
+                    deploymentKey(
+                      status.draftRevision,
+                      status.preview.revision,
+                      status.preview.rebuilds,
+                    ),
+                  )
           }
           note={status?.preview.url ?? t('dashboard.previewOptional')}
           link={status?.preview.url ?? undefined}

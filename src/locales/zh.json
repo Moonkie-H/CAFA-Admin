@@ -2,7 +2,6 @@
   "app": {
     "editor": "工作室编辑器",
     "loading": "正在载入…",
-    "loadingSite": "正在载入网站…",
     "unreachable": "无法连接到站点。"
   },
   "nav": {
@@ -38,6 +37,7 @@
     "revision": "版本 {{revision}}",
     "previewBuilding": "预览正在生成…",
     "publishing": "正在发布…",
+    "notRebuilding": "没有在重新生成",
     "save": "保存草稿",
     "saving": "正在保存…",
     "preview": "预览草稿",
@@ -49,6 +49,7 @@
     "nothing": "没有可发布的更改。",
     "failed": "发布失败。",
     "saveFirst": "请先保存最新更改，再预览或发布。",
+    "noDeployHook": "这个版本已发布，但没有配置部署钩子——没有任何东西在重新生成线上网站。请在 Worker 上设置 DEPLOY_HOOK_URL。",
     "saveFailed": "保存失败。"
   },
   "signin": {
@@ -76,6 +77,7 @@
     "moveNamedUp": "将 {{name}} 上移",
     "noImage": "没有图片",
     "notConfigured": "尚未配置",
+    "notRebuilding": "没有在重新生成",
     "pageWords": "这个页面上的文字",
     "remove": "删除",
     "removeItem": "删除第 {{number}} 个{{item}}",

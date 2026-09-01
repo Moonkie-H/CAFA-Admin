@@ -13,10 +13,17 @@
  *
  * POST rather than GET for both, including sign-out: neither is safe to
  * repeat from a prefetch, a crawler, or an <img> tag someone else wrote.
+ *
+ * Signing in answers with the content as well as the name, which is the same
+ * answer `/api/session` gives and for the same reason: the screen that replaces
+ * this one needs the content, and it cannot ask for it until the cookie this
+ * response sets exists. Sending it here is one round trip rather than two, and
+ * the read happens only once the password has already been accepted.
  */
 import { sealSession, sessionCookie, clearedSessionCookie } from '../domain/session';
 import type { SessionResponse, SignedOutResponse } from '../models/dtos/session.dtos';
 import type { AuthService } from '../services/auth.service';
+import type { ContentService } from '../services/content.service';
 import { ApiException } from '../shared/api-exception';
 import { ApiResponse, toResponse } from '../shared/api-response';
 import { MAX_CREDENTIAL_BYTES, readJson } from '../shared/request-body';
@@ -36,6 +43,7 @@ function credentialsOf(value: unknown): Credentials {
 export class AuthController {
   constructor(
     private readonly auth: AuthService,
+    private readonly content: ContentService,
     private readonly sessionSecret: string,
   ) {}
 
@@ -50,9 +58,12 @@ export class AuthController {
     }
 
     const login = await this.auth.signIn(username, password);
-    const sealed = await sealSession(this.sessionSecret, { login });
+    const [sealed, content] = await Promise.all([
+      sealSession(this.sessionSecret, { login }),
+      this.content.read(),
+    ]);
 
-    return toResponse(ApiResponse.ok<SessionResponse>({ login }, 'Signed in'), {
+    return toResponse(ApiResponse.ok<SessionResponse>({ login, ...content }, 'Signed in'), {
       'Set-Cookie': sessionCookie(sealed),
     });
   };

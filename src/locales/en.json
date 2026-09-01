@@ -2,7 +2,6 @@
   "app": {
     "editor": "Studio editor",
     "loading": "Loading…",
-    "loadingSite": "Loading the site…",
     "unreachable": "Could not reach the site."
   },
   "nav": {
@@ -38,6 +37,7 @@
     "revision": "Revision {{revision}}",
     "previewBuilding": "Preview building…",
     "publishing": "Publishing…",
+    "notRebuilding": "Not rebuilding",
     "save": "Save draft",
     "saving": "Saving…",
     "preview": "Preview draft",
@@ -49,6 +49,7 @@
     "nothing": "Nothing to publish.",
     "failed": "Publishing failed.",
     "saveFirst": "Save the newest edits before previewing or publishing.",
+    "noDeployHook": "This revision is published, but no deploy hook is configured — nothing is rebuilding the live site. Set DEPLOY_HOOK_URL on the Worker.",
     "saveFailed": "The save failed."
   },
   "signin": {
@@ -76,6 +77,7 @@
     "moveNamedUp": "Move {{name}} up",
     "noImage": "No image",
     "notConfigured": "Not configured",
+    "notRebuilding": "Not rebuilding",
     "pageWords": "The words on this page",
     "remove": "Remove",
     "removeItem": "Remove {{item}} {{number}}",

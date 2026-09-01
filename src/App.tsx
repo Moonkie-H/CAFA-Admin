@@ -1,17 +1,23 @@
 /**
- * The shell: establish a session, load the content once, then route.
+ * The shell: establish a session, then route.
  *
  * Three states before any page renders — checking, signed out, loaded — and
  * they are separate on purpose. "Could not reach the site" and "you are not
  * signed in" are different problems with different fixes, and collapsing them
  * into one screen is how an expired cookie comes to look like an outage.
  *
- * The content is loaded once, here, and held for the session. Every page edits
- * the same in-memory `ContentSet` through the same `Editor`, which is what lets
- * a save be one transaction over the whole thing rather than six that could
- * half-succeed.
+ * **One request gets us from opening the admin to editing it.** The session
+ * answers with the content, so there is nothing left to fetch once it lands:
+ * the read used to be a second call that could not begin until the first had
+ * come back, because until then there was no session to read with, and that
+ * serial pair was the whole of the wait after signing in. The sign-in answers
+ * the same shape for the same reason.
+ *
+ * The content is held for the session. Every page edits the same in-memory
+ * `ContentSet` through the same `Editor`, which is what lets a save be one
+ * transaction over the whole thing rather than six that could half-succeed.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ProblemList } from './components/ProblemList';
@@ -34,25 +40,13 @@ import { WorkForm } from './features/works/WorkForm';
 import { WorksPage } from './features/works/WorksPage';
 import { useEditor } from './hooks/useEditor';
 import { useRoute, type Route } from './routes';
-import { contentService } from './services/content';
 import { sessionService } from './services/session';
-import type { ContentResponse } from './services/types';
+import type { SessionResponse } from './services/types';
 
 export function App() {
   const { t } = useTranslation();
   const [state, setState] = useState<AppState>({ status: 'checking-session' });
   const requestId = useRef(0);
-
-  const loadContent = useCallback(async (login: string): Promise<void> => {
-    const id = ++requestId.current;
-    setState({ status: 'loading-content', login });
-    try {
-      const content = await contentService.load();
-      if (requestId.current === id) setState({ status: 'ready', login, content });
-    } catch (error) {
-      if (requestId.current === id) setState({ status: 'failed', error });
-    }
-  }, []);
 
   useEffect(() => {
     const id = ++requestId.current;
@@ -60,11 +54,7 @@ export function App() {
       try {
         const session = await sessionService.whoami();
         if (requestId.current !== id) return;
-        if (session === null) {
-          setState({ status: 'signed-out' });
-          return;
-        }
-        await loadContent(session.login);
+        setState(session === null ? { status: 'signed-out' } : { status: 'ready', session });
       } catch (error) {
         if (requestId.current === id) setState({ status: 'failed', error });
       }
@@ -72,26 +62,32 @@ export function App() {
     return () => {
       requestId.current += 1;
     };
-  }, [loadContent]);
+  }, []);
 
   if (state.status === 'checking-session') {
     return <p className="centred">{t('app.loading')}</p>;
   }
   if (state.status === 'signed-out') {
-    return <SignInPage onSignedIn={(session) => void loadContent(session.login)} />;
+    return (
+      <SignInPage
+        onSignedIn={(session) => {
+          // The sign-in already carries the content, so this is the last thing
+          // between a password and an editable page: no second request, and no
+          // screen in between saying that one is happening.
+          requestId.current += 1;
+          setState({ status: 'ready', session });
+        }}
+      />
+    );
   }
   if (state.status === 'failed') {
     const message = state.error instanceof Error ? state.error.message : t('app.unreachable');
     return <p className="centred problem">{message}</p>;
   }
-  if (state.status === 'loading-content') {
-    return <p className="centred">{t('app.loadingSite')}</p>;
-  }
 
   return (
     <Editing
-      login={state.login}
-      content={state.content}
+      session={state.session}
       onSignedOut={() => {
         // Back to the sign-in screen without a page load. `Editing` unmounts,
         // which is what actually discards the edited content — there is no
@@ -106,18 +102,16 @@ export function App() {
 type AppState =
   | { status: 'checking-session' }
   | { status: 'signed-out' }
-  | { status: 'loading-content'; login: string }
-  | { status: 'ready'; login: string; content: ContentResponse }
+  | { status: 'ready'; session: SessionResponse }
   | { status: 'failed'; error: unknown };
 
 interface EditingProps {
-  login: string;
-  content: ContentResponse;
+  session: SessionResponse;
   onSignedOut: () => void;
 }
 
-function Editing({ login, content, onSignedOut }: EditingProps) {
-  const editor = useEditor(content.content, content.media);
+function Editing({ session, onSignedOut }: EditingProps) {
+  const editor = useEditor(session.content, session.media);
   const route = useRoute();
 
   // The browser's own guard is the only one that catches a closed tab.
@@ -129,7 +123,7 @@ function Editing({ login, content, onSignedOut }: EditingProps) {
   }, [editor.dirty]);
 
   return (
-    <AdminLayout editor={editor} login={login} route={route} onSignedOut={onSignedOut}>
+    <AdminLayout editor={editor} login={session.login} route={route} onSignedOut={onSignedOut}>
       <ProblemList problems={editor.problems} />
       <Screen route={route} editor={editor} />
     </AdminLayout>

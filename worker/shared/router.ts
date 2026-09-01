@@ -8,8 +8,9 @@
  * previous shape decided it with a `path.startsWith('/api/')` check halfway down
  * a 453-line handler, which is a rule you have to reconstruct by reading.
  *
- * Matching is exact on segment count, so `/api/content` and
- * `/api/content/published` cannot shadow one another however they are ordered.
+ * Matching is exact on segment count, so `/api/content/published` and a
+ * two-segment `/api/…` route cannot shadow one another however they are
+ * ordered.
  */
 import type { ActionResult } from './api-response';
 import type { CurrentUser } from './current-user';
