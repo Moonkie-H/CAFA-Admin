@@ -38,7 +38,13 @@ export interface ApiDocument {
   info: { title: string; version: string; description: string };
   servers: { url: string; description: string }[];
   tags: { name: string; description: string }[];
-  paths: Record<string, { get: DocumentedOperation }>;
+  /**
+   * Every path answers exactly one verb, but not all of them answer the same
+   * one — `/api/v1/contact` is a POST and everything else is a GET. Both
+   * optional so neither has to pretend to the other's shape, which is also how
+   * the Worker writes the document.
+   */
+  paths: Record<string, Partial<Record<'get' | 'post', DocumentedOperation>>>;
   components: { schemas: Record<string, unknown> };
 }
 
@@ -46,6 +52,8 @@ export interface ApiDocument {
 export interface ConnectorView {
   id: string;
   group: string;
+  /** The verb this path answers. Only the contact endpoint is not a GET. */
+  method: 'GET' | 'POST';
   path: string;
   summary: string;
   description: string;
@@ -103,15 +111,27 @@ function pretty(body: string): string {
  * alphabetically.
  */
 export function groupsOf(document: ApiDocument): ConnectorGroupView[] {
-  const connectors: ConnectorView[] = Object.entries(document.paths).map(([path, item]) => ({
-    id: item.get.operationId,
-    group: item.get.tags[0] ?? 'Other',
-    path,
-    summary: item.get.summary,
-    description: item.get.description,
-    params: item.get.parameters ?? [],
-    schema: item.get.responses['200']?.content?.['application/json']?.schema,
-  }));
+  const connectors: ConnectorView[] = Object.entries(document.paths).flatMap(([path, item]) => {
+    // A path declares one verb or the other. Reading both and taking whichever
+    // is there means a document that grows a second write does not need this
+    // function edited, and — the reason it is written this way at all — a
+    // POST-only path does not reach for `.get` and throw.
+    const [method, operation] = item.get ? (['GET', item.get] as const) : (['POST', item.post] as const);
+    if (operation === undefined) return [];
+
+    return [
+      {
+        id: operation.operationId,
+        group: operation.tags[0] ?? 'Other',
+        method,
+        path,
+        summary: operation.summary,
+        description: operation.description,
+        params: operation.parameters ?? [],
+        schema: operation.responses['200']?.content?.['application/json']?.schema,
+      },
+    ];
+  });
 
   return document.tags
     .map((tag) => ({

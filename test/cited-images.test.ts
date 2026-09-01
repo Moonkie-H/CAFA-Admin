@@ -18,7 +18,7 @@ import {
   citedKeys,
   type ImageCitation,
 } from '../shared/content/images';
-import type { ContentSet, ImageRef, Mentor, Work } from '../shared/content/types';
+import type { ContentSet, ImageRef, Mentor, Project, Work } from '../shared/content/types';
 import { content, pages } from './content-fixture';
 
 function image(src: string): ImageRef {
@@ -50,6 +50,15 @@ function mentor(slug: string): Mentor {
   };
 }
 
+function projectRecord(slug: string): Project {
+  return {
+    slug,
+    title: { zh: '项目', en: 'Project' },
+    summary: { zh: '简介', en: 'Summary' },
+    image: image(`projects/${slug}.jpg`),
+  };
+}
+
 /** The content set with the front page carrying these photographs. */
 function withGallery(...srcs: string[]): ContentSet {
   const base = content();
@@ -61,6 +70,7 @@ function populated(): ContentSet {
     ...withGallery('pages/home/01.jpg'),
     works: [work('edible-house')],
     mentors: [mentor('shen-zhibai')],
+    projects: [projectRecord('salt-and-scaffold')],
   };
 }
 
@@ -73,6 +83,7 @@ describe('citedImages', () => {
       'works/edible-house/01.jpg',
       'works/edible-house/02.jpg',
       'mentors/shen-zhibai.jpg',
+      'projects/salt-and-scaffold.jpg',
       'pages/home/01.jpg',
     ]);
   });
@@ -85,6 +96,7 @@ describe('citedImages', () => {
       'work-photo',
       'work-photo',
       'mentor-portrait',
+      'project-image',
       'home-photo',
     ]);
 
@@ -94,7 +106,7 @@ describe('citedImages', () => {
     const second = cites[2];
     expect(second?.kind === 'work-photo' && second.position).toBe(1);
 
-    const onHome = cites[4];
+    const onHome = cites[5];
     expect(onHome?.kind === 'home-photo' && onHome.position).toBe(0);
   });
 

@@ -6,6 +6,12 @@
  * that label them are one screen rather than two — they are one card, and
  * splitting "the email address" from "the word before the email address" across
  * two screens was the clearest thing wrong with the old Site text page.
+ *
+ * The email address below is now load-bearing in a second way. It is still what
+ * the card prints, and it is also where the card's form delivers: the Worker
+ * reads it out of the published revision on every message. So changing it here
+ * and publishing moves the studio's inbox, and the printed address and the
+ * delivered-to address cannot come apart.
  */
 import { useTranslation } from 'react-i18next';
 
@@ -36,9 +42,25 @@ const CARD_WORDS: CopyField[] = [
   {
     path: 'contact.subject',
     label: 'Message form — subject line',
-    hint: 'The line the reader’s own mail client opens with. Send hands them a draft; nothing is collected here.',
+    hint: 'The line the message arrives under in your inbox. Your visitor’s address is added after it, so a full inbox can still be scanned.',
   },
   { path: 'contact.send', label: 'Message form — the send button' },
+  { path: 'contact.sending', label: 'Message form — the button while sending' },
+  {
+    path: 'contact.sent',
+    label: 'Message form — after it has gone',
+    hint: 'This replaces the form, so the visitor cannot send the same message twice by accident.',
+  },
+  {
+    path: 'contact.failed',
+    label: 'Message form — if it could not be sent',
+    hint: 'Only shown when the connection failed. If the message itself was the problem — a malformed address, say — the visitor is told that instead.',
+  },
+  {
+    path: 'contact.draft',
+    label: 'Message form — the way out after a failure',
+    hint: 'Offers to open the message in the visitor’s own mail program instead, with what they wrote already in it.',
+  },
 ];
 
 interface ContactPageProps {

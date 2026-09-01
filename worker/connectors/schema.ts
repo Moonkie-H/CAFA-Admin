@@ -169,6 +169,16 @@ export const COMPONENTS: Record<string, JsonSchema> = {
     portrait: ref('Image'),
   }),
 
+  Project: shape(
+    {
+      slug: text('Stable id. Not a URL segment — a project has no page of its own.'),
+      title: ref('LocalisedText'),
+      summary: ref('LocalisedText'),
+      image: ref('Image'),
+    },
+    'One card in the grid at the foot of the about page: a picture, a name and a line or two. Deliberately the smallest record here — a project is not a work, so it carries no status, no year, no disciplines and no credits, and nothing routes to one.',
+  ),
+
   PageText: shape(
     {
       title: ref('LocalisedText'),
@@ -204,7 +214,7 @@ export const COMPONENTS: Record<string, JsonSchema> = {
       mentorsTitle: ref('LocalisedText'),
       projectsTitle: ref('LocalisedText'),
     },
-    'The about page, read downwards: the prose, the mentors under `mentorsTitle`, then the published works as a grid under `projectsTitle`. Both collections are endpoints of their own.',
+    'The about page, read downwards: the prose, the mentors under `mentorsTitle`, then the projects as a grid under `projectsTitle`. Both collections are endpoints of their own — `/api/v1/mentors` and `/api/v1/projects`. The grid under `projectsTitle` used to be a second drawing of the works index; it is its own collection now, so the heading names what is actually beneath it.',
   ),
 
   Pages: shape(
@@ -276,8 +286,12 @@ export const COMPONENTS: Record<string, JsonSchema> = {
         note: 'The line under them.',
         from: 'The label on the message form’s address field.',
         message: 'The label on its message field.',
-        subject: 'The subject line the reader’s own mail client opens with.',
+        subject: 'The subject line the message arrives under in the studio’s inbox.',
         send: 'The word on its button.',
+        sending: 'The word on the button while the message is in flight.',
+        sent: 'What replaces the form once the message has gone.',
+        failed: 'What is said when the message could not be sent and the endpoint gave no reason — a network failure. A refusal carries its own sentence in `msg`, and that is shown instead.',
+        draft: 'The offer of a mailto: draft after a failure, so it is never a dead end.',
       }),
       notFound: words({
         title: 'The 404 heading.',
@@ -304,7 +318,7 @@ export const COMPONENTS: Record<string, JsonSchema> = {
       },
       decorative: flag('True when there is no alt text because there is nothing to describe.'),
       usedBy: text(
-        'What draws it: "work:<slug>", "mentor:<slug>", or "page:home" for the front page’s gallery. A photograph cited from more than one place is listed once, under the first that cites it.',
+        'What draws it: "work:<slug>", "mentor:<slug>", "project:<slug>", or "page:home" for the front page’s gallery. A photograph cited from more than one place is listed once, under the first that cites it.',
       ),
     },
     'One published photograph, with everything needed to lay it out before it loads.',
@@ -317,6 +331,7 @@ export const COMPONENTS: Record<string, JsonSchema> = {
       works: list(ref('Work'), 'Every work, in index order.'),
       programs: list(ref('Program'), 'Every programme.'),
       mentors: list(ref('Mentor'), 'Every mentor.'),
+      projects: list(ref('Project'), 'Every project. May be empty.'),
       dictionaries: shape(
         { zh: ref('Dictionary'), en: ref('Dictionary') },
         'The site’s words, one dictionary per language.',
@@ -330,6 +345,11 @@ export const COMPONENTS: Record<string, JsonSchema> = {
         'What was measured, by object key, for every photograph public content cites.',
       ),
       mediaBase: text('The origin the photographs are served from.'),
+      contactEndpoint: {
+        anyOf: [{ type: 'string' }, { type: 'null' }],
+        description:
+          'Where the contact form posts a message, or null where the site has none configured. Null is a site that should offer a `mailto:` draft instead, not an error.',
+      },
       mediaTransform: flag(
         'Whether photographs may be requested through `/cdn-cgi/image/…` on the site’s own zone. False means the zone cannot transform and the originals must be rendered as they are — the URLs in `mediaBase` still resolve, they are simply full size.',
       ),

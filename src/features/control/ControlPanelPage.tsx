@@ -125,7 +125,13 @@ export function ControlPanelPage({ editor }: ControlPanelPageProps) {
           label={t('dashboard.mentors')}
           value={String(content.mentors.length)}
           note={t('dashboard.withPortraits')}
-          to={at('about')}
+          to={at('mentors')}
+        />
+        <Tile
+          label={t('dashboard.projects')}
+          value={String(content.projects.length)}
+          note={t('dashboard.projectsNote')}
+          to={at('projects')}
         />
         <Tile
           label={t('dashboard.photos')}

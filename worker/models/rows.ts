@@ -99,6 +99,18 @@ export interface ProgramRow {
   summary_en: string;
 }
 
+export interface ProjectRow {
+  slug: string;
+  title_zh: string;
+  title_en: string;
+  summary_zh: string;
+  summary_en: string;
+  image_key: string;
+  image_alt_zh: string;
+  image_alt_en: string;
+  image_decorative: number;
+}
+
 export interface MentorRow {
   slug: string;
   name_zh: string;

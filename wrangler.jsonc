@@ -55,6 +55,27 @@
     }
   ],
 
+  // How hard one visitor may lean on the contact form. Keyed on the caller's IP
+  // in worker/services/contact.service.ts, and deliberately generous for a
+  // person and tight for a script: five messages a minute is more than anyone
+  // sends by hand and not enough to be worth automating.
+  //
+  // `namespace_id` is a number the account picks and only has to be unique
+  // among this Worker's own limiters.
+  //
+  // Delete this block and the contact endpoint still works, unthrottled — the
+  // service takes `undefined` and reads it as no limit, which is also what a
+  // test hands it. It will not do so *quietly*: the binding is generated into
+  // worker-configuration.d.ts, so `npm run types:worker` after removing it
+  // makes worker/index.ts stop compiling at the one line that passes it.
+  "ratelimits": [
+    {
+      "name": "CONTACT_RATE",
+      "namespace_id": "1001",
+      "simple": { "limit": 5, "period": 60 }
+    }
+  ],
+
   "vars": {
     // Where the R2 originals are served from. The template appends the object
     // key to this and asks Cloudflare to transform the result, so it is the one
@@ -94,7 +115,21 @@
     //
     // No trailing slash: it is used as a URL base, and a trailing slash would
     // survive into every absolute URL derived from it.
-    "PRODUCTION_URL": "https://cafa-studio.com"
+    "PRODUCTION_URL": "https://cafa-studio.com",
+
+    // The admin's own origin, said here because the *site* has to know it.
+    //
+    // Only one thing needs it, and it is the one thing on the public site that
+    // talks back: the contact card's form posts a message to this Worker.
+    // worker/domain/bundle.ts turns this into `contactEndpoint` on the
+    // published bundle, so the template learns the address the same way it
+    // learns where photographs live — out of the content, rather than from a
+    // second environment variable somebody has to remember to set on the other
+    // side. CAFA-Template's one module that knows the admin exists stays one.
+    //
+    // Remove this line and the bundle carries no endpoint, which the site reads
+    // as "no form" and falls back to a mailto: draft.
+    "ADMIN_URL": "https://admin.cafa-studio.com"
 
     // PREVIEW_URL is set once the preview Worker has built once and its alias
     // exists. Without it the admin simply shows no preview link.
@@ -107,8 +142,22 @@
   //   DEPLOY_HOOK_URL          — poked on publish; rebuilds the live site
   //   PREVIEW_DEPLOY_HOOK_URL  — poked on save; rebuilds the preview
   //   PREVIEW_TOKEN            — lets the preview build read unpublished work
+  //   CONTACT_TOKEN            — the mail provider's API key
+  //   CONTACT_SENDER           — the verified address messages are sent *from*
   //
   // The three deploy-related secrets are all optional. Without DEPLOY_HOOK_URL
   // publishing still writes a revision, it just does not trigger the build;
   // without the preview pair there is simply no preview.
+  //
+  // The contact pair is optional together. Both set and the card's form posts a
+  // message to whatever address the published `site.contact.email` names —
+  // which is why moving the studio's inbox is an edit and a publish rather than
+  // a secret. Either missing and /api/v1/contact answers 503 saying so, and the
+  // site falls back to handing the reader a `mailto:` draft, which is what it
+  // did before the endpoint existed. Nothing is ever silently dropped.
+  //
+  // CONTACT_SENDER has to be an address on a domain the provider has verified —
+  // `studio@cafa-studio.com`, not the visitor's own address. The visitor's goes
+  // on as Reply-To, so hitting reply still reaches them; sending *as* them is
+  // what SPF and DMARC exist to refuse.
 }

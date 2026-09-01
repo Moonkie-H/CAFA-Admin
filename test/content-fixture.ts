@@ -40,6 +40,10 @@ export function dictionary(): Dictionary {
       message: 'Message',
       subject: 'Subject',
       send: 'Send',
+      sending: 'Sending',
+      sent: 'Sent',
+      failed: 'Failed',
+      draft: 'Draft',
     },
     notFound: { title: 'Missing', body: 'Not found', home: 'Home' },
     footer: { note: 'Footer' },
@@ -87,6 +91,7 @@ export function content(): ContentSet {
     works: [],
     programs: [],
     mentors: [],
+    projects: [],
     zh: dictionary(),
     en: dictionary(),
   };

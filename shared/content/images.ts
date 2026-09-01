@@ -15,11 +15,11 @@
  * the four want four different things from it — a slug, a phrase, a `usedBy`
  * label, a status — and a walker that guessed which would be wrong for three.
  *
- * The order is works, then mentors, then the front page's gallery. It is the
- * order `/api/v1/photographs` answers in, so it is fixed here rather than
- * incidental.
+ * The order is works, then mentors, then the projects, then the front page's
+ * gallery. It is the order `/api/v1/photographs` answers in, so it is fixed
+ * here rather than incidental.
  */
-import type { ImageRef, Mentor, Work } from './types';
+import type { ImageRef, Mentor, Project, Work } from './types';
 
 /**
  * The records a photograph hangs off, and where on one it sits.
@@ -33,6 +33,7 @@ export type ImageCitation =
   | { kind: 'work-cover'; work: Work }
   | { kind: 'work-photo'; work: Work; position: number }
   | { kind: 'mentor-portrait'; mentor: Mentor }
+  | { kind: 'project-image'; project: Project }
   | { kind: 'home-photo'; position: number };
 
 export interface CitedImage {
@@ -50,6 +51,7 @@ export interface CitedImage {
 export interface ImageBearingContent {
   works: readonly Work[];
   mentors: readonly Mentor[];
+  projects: readonly Project[];
   pages: { home: { gallery: readonly ImageRef[] } };
 }
 
@@ -63,6 +65,10 @@ export function* citedImages(content: ImageBearingContent): Generator<CitedImage
 
   for (const mentor of content.mentors) {
     yield { image: mentor.portrait, cite: { kind: 'mentor-portrait', mentor } };
+  }
+
+  for (const project of content.projects) {
+    yield { image: project.image, cite: { kind: 'project-image', project } };
   }
 
   for (const [position, image] of content.pages.home.gallery.entries()) {
@@ -85,6 +91,7 @@ export function citationIsPublic(cite: ImageCitation): boolean {
     case 'work-photo':
       return cite.work.status !== 'private';
     case 'mentor-portrait':
+    case 'project-image':
     case 'home-photo':
       return true;
   }

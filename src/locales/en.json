@@ -16,6 +16,7 @@
     "programs": "Programmes",
     "about": "About",
     "mentors": "Mentors",
+    "projects": "Projects",
     "contact": "Contact",
     "general": "General",
     "history": "History",
@@ -116,6 +117,8 @@
     "privateWorks": "{{count}} private — listed, no page.",
     "teaching": "Teaching.",
     "withPortraits": "Read across the about page.",
+    "projects": "Projects",
+    "projectsNote": "The grid at the end of the about page.",
     "photoNote": "In the draft, across the works, the people and the front page.",
     "bilingualNote": "Both languages, always. A blank in either blocks the save.",
     "contactNote": "Address, hours, and how people reach you.",
@@ -135,6 +138,7 @@
     "addProgram": "Add a programme",
     "mentors": "Mentors",
     "addMentor": "Add a mentor",
+    "addProject": "Add a project",
     "history": "History",
     "developer": "Developer tools"
   },
@@ -170,9 +174,10 @@
     "introHint": "The paragraphs at the top of the page.",
     "mentorsHint": "The heading over the band of portraits. {{count}} person is in it.",
     "mentorsHint_other": "The heading over the band of portraits. {{count}} people are in it.",
-    "projectsHint": "The heading over the grid of covers. It shows every work that is not private.",
+    "projectsHint": "The heading over the grid of projects. {{count}} project is under it.",
+    "projectsHint_other": "The heading over the grid of projects. {{count}} projects are under it.",
     "toMentors": "Edit the people",
-    "toWorks": "Edit the works"
+    "toProjects": "Edit the projects"
   },
   "mentorPage": {
     "intro": "The people, as a band of portraits a third of the way down the about page, read in this order.",
@@ -185,6 +190,19 @@
     "needsKey": "Give this person a key first — it names the portrait file.",
     "removeMentor": "Remove this person",
     "removeQuestion": "Remove {{name}} from the site? Their portrait stays in storage.",
+    "removeIt": "Remove it"
+  },
+  "projectsPage": {
+    "intro": "The grid at the end of the about page: a picture, a name and a line or two each, read in this order. These are not the works — a project is its own record, and adding one here changes nothing on the works index.",
+    "empty": "No projects yet. Until there is one, the about page ends on the people and the section is left out altogether.",
+    "noSummary": "No summary yet",
+    "allProjects": "All projects",
+    "newProject": "New project",
+    "keyHint": "Not shown to anyone, and not a web address — a project has no page. It names the picture file.",
+    "summaryHint": "A line or two under the picture. The card has room for a sentence, not a paragraph.",
+    "needsKey": "Give this project a key first — it names the picture file.",
+    "removeProject": "Remove this project",
+    "removeQuestion": "Remove {{name}} from the about page? Its picture stays in storage.",
     "removeIt": "Remove it"
   },
   "contactPage": {
@@ -214,6 +232,7 @@
     "photographNumber": "Photograph {{number}}",
     "cover": "Cover",
     "portrait": "Portrait",
+    "picture": "Picture",
     "oneLine": "One line",
     "audience": "Who it is for",
     "duration": "How long",
@@ -277,6 +296,7 @@
     "connectors": "{{count}} connector",
     "connectors_other": "{{count}} connectors",
     "send": "Send request",
+    "notProbed": "Not tried from here — sending one would put a real message in the studio’s inbox.",
     "sending": "Asking…",
     "response": "Response shape",
     "documentFailed": "The API document could not be read.",
@@ -313,6 +333,7 @@
       "duplicateWork": "is used by more than one work (\"{{slug}}\")",
       "duplicateProgram": "is used by more than one programme (\"{{slug}}\")",
       "duplicateMentor": "is used by more than one person (\"{{slug}}\")",
+      "duplicateProject": "is used by more than one project (\"{{slug}}\")",
       "notInStorage": "names a photograph that is not in storage ({{file}}) — upload it again, or remove the image"
     }
   }

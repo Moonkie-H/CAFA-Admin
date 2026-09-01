@@ -86,7 +86,9 @@ Works            ▸ 12      the words at the top, and every work
 Programmes       ▸ 4       the words at the top, and every programme
 About            ▸         the prose, the two headings
   Mentors        ▸ 6       the people, who are a band across About
-Contact                    the studio's details, and the words on the card
+  Projects       ▸ 4       the grid at the foot of About. Not the works
+Contact                    the studio's details, the words on the card, and
+                           the address a message from it is delivered to
 General                    the footer, the missing-page notice, the rest
 ```
 
@@ -135,13 +137,16 @@ GET /api/v1/works             ?status=completed|in-progress|private
 GET /api/v1/works/{slug}
 GET /api/v1/programs          GET /api/v1/programs/{slug}
 GET /api/v1/mentors           GET /api/v1/mentors/{slug}
+GET /api/v1/projects          GET /api/v1/projects/{slug}
 GET /api/v1/copy/{locale}     every fixed word on the site, in one language
 GET /api/v1/photographs       ?prefix=works/ — URLs, dimensions, hue, alt text
 GET /api/v1/bundle            all of the above in one answer, ~40 KB
 GET /api.json                 the OpenAPI 3.1 document, compiled from the above
+
+POST /api/v1/contact          a message from the site's contact card
 ```
 
-Four things are true of all of them:
+Four things are true of all the reads:
 
 - **They answer the newest published revision.** Never the draft — an
   unpublished edit is exactly what should not be visible from outside, and the
@@ -162,6 +167,25 @@ Four things are true of all of them:
   Worker. `mediaTransform` on the bundle says whether that URL is fetched
   through `/cdn-cgi/image/` first.
 
+### The one thing that is not a read
+
+`POST /api/v1/contact` is the site's contact card, from the far side. It is the
+only unauthenticated write in the API, and what makes it safe is that the
+recipient is not the caller's to choose: the message goes to whatever
+`site.contact.email` the newest published revision names — the address already
+printed on the card — so it cannot be pointed at a stranger and used as a relay.
+Moving the studio's inbox is an edit on the Contact screen and a publish, which
+also means the printed address and the delivered-to address cannot disagree.
+
+Around that: a honeypot field answered with a cheerful 200, a rate limit keyed
+on the caller's IP, length caps, and a refusal of any address or name carrying
+the carriage return that would turn a `Reply-To` into a `Bcc`. The mail itself
+goes out through an HTTPS provider — a Worker has no SMTP socket — configured by
+`CONTACT_TOKEN` and `CONTACT_SENDER`. Both are optional and optional *together*:
+without them the endpoint answers 503 and says so, and the site falls back to
+handing the reader a `mailto:` draft, which is what it did before this existed.
+A form that silently drops messages is worse than no form.
+
 ### api.json is compiled, not committed
 
 There is no OpenAPI file in this repository, and that is deliberate. A checked-in
@@ -172,6 +196,12 @@ that produces it; `worker/index.ts` registers the routes from that array and
 `/api.json` is built from it per request. So adding a connector routes it,
 documents it, and gives it a card in the dev panel, in one edit — and the
 document can never describe an endpoint the Worker does not answer.
+
+The contact endpoint is declared the same way and in the same shape, in
+`worker/connectors/contact-endpoint.ts` rather than in that array. Keeping it
+out is what lets the array go on saying, without qualification, that nothing in
+it writes and there is no verb but GET; the document is compiled from both, so
+it still describes exactly what the Worker answers.
 
 The `servers` entry is the origin the document was fetched from, so the copy
 downloaded from a local `wrangler dev` points at localhost and the copy
@@ -519,7 +549,7 @@ worker/
 
   repositories/             D1: rows in, domain objects out
     content.repository.ts   the unit of work — one batch, one transaction
-    site · pages · works · programs · mentors · copy    one aggregate each
+    site · pages · works · programs · mentors · projects · copy   one aggregate each
     pages.repository.ts     the four pages, and the words on each
     media · revision
     mapping.ts              paired columns ⇄ LocalisedText, four columns ⇄ ImageRef
@@ -566,6 +596,7 @@ src/
     programs/               ProgramsPage · ProgramForm
     about/                  AboutPage — the prose, and the two headings
     mentors/                MentorsPage · MentorForm — the band across About
+    projects/               ProjectsPage · ProjectForm — the grid under it
     contact/                ContactPage — the details, and the card's own words
     general/                GeneralPage — the footer, the 404, the rest
     dev/                    DevPanelPage · ConnectorCard · markdown

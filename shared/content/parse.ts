@@ -12,6 +12,7 @@ import {
   type PageText,
   type Program,
   type ProgramsPage,
+  type Project,
   type SiteContent,
   type SitePages,
   type Work,
@@ -193,6 +194,16 @@ function programAt(value: unknown, path: string): Program {
   };
 }
 
+function projectAt(value: unknown, path: string): Project {
+  const record = objectAt(value, path);
+  return {
+    slug: stringAt(property(record, 'slug', path), `${path}.slug`),
+    title: localisedAt(property(record, 'title', path), `${path}.title`),
+    summary: localisedAt(property(record, 'summary', path), `${path}.summary`),
+    image: imageAt(property(record, 'image', path), `${path}.image`),
+  };
+}
+
 function mentorAt(value: unknown, path: string): Mentor {
   const record = objectAt(value, path);
   return {
@@ -244,7 +255,8 @@ export function parseDictionary(value: unknown, path = 'dictionary'): Dictionary
       'index', 'status', 'year', 'discipline', 'credits', 'previous', 'next',
     ]) as Dictionary['work'],
     contact: stringsAt(contact, `${path}.contact`, [
-      'nav', 'title', 'email', 'wechat', 'address', 'hours', 'note', 'from', 'message', 'subject', 'send',
+      'nav', 'title', 'email', 'wechat', 'address', 'hours', 'note', 'from', 'message', 'subject',
+      'send', 'sending', 'sent', 'failed', 'draft',
     ]) as Dictionary['contact'],
     notFound: stringsAt(notFound, `${path}.notFound`, ['title', 'body', 'home']) as Dictionary['notFound'],
     footer: stringsAt(footer, `${path}.footer`, ['note']) as Dictionary['footer'],
@@ -266,6 +278,9 @@ export function parseContentSet(value: unknown): ContentSet {
     ),
     mentors: arrayAt(property(root, 'mentors', 'content'), 'content.mentors').map(
       (mentor, index) => mentorAt(mentor, `content.mentors[${index}]`),
+    ),
+    projects: arrayAt(property(root, 'projects', 'content'), 'content.projects').map(
+      (project, index) => projectAt(project, `content.projects[${index}]`),
     ),
     zh: parseDictionary(property(root, 'zh', 'content'), 'content.zh'),
     en: parseDictionary(property(root, 'en', 'content'), 'content.en'),

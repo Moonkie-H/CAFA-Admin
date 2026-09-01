@@ -79,6 +79,7 @@ export class PublishService {
         this.env.MEDIA_BASE,
         this.env.PRODUCTION_URL,
         this.env.MEDIA_TRANSFORM,
+        this.env.ADMIN_URL,
       ),
     );
   }

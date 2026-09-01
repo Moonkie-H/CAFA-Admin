@@ -41,9 +41,10 @@ function withWorks(...works: Work[]): ContentSet {
 
 const MEDIA_BASE = 'https://media.example.com';
 const SITE_URL = 'https://example.com';
+const ADMIN_URL = 'https://admin.example.com';
 
 function bundleOf(set: ContentSet, media: MediaRow[]) {
-  return buildBundle(set, media, MEDIA_BASE, SITE_URL, undefined);
+  return buildBundle(set, media, MEDIA_BASE, SITE_URL, undefined, ADMIN_URL);
 }
 
 describe('the published bundle', () => {
@@ -98,13 +99,39 @@ describe('the published bundle', () => {
   });
 
   it('adds the deployment’s own facts to site, and strips the trailing slash', () => {
-    const bundle = buildBundle(content(), [], MEDIA_BASE, 'https://example.com/', undefined);
+    const bundle = buildBundle(
+      content(),
+      [],
+      MEDIA_BASE,
+      'https://example.com/',
+      undefined,
+      ADMIN_URL,
+    );
 
     expect(bundle.site.url).toBe('https://example.com');
     expect(bundle.site.locales).toEqual(['zh', 'en']);
     expect(bundle.site.localeNames).toEqual({ zh: 'English', en: 'English' });
     // Lifted out of the dictionaries, so what is left is page copy only.
     expect(bundle.dictionaries.en).not.toHaveProperty('localeName');
+  });
+
+  it('points the contact form at the admin, and offers no form without one', () => {
+    expect(bundleOf(content(), []).contactEndpoint).toBe(
+      'https://admin.example.com/api/v1/contact',
+    );
+
+    // A trailing slash on the var must not become a double slash in the URL the
+    // browser posts to — the same rule site.url is held to two lines above.
+    expect(
+      buildBundle(content(), [], MEDIA_BASE, SITE_URL, undefined, 'https://admin.example.com/')
+        .contactEndpoint,
+    ).toBe('https://admin.example.com/api/v1/contact');
+
+    // No ADMIN_URL is a deployment that has not set the form up. Null rather
+    // than '' so the site has to decide, and it decides on a mailto: draft.
+    expect(
+      buildBundle(content(), [], MEDIA_BASE, SITE_URL, undefined, undefined).contactEndpoint,
+    ).toBeNull();
   });
 
   it('is deterministic over the same content, which is what "nothing to publish" rests on', () => {

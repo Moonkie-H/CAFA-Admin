@@ -100,6 +100,31 @@ export interface Mentor {
 }
 
 /**
+ * A project: a picture, a name, and a line or two about it.
+ *
+ * The smallest record here, and its smallness is the point. About used to end
+ * on a grid of the *works*, drawn from the works table under a heading that
+ * called them projects — so the studio could neither put something under that
+ * heading that was not a work, nor keep a work off it. Two unlike things shared
+ * one table because they looked alike on the day the page was drawn.
+ *
+ * What a project is not, it is not on purpose. No status: a work is completed,
+ * in progress or private because the index says so beside its number, and
+ * nothing on About says anything of the kind. No year, no disciplines, no
+ * credits — those are the columns of the works index, read there. And no page,
+ * so `slug` is a stable key for ordering and for filing the photograph under,
+ * the way a programme's is; it is never a URL segment and nothing resolves a
+ * project by it.
+ */
+export interface Project {
+  slug: string;
+  title: LocalisedText;
+  /** The line or two under the picture. */
+  summary: LocalisedText;
+  image: ImageRef;
+}
+
+/**
  * The four pages the site has, and the words the studio fills them with.
  *
  * **The set of pages is code, and so is what each one is composed of.** Each
@@ -110,9 +135,9 @@ export interface Mentor {
  * without anyone drawing anything new.
  *
  * The lists are not here. The works index *is* `works`, the programme list is
- * `programs`, the mentor strip is `mentors` — a page names a collection rather
- * than carrying one, so adding a work still changes three pages and touches
- * nothing in this file.
+ * `programs`, the mentor strip is `mentors`, the grid on About is `projects` —
+ * a page names a collection rather than carrying one, so adding a work still
+ * changes three pages and touches nothing in this file.
  */
 const PAGE_KEYS = ['home', 'works', 'programs', 'about'] as const;
 
@@ -152,8 +177,12 @@ export interface ProgramsPage extends PageText {
  * About: what the studio says about itself, the people, and the projects.
  *
  * Read down the page: the prose, then the mentors under `mentorsTitle`, then
- * the published works as a grid under `projectsTitle`. The mentors and the
- * works are collections of their own — this page only names them.
+ * the projects as a grid under `projectsTitle`. The mentors and the projects
+ * are collections of their own — this page only names them.
+ *
+ * `projectsTitle` used to head a second drawing of the works index. It heads
+ * the projects now, which are their own records; the heading did not have to
+ * change, because it was always the honest name for what it labelled.
  */
 export interface AboutPage extends PageText {
   intro: LocalisedText[];
@@ -229,12 +258,31 @@ export interface Dictionary {
     address: string;
     hours: string;
     note: string;
-    /** The message form: two field labels, the subject the reader's mail client
-        opens with, and the word on the button. */
+    /** The message form: two field labels, the subject the message arrives
+        under, and the word on the button. */
     from: string;
     message: string;
     subject: string;
     send: string;
+    /**
+     * The form in its other three states, and the way out of the third.
+     *
+     * These arrived with the endpoint. While Send only composed a `mailto:`
+     * there was nothing to wait for and nothing that could fail — the reader's
+     * own mail client took over and the card was done. A form that posts has a
+     * mid-flight, a done and a failed, and a card that does not say which of the
+     * three it is in is a card that looks broken while it is working.
+     *
+     * `failed` is the fallback rather than the usual case: a refusal from the
+     * Worker carries its own sentence for whoever typed the message, and the
+     * card shows that instead. This is what is said when the network went and
+     * there is nothing to relay. `draft` labels the offer of a `mailto:`
+     * afterwards, so a failure is never a dead end.
+     */
+    sending: string;
+    sent: string;
+    failed: string;
+    draft: string;
   };
   notFound: { title: string; body: string; home: string };
   footer: { note: string };
@@ -249,6 +297,7 @@ export interface ContentSet {
   works: Work[];
   programs: Program[];
   mentors: Mentor[];
+  projects: Project[];
   zh: Dictionary;
   en: Dictionary;
 }
