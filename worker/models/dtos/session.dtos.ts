@@ -1,11 +1,19 @@
 /**
  * What the editor is told about its own session.
  *
- * A login and nothing else. There is no token to hand back and nothing else
- * worth putting in the cookie: the password is verified once, at sign-in, and
- * from then on the sealed name is the entire session.
+ * A login, and the content that login is there to edit. The two travel together
+ * because they are one question — "who am I and what am I editing" — and asking
+ * it as two requests cost a full round trip before the first field could be
+ * drawn: the second could not start until the first had answered, because until
+ * it has there is no session to read the content with.
+ *
+ * There is no token in here and nothing else worth putting in the cookie: the
+ * password is verified once, at sign-in, and from then on the sealed name is
+ * the entire session.
  */
-export interface SessionResponse {
+import type { ContentResponse } from './content.dtos';
+
+export interface SessionResponse extends ContentResponse {
   login: string;
 }
 

@@ -418,7 +418,7 @@ it already takes an entry with intrinsic dimensions and a variant list.
 
 | Route | Auth | Purpose |
 |---|---|---|
-| `GET /api/content` | session | Live draft tables, for the admin |
+| `GET /api/session` | session | Who is signed in **and** the live draft tables, for the admin |
 | `GET /api/content/published` | **public** | Latest revision blob, for the production build |
 | `GET /api/content/draft` | preview token | The draft, for the preview build |
 | `POST /api/save` | session | Write draft tables in one `batch()` |

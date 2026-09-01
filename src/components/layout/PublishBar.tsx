@@ -16,6 +16,10 @@
  * The preview answers the same question against the draft, which has no
  * revision number of its own — so it reports a fingerprint of the content
  * instead, and the comparison is otherwise identical.
+ *
+ * And when an origin is behind with nothing coming to fix it — no deploy hook
+ * configured, so the publish wrote its revision and poked nothing — this says
+ * that instead of "publishing…", which is what it would otherwise say forever.
  */
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -42,9 +46,13 @@ export function PublishBar({ editor }: PublishBarProps) {
   const [notice, setNotice] = useState<string | null>(null);
 
   const preview =
-    status === null ? 'unknown' : deploymentOf(status.draftRevision, status.preview.revision);
+    status === null
+      ? 'unknown'
+      : deploymentOf(status.draftRevision, status.preview.revision, status.preview.rebuilds);
   const production =
-    status === null ? 'unknown' : deploymentOf(status.latestRevision, status.production.revision);
+    status === null
+      ? 'unknown'
+      : deploymentOf(status.latestRevision, status.production.revision, status.production.rebuilds);
   const settling = preview === 'building' || production === 'building';
 
   // Re-ask while a build is in flight, waiting a full interval *after* each
@@ -97,10 +105,12 @@ export function PublishBar({ editor }: PublishBarProps) {
   }
 
   // One sentence at a time, most urgent first: a failure, then what just
-  // happened, then the reason a button next to it is doing nothing.
+  // happened, then the fact that nothing is going to make this live, then the
+  // reason a button next to it is doing nothing.
   const message =
     editor.error ??
     notice ??
+    (production === 'stalled' ? t('publish.noDeployHook') : null) ??
     (editor.dirty && unpublished ? t('publish.saveFirst') : null);
 
   return (
@@ -119,6 +129,9 @@ export function PublishBar({ editor }: PublishBarProps) {
 
         {preview === 'building' && <span className="state">{t('publish.previewBuilding')}</span>}
         {production === 'building' && <span className="state">{t('publish.publishing')}</span>}
+        {production === 'stalled' && (
+          <span className="state state-warn">{t('publish.notRebuilding')}</span>
+        )}
       </p>
 
       <div className="publish-actions">

@@ -84,9 +84,16 @@ export class PublishService {
     );
   }
 
+  /**
+   * All four reads at once. The two origins are asked what they are serving
+   * while the database is being asked what the draft is — nothing here depends
+   * on anything else here, and waiting for the bundle before opening a socket
+   * made the poll cost the sum of the two rather than the longer of them.
+   */
   async status(): Promise<StatusResponse> {
-    const [newest, draft] = await Promise.all([newestRevision(this.env.DB), this.draftBundle()]);
-    const [live, preview] = await Promise.all([
+    const [newest, draft, live, preview] = await Promise.all([
+      newestRevision(this.env.DB),
+      this.draftBundle(),
       this.deploy.liveRevision(this.env.PRODUCTION_URL),
       this.deploy.liveRevision(this.env.PREVIEW_URL),
     ]);
@@ -97,8 +104,16 @@ export class PublishService {
       // No revision yet means everything is unpublished, including nothing.
       unpublished: newest === null ? true : newest.content !== draft,
       draftRevision: fingerprint(draft),
-      production: { url: this.env.PRODUCTION_URL, revision: live },
-      preview: { url: this.env.PREVIEW_URL ?? null, revision: preview },
+      production: {
+        url: this.env.PRODUCTION_URL,
+        revision: live,
+        rebuilds: this.deploy.rebuilds('production'),
+      },
+      preview: {
+        url: this.env.PREVIEW_URL ?? null,
+        revision: preview,
+        rebuilds: this.deploy.rebuilds('preview'),
+      },
     };
   }
 

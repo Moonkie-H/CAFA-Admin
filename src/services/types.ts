@@ -21,17 +21,19 @@ export interface ApiResponse<T> {
   problems?: Problem[];
 }
 
+/**
+ * Who is signed in, and what they are signed in to edit. One answer, because
+ * the editor has no use for either half without the other and asking twice cost
+ * a round trip the second request could not start until the first had finished.
+ */
 export interface SessionResponse {
   login: string;
+  content: ContentSet;
+  media: MediaInfo[];
 }
 
 export interface SignedOutResponse {
   signedOut: true;
-}
-
-export interface ContentResponse {
-  content: ContentSet;
-  media: MediaInfo[];
 }
 
 export interface SavedResponse {
@@ -41,6 +43,8 @@ export interface SavedResponse {
 export interface DeployedOrigin {
   url: string | null;
   revision: number | null;
+  /** Whether anything rebuilds it, i.e. whether its deploy hook is configured. */
+  rebuilds: boolean;
 }
 
 export interface SiteStatus {
