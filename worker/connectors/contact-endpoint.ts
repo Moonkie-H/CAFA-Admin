@@ -28,13 +28,15 @@ export const CONTACT_SUMMARY = 'Send a message to the studio';
 
 export const CONTACT_DESCRIPTION = `Posts one message to whatever address the published \`site.contact.email\` names — the same address printed on the contact card. The recipient is not a parameter and cannot be one: it is read out of the published revision on every request, so this cannot be used to send mail to anybody else.
 
-Refusals are the admin's own error envelope with a sentence in \`msg\` that is meant to be shown to whoever typed the message. \`400\` is something they can fix — a malformed address, an empty body. \`429\` is too many messages from one address in a short window. \`503\` means the studio has not finished setting the form up, or nothing has been published yet; a site that gets one should fall back to a \`mailto:\` link rather than dropping the message.
+Refusals are the admin's own error envelope with a sentence in \`msg\` that is meant to be shown to whoever typed the message. \`400\` is something they can fix — a malformed address, an empty body, or a \`from\` whose domain publishes no mail server, which is the typo a pattern cannot catch. \`429\` is too many messages from one address in a short window. \`503\` means the studio has not finished setting the form up, or nothing has been published yet; a site that gets one should fall back to a \`mailto:\` link rather than dropping the message.
 
 \`website\` is a honeypot. Leave it out, or send it empty; a request that fills it is answered \`200\` and nothing is sent.`;
 
 export const CONTACT_REQUEST: JsonSchema = some(
   {
-    from: text('The address the studio should reply to. Required.'),
+    from: text(
+      'The address the studio should reply to. Required, and checked twice: for shape, and against DNS for whether its domain receives mail at all. A resolver that cannot answer is read as yes, so this refuses typos rather than gambling on outages.',
+    ),
     name: text('What the sender is called. May be empty.'),
     message: text('The message itself, as plain text. At most 5,000 characters.'),
     website: text(

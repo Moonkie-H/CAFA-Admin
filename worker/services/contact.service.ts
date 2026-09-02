@@ -18,16 +18,26 @@
  * that fills every input gives itself away, and the answer is a cheerful 200
  * with nothing sent — telling a bot it was caught is telling it what to change.
  *
+ * **The address is checked twice**, and the second check is the one that earns
+ * its keep. `checkContactMessage` decides whether what was typed is shaped like
+ * an address and is safe to put in a mail header; `MailDomains` then asks DNS
+ * whether the domain after the `@` has anywhere to deliver to. A message whose
+ * reply-to bounces is a message the studio cannot answer, and the sender is the
+ * only person who can fix it — so they are told now, while they are still
+ * looking at the card, rather than never. A resolver that cannot answer is
+ * treated as a yes; see mail-domains.ts for why that trade is not close.
+ *
  * **The rate limit** is Cloudflare's own binding, keyed on the caller's IP. It
  * is optional in the same way the mailer's key is: absent means unlimited, and
  * absent is what `wrangler dev` gives you unless configured, so the code must
  * work either way rather than crash locally.
  */
-import { checkContactMessage, contactBody, contactSubject } from '../domain/contact';
+import { addressDomain, checkContactMessage, contactBody, contactSubject } from '../domain/contact';
 import type { PublishedBundle } from '../domain/bundle';
 import { LOCALES, type Locale } from '../../shared/content/types';
 import { ApiException } from '../shared/api-exception';
 import type { Mailer } from './mailer';
+import type { MailDomains } from './mail-domains';
 import type { PublishService } from './publish.service';
 
 /**
@@ -66,6 +76,7 @@ export class ContactService {
     private readonly publishing: PublishService,
     private readonly mailer: Mailer,
     private readonly limiter: RateLimiter | undefined,
+    private readonly domains: MailDomains,
   ) {}
 
   async send(submission: ContactSubmission, from: string | null): Promise<ContactOutcome> {
@@ -83,6 +94,17 @@ export class ContactService {
 
     const checked = checkContactMessage(submission);
     if (!checked.ok) return { accepted: false, status: 400, reason: checked.fault };
+
+    // Shaped like an address, but is there anything behind it? A typo'd domain
+    // passes every pattern and then bounces a day later, in the studio's outbox
+    // rather than in front of the person who mistyped it.
+    if ((await this.domains.verdict(addressDomain(checked.message.from))) === 'refuses') {
+      return {
+        accepted: false,
+        status: 400,
+        reason: 'That address’s domain does not receive mail. Check the spelling.',
+      };
+    }
 
     const bundle = await this.publishedBundle();
     const to = bundle.site.contact.email;

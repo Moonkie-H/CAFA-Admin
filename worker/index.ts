@@ -33,6 +33,7 @@ import { AuthService } from './services/auth.service';
 import { ConnectorService } from './services/connector.service';
 import { ContactService } from './services/contact.service';
 import { ContentService } from './services/content.service';
+import { DnsMailDomains } from './services/mail-domains';
 import { ResendMailer } from './services/mailer';
 import { DeployService } from './services/deploy.service';
 import { MediaService } from './services/media.service';
@@ -72,6 +73,7 @@ function compose(env: Env, ctx: ExecutionContext): Router {
       publishing,
       new ResendMailer({ token: env.CONTACT_TOKEN, sender: env.CONTACT_SENDER }),
       env.CONTACT_RATE,
+      new DnsMailDomains(),
     ),
   );
 

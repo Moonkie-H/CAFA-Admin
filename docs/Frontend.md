@@ -204,6 +204,14 @@ sentence written for whoever typed the message — "that does not look like an
 email address". Show it. `429` is too many messages in a short window; `503` is
 the studio's own configuration and means fall back to the draft.
 
+**`from` is checked against DNS, not only against a pattern.** A `400` also
+comes back when the domain after the `@` publishes no mail server — `gmial.com`,
+`hotmail.con` — which is the mistake `type="email"` in the browser cannot catch
+and which otherwise bounces a day later, into the studio's outbox rather than in
+front of the person who mistyped it. A resolver that cannot answer is read as
+yes, so an outage never turns into a refused enquiry. Nothing about this changes
+what a frontend does: it is one more sentence in `msg` under a `400`.
+
 **`site.url` is the site's own origin**, without a trailing slash, and every
 canonical, hreflang, `og:url` and sitemap entry should resolve against it. It
 comes from the admin's `PRODUCTION_URL`, so moving domains is one edit here

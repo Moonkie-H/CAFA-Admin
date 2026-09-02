@@ -6,13 +6,16 @@
  * a mail header, a body that could fill an inbox, and the two guards — the
  * honeypot and the rate limit — whose whole job is to be silent when they fire.
  *
- * The service is exercised against a fake mailer rather than a network. The
- * question worth answering is "what did it decide to send, and to whom", and
- * the provider's HTTP shape is worth nothing to that.
+ * The service is exercised against a fake mailer and a fake resolver rather
+ * than a network. The question worth answering is "what did it decide to send,
+ * and to whom", and the provider's HTTP shape is worth nothing to that — the
+ * resolver's own shape is tested separately, against a stubbed `fetch`, because
+ * there the parsing *is* the behaviour.
  */
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  addressDomain,
   checkContactMessage,
   contactBody,
   contactSubject,
@@ -20,6 +23,11 @@ import {
 } from '../worker/domain/contact';
 import { buildBundle } from '../worker/domain/bundle';
 import { ContactService, type RateLimiter } from '../worker/services/contact.service';
+import {
+  DnsMailDomains,
+  type MailDomains,
+  type MailDomainVerdict,
+} from '../worker/services/mail-domains';
 import type { Mailer, Outgoing, SendResult } from '../worker/services/mailer';
 import type { PublishService } from '../worker/services/publish.service';
 import { ApiException } from '../worker/shared/api-exception';
@@ -119,6 +127,11 @@ class Recorder implements Mailer {
   }
 }
 
+/** A resolver that has already made up its mind. */
+function domains(verdict: MailDomainVerdict = 'accepts'): MailDomains {
+  return { verdict: () => Promise.resolve(verdict) };
+}
+
 /** A publish service that answers with one bundle, or with nothing published. */
 function publisher(options: { email?: string; published?: boolean } = {}): PublishService {
   const set = content();
@@ -154,7 +167,7 @@ const BLANK = { from: '', name: '', message: '', website: '', locale: '' };
 describe('sending one', () => {
   it('sends to the address the published content names, replying to the sender', async () => {
     const mailer = new Recorder();
-    const service = new ContactService(publisher({ email: 'studio@cafa.test' }), mailer, undefined);
+    const service = new ContactService(publisher({ email: 'studio@cafa.test' }), mailer, undefined, domains());
 
     const outcome = await service.send(
       { ...BLANK, from: 'ada@example.com', name: 'Ada', message: 'Hello.' },
@@ -172,7 +185,7 @@ describe('sending one', () => {
 
   it('drops a message that filled the honeypot, and says nothing about it', async () => {
     const mailer = new Recorder();
-    const service = new ContactService(publisher(), mailer, undefined);
+    const service = new ContactService(publisher(), mailer, undefined, domains());
 
     const outcome = await service.send(
       { ...BLANK, from: 'bot@example.com', message: 'Buy things.', website: 'http://spam' },
@@ -188,7 +201,7 @@ describe('sending one', () => {
   it('refuses over the limit before it reads the published content', async () => {
     const mailer = new Recorder();
     const limiter: RateLimiter = { limit: () => Promise.resolve({ success: false }) };
-    const service = new ContactService(publisher(), mailer, limiter);
+    const service = new ContactService(publisher(), mailer, limiter, domains());
 
     const outcome = await service.send(
       { ...BLANK, from: 'ada@example.com', message: 'Hello.' },
@@ -200,7 +213,7 @@ describe('sending one', () => {
   });
 
   it('hands a malformed address back as something the sender can fix', async () => {
-    const service = new ContactService(publisher(), new Recorder(), undefined);
+    const service = new ContactService(publisher(), new Recorder(), undefined, domains());
 
     const outcome = await service.send(
       { ...BLANK, from: 'not-an-address', message: 'Hello.' },
@@ -215,6 +228,7 @@ describe('sending one', () => {
       publisher(),
       new Recorder({ sent: false, reason: 'not-configured' }),
       undefined,
+      domains(),
     );
 
     const outcome = await service.send(
@@ -229,7 +243,12 @@ describe('sending one', () => {
   });
 
   it('has no endpoint before the site has been published', async () => {
-    const service = new ContactService(publisher({ published: false }), new Recorder(), undefined);
+    const service = new ContactService(
+      publisher({ published: false }),
+      new Recorder(),
+      undefined,
+      domains(),
+    );
 
     await expect(
       service.send({ ...BLANK, from: 'ada@example.com', message: 'Hello.' }, null),
@@ -238,7 +257,7 @@ describe('sending one', () => {
 
   it('titles the message in the language the card was read in', async () => {
     const mailer = new Recorder();
-    const service = new ContactService(publisher(), mailer, undefined);
+    const service = new ContactService(publisher(), mailer, undefined, domains());
 
     await service.send(
       { ...BLANK, from: 'ada@example.com', message: 'Hello.', locale: 'zh' },
@@ -253,5 +272,114 @@ describe('sending one', () => {
     // is that an unknown locale falls back rather than reaching for undefined.
     expect(mailer.sent).toHaveLength(2);
     expect(mailer.sent[1]?.subject).toBe(mailer.sent[0]?.subject);
+  });
+});
+
+describe('the address behind the address', () => {
+  it('reads the domain off an address, including a quoted local part', () => {
+    expect(addressDomain('ada@Example.COM')).toBe('example.com');
+    expect(addressDomain('"odd@name"@example.com')).toBe('example.com');
+  });
+
+  it('refuses a message whose domain receives no mail, in words that name the fix', async () => {
+    const mailer = new Recorder();
+    const service = new ContactService(publisher(), mailer, undefined, domains('refuses'));
+
+    const outcome = await service.send(
+      // Shaped like an address and passes every pattern. The domain is the typo.
+      { ...BLANK, from: 'ada@gmial.com', message: 'Hello.' },
+      null,
+    );
+
+    expect(outcome).toMatchObject({ accepted: false, status: 400 });
+    expect(mailer.sent).toHaveLength(0);
+  });
+
+  it('sends anyway when the resolver could not say', async () => {
+    const mailer = new Recorder();
+    const service = new ContactService(publisher(), mailer, undefined, domains('unknown'));
+
+    const outcome = await service.send(
+      { ...BLANK, from: 'ada@example.com', message: 'Hello.' },
+      null,
+    );
+
+    // Fails open, deliberately: a slow resolver must never become the studio
+    // refusing a genuine enquiry.
+    expect(outcome.accepted).toBe(true);
+    expect(mailer.sent).toHaveLength(1);
+  });
+});
+
+/** One DNS-over-HTTPS answer, as the resolver's JSON format gives it. */
+function dnsAnswer(status: number, types: number[]): Response {
+  return Response.json({ Status: status, Answer: types.map((type) => ({ type })) });
+}
+
+describe('asking DNS whether a domain takes mail', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /** Answers each lookup by record type, so a test says only what it means to. */
+  function resolver(answers: Partial<Record<string, Response>>) {
+    const asked: string[] = [];
+    vi.stubGlobal('fetch', (url: string) => {
+      const type = new URL(url).searchParams.get('type') ?? '';
+      asked.push(type);
+      const answer = answers[type];
+      return answer === undefined
+        ? Promise.reject(new Error('no answer stubbed'))
+        : Promise.resolve(answer);
+    });
+    return asked;
+  }
+
+  it('accepts a domain with an MX record and asks nothing further', async () => {
+    const asked = resolver({ MX: dnsAnswer(0, [15]) });
+
+    expect(await new DnsMailDomains().verdict('example.com')).toBe('accepts');
+    expect(asked).toEqual(['MX']);
+  });
+
+  it('accepts a domain that is its own mail exchanger', async () => {
+    // No MX, but an A record. RFC 5321 §5.1 — refusing this would refuse every
+    // small self-hosted domain.
+    resolver({ MX: dnsAnswer(0, []), A: dnsAnswer(0, [1]), AAAA: dnsAnswer(0, []) });
+
+    expect(await new DnsMailDomains().verdict('example.com')).toBe('accepts');
+  });
+
+  it('refuses a name that does not exist', async () => {
+    const asked = resolver({ MX: dnsAnswer(3, []) });
+
+    expect(await new DnsMailDomains().verdict('gmial.com')).toBe('refuses');
+    // NXDOMAIN is final: there is no point asking the same resolver twice.
+    expect(asked).toEqual(['MX']);
+  });
+
+  it('refuses a name that exists with nowhere to deliver', async () => {
+    resolver({ MX: dnsAnswer(0, []), A: dnsAnswer(0, []), AAAA: dnsAnswer(0, []) });
+
+    expect(await new DnsMailDomains().verdict('example.com')).toBe('refuses');
+  });
+
+  it('does not mistake a CNAME in the answer for the record it asked about', async () => {
+    // A CNAME chain comes back in the same array. A non-empty answer is not an
+    // answer to the question that was asked.
+    resolver({ MX: dnsAnswer(0, [5]), A: dnsAnswer(0, [5]), AAAA: dnsAnswer(0, [5]) });
+
+    expect(await new DnsMailDomains().verdict('example.com')).toBe('refuses');
+  });
+
+  it('says it does not know when the resolver errors, times out or misbehaves', async () => {
+    resolver({ MX: new Response('down', { status: 502 }) });
+    expect(await new DnsMailDomains().verdict('example.com')).toBe('unknown');
+
+    vi.stubGlobal('fetch', () => Promise.reject(new Error('timed out')));
+    expect(await new DnsMailDomains().verdict('example.com')).toBe('unknown');
+
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ Status: 2 })));
+    expect(await new DnsMailDomains().verdict('example.com')).toBe('unknown');
   });
 });

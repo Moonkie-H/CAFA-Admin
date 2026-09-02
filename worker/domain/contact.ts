@@ -23,6 +23,11 @@
  * is real. It cannot be known from the string, only from sending to it, and a
  * regex that tries anyway is a regex that eventually refuses somebody's genuine
  * address. This checks the shape and the safety, and stops.
+ *
+ * The half of that question which *can* be answered is answered elsewhere and
+ * over the network: whether the domain after the `@` publishes anywhere to
+ * deliver to. That is a DNS lookup rather than a pattern, so it lives in
+ * services/mail-domains.ts and this file only supplies the name to ask about.
  */
 
 /**
@@ -81,6 +86,18 @@ function withoutControls(value: string): string {
 
 export function isContactAddress(value: string): boolean {
   return value.length <= MAX_ADDRESS && ADDRESS.test(value);
+}
+
+/**
+ * The half of an address after the `@`, lowercased, for asking DNS about.
+ *
+ * `lastIndexOf` rather than a split: the local part may itself contain an `@`
+ * when it is quoted, and it is the final one that separates the domain. Only
+ * meaningful for a value `isContactAddress` has already accepted — the empty
+ * string is what anything else gives, and a lookup of it fails as it should.
+ */
+export function addressDomain(address: string): string {
+  return address.slice(address.lastIndexOf('@') + 1).toLowerCase();
 }
 
 /**
