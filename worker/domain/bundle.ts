@@ -81,12 +81,23 @@ export interface PublishedBundle {
   /**
    * What was measured about each photograph the published content cites, and
    * nothing about the ones it does not: the intrinsic size the template holds
-   * an aspect box open with, and the dominant hue it draws the works index's
-   * hover band from. `tint` is null for a monochrome photograph and for one
-   * uploaded before the admin measured such things; the site reads both as no
-   * hue and uses its neutral band.
+   * an aspect box open with, the dominant hue it draws the works index's hover
+   * band from, and which bytes are currently under the key. `tint` is null for
+   * a monochrome photograph and for one uploaded before the admin measured such
+   * things; the site reads both as no hue and uses its neutral band.
+   *
+   * `version` is here because without it a replaced photograph was invisible
+   * from end to end. A key does not change when the studio swaps a file, so a
+   * replacement of the same dimensions left this map — and therefore this whole
+   * bundle — byte-identical, and `insertRevisionIfChanged` correctly reported
+   * that there was nothing to publish. It is null for a photograph uploaded
+   * before migration 0009, which the site reads as no version and requests the
+   * plain URL for, exactly as it did before.
    */
-  media: Record<string, { width: number; height: number; tint: number | null }>;
+  media: Record<
+    string,
+    { width: number; height: number; tint: number | null; version: string | null }
+  >;
   /** Where the originals live, so the template can build transform URLs. */
   mediaBase: string;
   /**
@@ -192,7 +203,12 @@ export function buildBundle(
   const measured: PublishedBundle['media'] = {};
   for (const row of media) {
     if (cited.has(row.key)) {
-      measured[row.key] = { width: row.width, height: row.height, tint: row.tint };
+      measured[row.key] = {
+        width: row.width,
+        height: row.height,
+        tint: row.tint,
+        version: row.version,
+      };
     }
   }
 

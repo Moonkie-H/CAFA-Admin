@@ -138,6 +138,12 @@ export interface MediaRow {
   bytes: number;
   /** The dominant hue in OKLCH degrees, or null where there is none to have. */
   tint: number | null;
+  /**
+   * Which bytes are under the key, as a digest of them — null for a photograph
+   * uploaded before migration 0009. A key never changes when a photograph is
+   * replaced, so this is the only thing that says a replacement happened.
+   */
+  version: string | null;
 }
 
 export interface RevisionRow {

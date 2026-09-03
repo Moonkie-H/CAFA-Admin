@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isReadableMediaKey, isWritableMediaKey, measure } from '../worker/domain/image';
+import { isReadableMediaKey, isWritableMediaKey, measure, versionOf } from '../worker/domain/image';
 import { open, seal } from '../worker/domain/session';
 import { timingSafeEqualBytes, timingSafeEqualText } from '../worker/domain/secrets';
 import { ApiResponse } from '../worker/shared/api-response';
@@ -32,6 +32,25 @@ describe('Worker runtime boundaries', () => {
 
   it('rejects unreadable image bytes', () => {
     expect(() => measure(new ArrayBuffer(24))).toThrow(/not a JPEG or PNG/);
+  });
+
+  /*
+   * The two properties the replacement fix rests on. Same bytes, same version:
+   * re-uploading a file the studio has not actually changed must not churn a
+   * URL every reader has cached. Different bytes, different version: that is
+   * the whole of what says a photograph filed under an unchanged key is not the
+   * one the last published revision described.
+   */
+  it('names bytes by their content, so a replacement is a different name', async () => {
+    const [same, replaced] = await Promise.all([
+      versionOf(png(1_200, 800)),
+      versionOf(png(1_200, 801)),
+    ]);
+
+    expect(await versionOf(png(1_200, 800))).toBe(same);
+    expect(replaced).not.toBe(same);
+    // Short enough to hang off a URL, and hexadecimal so it needs no escaping.
+    expect(same).toMatch(/^[0-9a-f]{12}$/);
   });
 
   it('admits a media key for every folder the editor files into', () => {

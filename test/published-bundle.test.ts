@@ -32,7 +32,14 @@ function work(slug: string, status: Work['status']): Work {
 }
 
 function measured(...keys: string[]): MediaRow[] {
-  return keys.map((key) => ({ key, width: 1_200, height: 800, bytes: 100_000, tint: 210 }));
+  return keys.map((key) => ({
+    key,
+    width: 1_200,
+    height: 800,
+    bytes: 100_000,
+    tint: 210,
+    version: 'aaaaaaaaaaaa',
+  }));
 }
 
 function withWorks(...works: Work[]): ContentSet {
@@ -78,6 +85,7 @@ describe('the published bundle', () => {
       width: 1_200,
       height: 800,
       tint: 210,
+      version: 'aaaaaaaaaaaa',
     });
   });
 
@@ -140,6 +148,31 @@ describe('the published bundle', () => {
     const second = bundleOf(withWorks(work('edible-house', 'completed')), media);
 
     expect(JSON.stringify(first)).toBe(JSON.stringify(second));
+  });
+
+  /*
+   * The counterweight to the test above, and the regression this pair exists
+   * for. Determinism is what lets "nothing to publish" be decided by comparing
+   * two bundles as strings — which quietly meant that replacing a photograph
+   * with one of the same dimensions published nothing at all, because the key
+   * does not change and nothing else in the bundle described the file. The
+   * version is what differs now, so the studio's replacement reaches the site.
+   */
+  it('differs when a photograph is replaced under the same key', () => {
+    const set = withWorks(work('edible-house', 'completed'));
+    const before = measured('works/edible-house/cover.jpg', 'works/edible-house/01.jpg');
+    const after = before.map((row) => ({ ...row, version: 'bbbbbbbbbbbb' }));
+
+    expect(JSON.stringify(bundleOf(set, after))).not.toBe(JSON.stringify(bundleOf(set, before)));
+  });
+
+  it('publishes no version for a photograph uploaded before one was recorded', () => {
+    const bundle = bundleOf(
+      withWorks(work('edible-house', 'completed')),
+      measured('works/edible-house/cover.jpg').map((row) => ({ ...row, version: null })),
+    );
+
+    expect(bundle.media['works/edible-house/cover.jpg']?.version).toBeNull();
   });
 
   it('turns transformations off only for a value that plainly says so', () => {

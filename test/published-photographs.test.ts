@@ -39,7 +39,14 @@ function work(slug: string, status: Work['status'] = 'completed'): Work {
 }
 
 function measured(...keys: string[]): MediaRow[] {
-  return keys.map((key) => ({ key, width: 1_200, height: 800, bytes: 100_000, tint: 210 }));
+  return keys.map((key) => ({
+    key,
+    width: 1_200,
+    height: 800,
+    bytes: 100_000,
+    tint: 210,
+    version: 'aaaaaaaaaaaa',
+  }));
 }
 
 function published(set: ContentSet, media: MediaRow[]) {
@@ -92,7 +99,9 @@ describe('the published photographs', () => {
     const set: ContentSet = { ...content(), works: [work('edible-house')] };
     const [photograph] = published(set, measured('works/edible-house/cover.jpg'));
 
-    expect(photograph?.url).toBe('https://media.example.com/works/edible-house/cover.jpg');
+    expect(photograph?.url).toBe(
+      'https://media.example.com/works/edible-house/cover.jpg?v=aaaaaaaaaaaa',
+    );
     expect(photograph?.width).toBe(1_200);
     expect(photograph?.decorative).toBe(false);
   });

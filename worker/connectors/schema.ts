@@ -306,7 +306,9 @@ export const COMPONENTS: Record<string, JsonSchema> = {
   Photograph: shape(
     {
       key: text('The object key, which is what content refers to a photograph by.'),
-      url: text('The absolute URL of the original. Transform it when `Bundle.mediaTransform` is true; otherwise point an `<img src>` straight at it.'),
+      url: text(
+        'The absolute URL of the original, carrying a `v` that names the bytes currently filed under `key`. Transform it when `Bundle.mediaTransform` is true; otherwise point an `<img src>` straight at it. Keep the query either way: a key does not change when the studio replaces a photograph, so it is the only thing that stops a cache answering with the one that used to be there. Absent for a photograph uploaded before the admin recorded a version.',
+      ),
       width: whole('The intrinsic width in pixels, measured from the file on upload.'),
       height: whole('The intrinsic height, likewise. Together they are the aspect box.'),
       tint: maybeNumber(
@@ -341,6 +343,11 @@ export const COMPONENTS: Record<string, JsonSchema> = {
           width: whole('Intrinsic width.'),
           height: whole('Intrinsic height.'),
           tint: maybeNumber('Dominant hue in OKLCH degrees, or null where there is none.'),
+          version: {
+            anyOf: [{ type: 'string' }, { type: 'null' }],
+            description:
+              'A digest of the bytes currently filed under this key, to hang off the URL you build for it. An object key is stable when a photograph is replaced, so without this a reader’s cache — and the CDN’s — keeps the old picture. Null for a photograph uploaded before the admin recorded one; ask for the plain URL then.',
+          },
         }),
         'What was measured, by object key, for every photograph public content cites.',
       ),

@@ -42,7 +42,7 @@ export function photographsOf(bundle: ReadableBundle): Photograph[] {
 
     photographs.push({
       key: image.src,
-      url: `${base}/${image.src}`,
+      url: versioned(`${base}/${image.src}`, measured.version),
       width: measured.width,
       height: measured.height,
       tint: measured.tint,
@@ -53,6 +53,19 @@ export function photographsOf(bundle: ReadableBundle): Photograph[] {
   }
 
   return photographs;
+}
+
+/**
+ * The same URL, named for the bytes currently under the key.
+ *
+ * A key is stable across a replacement, so the bare URL is the one a caller
+ * already has cached. The version rides in the query for the same reason the
+ * site puts it there: R2 ignores an unknown parameter, and every cache in
+ * between keys on the whole URL. Absent for a photograph uploaded before the
+ * admin recorded one, which leaves that URL exactly as it was.
+ */
+function versioned(url: string, version: string | null): string {
+  return version === null ? url : `${url}?v=${version}`;
 }
 
 /** Which record a photograph is drawn by, as the answer names it. */

@@ -48,6 +48,18 @@ export interface MediaInfo {
    * it and falls back to a neutral one when it is null.
    */
   tint: number | null;
+  /**
+   * A digest of the bytes currently filed under `key`, or null for a photograph
+   * uploaded before the admin recorded one.
+   *
+   * A photograph keeps its key when it is replaced, so nothing else about a
+   * published record changes when the studio swaps one out — which is precisely
+   * why the swap used to be invisible. This is what differs, and both halves of
+   * the site read it: the bundle is no longer byte-identical after a
+   * replacement, so publishing triggers a deploy, and the delivery URL carries
+   * it, so no cache answers with the photograph that used to be there.
+   */
+  version: string | null;
 }
 
 export type WorkStatus = 'completed' | 'in-progress' | 'private';

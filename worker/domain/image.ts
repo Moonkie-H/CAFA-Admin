@@ -1,11 +1,13 @@
 /**
  * What is true about a photograph before anything stores it.
  *
- * Pure functions over bytes and keys: no bucket, no database, nothing async.
- * The bucket is worker/storage/media-storage.ts and the registry row is
+ * Pure functions over bytes and keys: no bucket, no database, no bindings. The
+ * bucket is worker/storage/media-storage.ts and the registry row is
  * worker/repositories/media.repository.ts; this is the part both of them agree
  * about, which is why it is the only one of the three that can be reasoned
- * about — or tested — without a binding.
+ * about — or tested — without a binding. `versionOf` is async and still of that
+ * kind: WebCrypto's digest returns a promise, and nothing else about it needs
+ * the world.
  *
  * Dimensions are read out of the uploaded bytes rather than taken from the
  * browser that sent them. They are not decoration: the template turns them into
@@ -106,6 +108,29 @@ export function isWritableMediaKey(key: string): boolean {
 /** A key the editor may fetch bytes for. Everything writable, plus the legacy folder. */
 export function isReadableMediaKey(key: string): boolean {
   return READABLE.test(key) && !key.includes('..');
+}
+
+/**
+ * A short name for exactly these bytes.
+ *
+ * A photograph keeps its key when it is replaced — that is what stops the
+ * record having to be rewritten and the old object being orphaned — so the key
+ * cannot say which photograph is under it. This can, and it is what makes a
+ * replacement visible: it goes into the published bundle beside the dimensions,
+ * so a bundle differs whenever a file does and publishing is not a no-op, and
+ * the site hangs it off the delivery URL, so every cache between the bucket and
+ * the reader misses on a photograph that has changed.
+ *
+ * Content-addressed rather than a counter or an upload time, so re-uploading
+ * the same file leaves the URL — and every cache of it — alone. Six bytes of
+ * SHA-256: this distinguishes successive versions of one photograph, not every
+ * file in the world, and a URL carries it.
+ */
+export async function versionOf(buffer: ArrayBuffer): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', buffer);
+  return [...new Uint8Array(digest, 0, 6)]
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 export function contentTypeOf(key: string): string {

@@ -296,7 +296,7 @@ export const CONNECTORS: readonly Connector[] = [
     path: '/api/v1/photographs',
     summary: 'Every published photograph',
     description:
-      'One flat list of everything the published content cites — the works’ covers and pages, the mentors’ portraits, the projects’ pictures, the galleries on the pages — each with an absolute URL, its intrinsic dimensions, its dominant hue and its alt text. A private work’s photographs are absent, because a published revision does not name them. The dimensions are measured from the file at upload rather than taken from the client, so they can be trusted as an aspect box.',
+      'One flat list of everything the published content cites — the works’ covers and pages, the mentors’ portraits, the projects’ pictures, the galleries on the pages — each with an absolute URL, its intrinsic dimensions, its dominant hue and its alt text. The URL carries a `v` naming the bytes currently filed under the key, because the key itself does not change when the studio replaces a photograph — so an unversioned URL is one a cache may answer with the picture that used to be there. A private work’s photographs are absent, because a published revision does not name them. The dimensions are measured from the file at upload rather than taken from the client, so they can be trusted as an aspect box.',
     params: [
       {
         name: 'prefix',
