@@ -60,6 +60,21 @@ export interface MediaInfo {
    * it, so no cache answers with the photograph that used to be there.
    */
   version: string | null;
+  /**
+   * The widths this photograph is also filed at, ascending.
+   *
+   * The site's zone cannot transform, so nothing resizes a photograph on the
+   * way to a reader — which left every device downloading the 2400px original
+   * and mobile browsers failing to decode a page of them. These are written by
+   * the browser that uploads the photograph, in the pass where it is already
+   * decoded, and they are what the site's `srcset` is actually built from.
+   *
+   * Empty for a photograph uploaded before the ladder existed. Each entry is a
+   * width whose object is known to be in the bucket: the rungs are written
+   * before this list claims them, for the same reason the object is written
+   * before the row.
+   */
+  widths: number[];
 }
 
 export type WorkStatus = 'completed' | 'in-progress' | 'private';
@@ -215,6 +230,28 @@ export interface SitePages {
  * it comes from the PRODUCTION_URL var and is stamped into the published bundle
  * by worker/domain/bundle.ts, which is also where the reasoning lives.
  */
+/**
+ * How large the site sets its type, as a step rather than a size.
+ *
+ * The studio asked for a font-size control "like Word". Word's answer — any
+ * number of points on any run of text — is the one thing the design cannot
+ * offer: six type roles are what make the pages look like one site, and a field
+ * that can put nine pixels on a paragraph is a field that can break the contrast
+ * floor and the touch floor in a single edit. So it is the same control at the
+ * scale the design can honour: one step for the whole site, applied to all six
+ * roles at once so their relationships survive it.
+ *
+ * No step down. Three of the roles already sit at the floor the accessibility
+ * rules allow, and the only direction they may not move is smaller.
+ */
+export const TYPE_SCALES = ['normal', 'large', 'larger'] as const;
+
+export type TypeScale = (typeof TYPE_SCALES)[number];
+
+export function isTypeScale(value: string): value is TypeScale {
+  return TYPE_SCALES.some((scale) => scale === value);
+}
+
 export interface SiteContent {
   name: LocalisedText;
   contact: {
@@ -222,7 +259,19 @@ export interface SiteContent {
     wechat: string;
     address: LocalisedText;
     hours: LocalisedText;
+    /**
+     * The WeChat QR code, or no code at all.
+     *
+     * Optional, which is the one thing that makes it unlike every other
+     * photograph in here: a studio that has not uploaded one gets the card
+     * exactly as it was. `null` rather than an ImageRef with an empty `src`,
+     * so nothing downstream can accidentally render a URL for a file that is
+     * not there — the site branches on the absence instead.
+     */
+    qr: ImageRef | null;
   };
+  /** How large the whole site sets its type. See TypeScale. */
+  typeScale: TypeScale;
 }
 
 /**

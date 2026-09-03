@@ -280,6 +280,8 @@ function whichRecord(cite: ImageCitation): Pick<Problem, 'section' | 'record' | 
         record: 'home',
         label: say('fields.photographNumber', { number: cite.position + 1 }),
       };
+    case 'site-qr':
+      return { section: 'site', record: 'site', label: say('fields.qr') };
   }
 }
 
@@ -380,6 +382,13 @@ export function checkContent(content: ContentSet): Problem[] {
   site.text(content.site.contact.wechat, say('fields.wechat'));
   site.localised(content.site.contact.address, say('fields.address'));
   site.localised(content.site.contact.hours, say('fields.hours'));
+  // Optional, so only a code that *is* there is held to the alt-text rule. The
+  // schema cannot state that pairing for this one column — ALTER TABLE cannot
+  // add a table-level CHECK — so unlike every other photograph on the site, this
+  // gate is the only one that says a code must be described.
+  if (content.site.contact.qr !== null) {
+    site.image(content.site.contact.qr, say('fields.qr'));
+  }
   problems.push(...site.problems);
 
   problems.push(...checkDictionary(content.zh, 'zh'));

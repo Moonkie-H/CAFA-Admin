@@ -15,8 +15,7 @@ import { describe, expect, it } from 'vitest';
 
 import { buildBundle } from '../worker/domain/bundle';
 import { photographsOf } from '../worker/connectors/photographs';
-import type { MediaRow } from '../worker/models/rows';
-import type { ContentSet, ImageRef, Work } from '../shared/content/types';
+import type { ContentSet, ImageRef, MediaInfo, Work } from '../shared/content/types';
 import { content } from './content-fixture';
 
 function image(src: string): ImageRef {
@@ -38,7 +37,7 @@ function work(slug: string, status: Work['status'] = 'completed'): Work {
   };
 }
 
-function measured(...keys: string[]): MediaRow[] {
+function measured(...keys: string[]): MediaInfo[] {
   return keys.map((key) => ({
     key,
     width: 1_200,
@@ -46,10 +45,11 @@ function measured(...keys: string[]): MediaRow[] {
     bytes: 100_000,
     tint: 210,
     version: 'aaaaaaaaaaaa',
+    widths: [480, 768],
   }));
 }
 
-function published(set: ContentSet, media: MediaRow[]) {
+function published(set: ContentSet, media: MediaInfo[]) {
   return photographsOf(
     buildBundle(
       set,

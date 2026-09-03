@@ -15,6 +15,8 @@
  * empties a private work's cover and media. What is written here is what a
  * client will actually receive.
  */
+import { TYPE_SCALES } from '../../shared/content/types';
+
 export interface JsonSchema {
   type?: 'object' | 'array' | 'string' | 'integer' | 'number' | 'boolean' | 'null';
   description?: string;
@@ -241,7 +243,16 @@ export const COMPONENTS: Record<string, JsonSchema> = {
         wechat: text('The WeChat id.'),
         address: ref('LocalisedText'),
         hours: ref('LocalisedText'),
+        qr: {
+          anyOf: [ref('Image'), { type: 'null' }],
+          description:
+            'The WeChat QR code, or null where the studio has not uploaded one. The only optional photograph in the content, and the only one that hangs off no record — so null is a contact card that prints the id alone, not a missing file.',
+        },
       }),
+      typeScale: choice(
+        TYPE_SCALES,
+        'How large the site sets its type, as a step on its own scale rather than a size. It moves all six type roles together, so their proportions survive it, and it never steps down — three of those roles already sit at the smallest size the accessibility rules allow.',
+      ),
     },
     'The studio itself: who it is and where it is. The navigation is not here — the bar is Works, Programmes and About, in that order, each labelled by its own page title.',
   ),
@@ -348,6 +359,10 @@ export const COMPONENTS: Record<string, JsonSchema> = {
             description:
               'A digest of the bytes currently filed under this key, to hang off the URL you build for it. An object key is stable when a photograph is replaced, so without this a reader’s cache — and the CDN’s — keeps the old picture. Null for a photograph uploaded before the admin recorded one; ask for the plain URL then.',
           },
+          widths: list(
+            whole('One width, in pixels, that this photograph is also filed at.'),
+            'The narrower copies of this photograph in the bucket, ascending and all narrower than `width`. Each is filed under `derived/<width>/<key>` against `mediaBase`, so a `srcset` can be built from them without transforming anything — which is what a zone on a free plan cannot do. Empty means the original is the only size there is.',
+          ),
         }),
         'What was measured, by object key, for every photograph public content cites.',
       ),

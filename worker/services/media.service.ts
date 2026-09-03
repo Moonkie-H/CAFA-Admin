@@ -32,7 +32,7 @@
  * the CLS budget is made of.
  */
 import type { MediaInfo } from '../../shared/content/types';
-import { contentTypeOf, measure, versionOf } from '../domain/image';
+import { contentTypeOf, isDerivedMediaKey, measure, versionOf } from '../domain/image';
 import { recordMedia } from '../repositories/media.repository';
 import { ApiException } from '../shared/api-exception';
 import { getMedia, putMedia } from '../storage/media-storage';
@@ -43,7 +43,12 @@ export class MediaService {
     private readonly bucket: R2Bucket,
   ) {}
 
-  async upload(key: string, body: ArrayBuffer, tint: number | null): Promise<MediaInfo> {
+  async upload(
+    key: string,
+    body: ArrayBuffer,
+    tint: number | null,
+    widths: number[],
+  ): Promise<MediaInfo> {
     let measured;
     try {
       measured = measure(body);
@@ -64,10 +69,17 @@ export class MediaService {
       bytes: measured.bytes,
       tint,
       version: await versionOf(body),
+      widths,
     };
 
     await putMedia(this.bucket, key, body);
-    await recordMedia(this.db, info);
+
+    // A rung of a ladder is bytes and nothing else. It has no row because
+    // nothing may cite it: the registry is what content's foreign keys point
+    // into, and a photograph is one entry there however many sizes of it are in
+    // the bucket. Its dimensions are still measured — that is what refuses a
+    // rung that is not the image it claims to be — they are simply not recorded.
+    if (!isDerivedMediaKey(key)) await recordMedia(this.db, info);
 
     return info;
   }

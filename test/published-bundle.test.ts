@@ -12,8 +12,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildBundle, transformsOn } from '../worker/domain/bundle';
-import type { MediaRow } from '../worker/models/rows';
-import type { ContentSet, Work } from '../shared/content/types';
+import type { ContentSet, MediaInfo, Work } from '../shared/content/types';
 import { content } from './content-fixture';
 
 function work(slug: string, status: Work['status']): Work {
@@ -31,7 +30,7 @@ function work(slug: string, status: Work['status']): Work {
   };
 }
 
-function measured(...keys: string[]): MediaRow[] {
+function measured(...keys: string[]): MediaInfo[] {
   return keys.map((key) => ({
     key,
     width: 1_200,
@@ -39,6 +38,7 @@ function measured(...keys: string[]): MediaRow[] {
     bytes: 100_000,
     tint: 210,
     version: 'aaaaaaaaaaaa',
+    widths: [480, 768],
   }));
 }
 
@@ -50,7 +50,7 @@ const MEDIA_BASE = 'https://media.example.com';
 const SITE_URL = 'https://example.com';
 const ADMIN_URL = 'https://admin.example.com';
 
-function bundleOf(set: ContentSet, media: MediaRow[]) {
+function bundleOf(set: ContentSet, media: MediaInfo[]) {
   return buildBundle(set, media, MEDIA_BASE, SITE_URL, undefined, ADMIN_URL);
 }
 
@@ -86,6 +86,7 @@ describe('the published bundle', () => {
       height: 800,
       tint: 210,
       version: 'aaaaaaaaaaaa',
+      widths: [480, 768],
     });
   });
 
@@ -164,6 +165,24 @@ describe('the published bundle', () => {
     const after = before.map((row) => ({ ...row, version: 'bbbbbbbbbbbb' }));
 
     expect(JSON.stringify(bundleOf(set, after))).not.toBe(JSON.stringify(bundleOf(set, before)));
+  });
+
+  /*
+   * A rung the file cannot honour is worse than no rung: the site turns each of
+   * these into a `srcset` candidate and tells the browser how wide it is, so a
+   * width at or above the photograph's own is a promise of pixels that are not
+   * there — and the browser plans its `sizes` around the promise.
+   */
+  it('publishes no rung as wide as the photograph itself', () => {
+    const bundle = bundleOf(
+      withWorks(work('edible-house', 'completed')),
+      measured('works/edible-house/cover.jpg').map((row) => ({
+        ...row,
+        widths: [480, 1_200, 1_800],
+      })),
+    );
+
+    expect(bundle.media['works/edible-house/cover.jpg']?.widths).toEqual([480]);
   });
 
   it('publishes no version for a photograph uploaded before one was recorded', () => {

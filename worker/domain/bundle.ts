@@ -44,6 +44,7 @@ import {
   type LocalisedText,
   type Mentor,
   type Program,
+  type MediaInfo,
   type Project,
   type SiteContent,
   type SitePages,
@@ -51,7 +52,7 @@ import {
 } from '../../shared/content/types';
 import { citedKeys } from '../../shared/content/images';
 import { CONTACT_PATH } from './contact';
-import type { MediaRow } from '../models/rows';
+
 
 /**
  * Copy that describes the chrome rather than a page, and is lifted into `site`
@@ -93,10 +94,23 @@ export interface PublishedBundle {
    * that there was nothing to publish. It is null for a photograph uploaded
    * before migration 0009, which the site reads as no version and requests the
    * plain URL for, exactly as it did before.
+   *
+   * `widths` is the ladder: the narrower copies of the photograph that are in
+   * the bucket beside it. The site's zone cannot transform, so this is the only
+   * thing that lets a `srcset` offer a phone anything but the 2400px original —
+   * which is what stopped photographs appearing on mobile at all. Empty means a
+   * photograph uploaded before the ladder existed, and the site falls back to
+   * the single candidate it used to build.
    */
   media: Record<
     string,
-    { width: number; height: number; tint: number | null; version: string | null }
+    {
+      width: number;
+      height: number;
+      tint: number | null;
+      version: string | null;
+      widths: number[];
+    }
   >;
   /** Where the originals live, so the template can build transform URLs. */
   mediaBase: string;
@@ -185,7 +199,7 @@ function contactEndpointFor(adminUrl: string | undefined): string | null {
 
 export function buildBundle(
   content: ContentSet,
-  media: MediaRow[],
+  media: MediaInfo[],
   mediaBase: string,
   siteUrl: string,
   mediaTransform: string | undefined,
@@ -208,6 +222,10 @@ export function buildBundle(
         height: row.height,
         tint: row.tint,
         version: row.version,
+        // Only rungs narrower than the photograph itself. A row claiming its own
+        // width, or more, would put a candidate in the site's srcset that
+        // promises pixels the file underneath it does not have.
+        widths: row.widths.filter((width) => width < row.width),
       };
     }
   }

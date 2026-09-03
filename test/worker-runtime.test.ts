@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { isReadableMediaKey, isWritableMediaKey, measure, versionOf } from '../worker/domain/image';
+import {
+  isDerivedMediaKey,
+  isReadableMediaKey,
+  isWritableMediaKey,
+  measure,
+  versionOf,
+} from '../worker/domain/image';
+import { derivedKey, ladderFor } from '../src/lib/media-keys';
 import { open, seal } from '../worker/domain/session';
 import { timingSafeEqualBytes, timingSafeEqualText } from '../worker/domain/secrets';
 import { ApiResponse } from '../worker/shared/api-response';
@@ -68,6 +75,43 @@ describe('Worker runtime boundaries', () => {
       expect(isWritableMediaKey(key), key).toBe(true);
       expect(isReadableMediaKey(key), key).toBe(true);
     }
+  });
+
+  /*
+   * The ladder's half of the key rules. A rung is the same photograph re-filed
+   * under `derived/<width>/`, so it is writable exactly where the photograph is
+   * — and it is never a way to reach a folder the editor could not otherwise
+   * write to, nor a row in the registry that content could then cite.
+   */
+  it('files a rung under the photograph it is a rung of', () => {
+    const key = 'pages/home/01.jpg';
+    const rung = derivedKey(768, key);
+
+    expect(rung).toBe('derived/768/pages/home/01.jpg');
+    expect(isWritableMediaKey(rung)).toBe(true);
+    expect(isReadableMediaKey(rung)).toBe(true);
+    expect(isDerivedMediaKey(rung)).toBe(true);
+    expect(isDerivedMediaKey(key)).toBe(false);
+  });
+
+  it('refuses a rung of something that is not a photograph', () => {
+    for (const key of [
+      'derived/768/etc/passwd',
+      'derived/768/../pages/home/01.jpg',
+      'derived/0/pages/home/01.jpg',
+      'derived/99999/pages/home/01.jpg',
+      'derived/768/studio/01.jpg', // readable, but nothing files there
+      'derived//pages/home/01.jpg',
+    ]) {
+      expect(isWritableMediaKey(key), key).toBe(false);
+    }
+  });
+
+  it('never offers a rung as wide as the photograph', () => {
+    expect(ladderFor(2_400)).toEqual([480, 768, 1_200, 1_800]);
+    expect(ladderFor(1_200)).toEqual([480, 768]);
+    // Narrower than the first rung: the original is the whole ladder.
+    expect(ladderFor(400)).toEqual([]);
   });
 
   it('reads the legacy studio folder but never writes to it', () => {

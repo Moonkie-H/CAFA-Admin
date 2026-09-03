@@ -80,5 +80,7 @@ function citedBy(cite: ImageCitation): string {
       return `project:${cite.project.slug}`;
     case 'home-photo':
       return 'page:home';
+    case 'site-qr':
+      return 'site:qr';
   }
 }

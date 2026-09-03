@@ -89,25 +89,53 @@ export function measure(buffer: ArrayBuffer): Measured {
  * record carries exactly one photograph, so the record's own slug names the
  * file and there is no folder to number inside.
  *
- * `studio/` is the fourth and is read-only. Migration 0005 folded the studio
+ * `site/` is the fifth and the newest: the studio's WeChat QR code, which
+ * belongs to the contact card rather than to any record, so it is filed under
+ * the site itself the way a mentor's portrait is filed under the mentor.
+ *
+ * `studio/` is the sixth and is read-only. Migration 0005 folded the studio
  * photographs into a gallery section on the front page and dropped the table
  * they hung off, but the objects kept their keys — `studio/01.jpg` and its four
  * siblings are still cited by live content, so the editor has to be able to
  * preview them. Nothing files a new one there, so nothing may write one.
  *
- * Neither may climb out of the bucket with "..".
+ * Neither may climb out of the bucket with "..", and both read a `derived/`
+ * prefix off first — a rung is filed wherever its photograph is filed, so the
+ * question either predicate is really asking is about the key underneath.
  */
-const WRITABLE = /^(?:(?:works|pages)\/[a-z0-9-]+|mentors|projects)\/[a-z0-9-]+\.(?:jpg|png)$/;
-const READABLE = /^(?:(?:works|pages)\/[a-z0-9-]+|mentors|projects|studio)\/[a-z0-9-]+\.(?:jpg|png)$/;
+const WRITABLE = /^(?:(?:works|pages)\/[a-z0-9-]+|mentors|projects|site)\/[a-z0-9-]+\.(?:jpg|png)$/;
+const READABLE =
+  /^(?:(?:works|pages)\/[a-z0-9-]+|mentors|projects|site|studio)\/[a-z0-9-]+\.(?:jpg|png)$/;
+
+/**
+ * A rung of a photograph's ladder: the same key under `derived/<width>/`.
+ *
+ * Its own namespace, and that is what makes it safe. Content names a photograph
+ * only by the key it was uploaded under, so nothing can ever cite a rung, no
+ * name `nextMediaName` hands out can shadow one, and the derivative half of the
+ * bucket can be listed, re-made or dropped by prefix. The width is bounded
+ * because an unbounded one is an invitation to fill a bucket with 4-pixel JPEGs.
+ */
+const DERIVED = /^derived\/(?:[1-9][0-9]{2,3})\/(?=.)/;
 
 /** A key a photograph may be uploaded under. */
 export function isWritableMediaKey(key: string): boolean {
-  return WRITABLE.test(key) && !key.includes('..');
+  if (key.includes('..')) return false;
+  const stem = key.replace(DERIVED, '');
+  // A rung is writable exactly where the photograph under it is: `derived/` is
+  // a re-filing of an existing key, never a way to reach a folder of its own.
+  return WRITABLE.test(stem);
 }
 
 /** A key the editor may fetch bytes for. Everything writable, plus the legacy folder. */
 export function isReadableMediaKey(key: string): boolean {
-  return READABLE.test(key) && !key.includes('..');
+  if (key.includes('..')) return false;
+  return READABLE.test(key.replace(DERIVED, ''));
+}
+
+/** Whether this key names a rung rather than a photograph the content can cite. */
+export function isDerivedMediaKey(key: string): boolean {
+  return DERIVED.test(key);
 }
 
 /**

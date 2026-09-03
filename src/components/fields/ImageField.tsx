@@ -24,6 +24,14 @@ interface ImageFieldProps {
   name: string;
   mediaUrl: (key: string) => string;
   onUpload: (key: string, file: File) => Promise<void>;
+  /**
+   * Offered only where having no photograph is a real answer, which today is
+   * the contact card's QR code and nothing else. Every other image on the site
+   * is required — a work without a cover is a broken row, not a plainer one —
+   * so those callers pass nothing and no button appears. Without this an
+   * optional field is one the studio can fill and then never empty.
+   */
+  onClear?: () => void;
 }
 
 export function ImageField({
@@ -34,6 +42,7 @@ export function ImageField({
   name,
   mediaUrl,
   onUpload,
+  onClear,
 }: ImageFieldProps) {
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
@@ -82,6 +91,11 @@ export function ImageField({
               onChange={(event) => void choose(event.target.files?.[0])}
             />
           </label>
+          {onClear !== undefined && value.src !== '' && (
+            <button type="button" className="button button-quiet" onClick={onClear}>
+              {t('common.removePhoto')}
+            </button>
+          )}
           {busy && <p className="field-hint">{t('common.uploading')}</p>}
           {failure !== null && <p className="problem">{failure}</p>}
           {value.src !== '' && <p className="field-hint image-path">{value.src}</p>}
