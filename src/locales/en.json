@@ -151,7 +151,7 @@
   "homePage": {
     "intro": "The first thing anyone sees: one line, and the photographs under it.",
     "titleHint": "Not shown on the page — the statement below is its heading. This is what the browser tab and a shared link say.",
-    "statementHint": "One line. It holds the whole first screen on its own, and it is the page’s heading.",
+    "statementHint": "One line. It holds the whole first screen on its own, and it is the page’s heading. Line breaks are kept: press return where you want the line to break.",
     "galleryHint": "They run full width, one at a time, below the fold, in this order.",
     "empty": "No photographs yet — the front page is the statement on its own."
   },
