@@ -17,6 +17,42 @@ export function mediaKey(folder: string, name: string): string {
 }
 
 /**
+ * The widths a photograph is filed at, besides its own.
+ *
+ * The same ladder `lib/media.ts` asks Cloudflare for on a zone that can
+ * transform, because the point is that the site's `srcset` looks the same
+ * either way — the rungs are written at upload instead of derived on delivery,
+ * and nothing above the URL has to know which of the two happened.
+ */
+export const MEDIA_WIDTHS = [480, 768, 1200, 1800] as const;
+
+/**
+ * Where one rung of the ladder is filed.
+ *
+ * Under `derived/` rather than beside the original as `01-768.jpg`, and the
+ * prefix is doing real work: content only ever names a photograph by the key it
+ * was uploaded under, so a namespace nothing cites is a namespace a rung can
+ * never collide with. `nextMediaName` cannot hand out a name that reads as a
+ * rung, a mentor slug cannot shadow one, and the whole ladder for a photograph
+ * — or for a width the site stops asking for — can be found by prefix.
+ */
+export function derivedKey(width: number, key: string): string {
+  return `derived/${width}/${key}`;
+}
+
+/**
+ * The rungs worth writing for a photograph this wide.
+ *
+ * Never upscale: a rung wider than the original is the same pixels in a bigger
+ * file, and a `srcset` that offers 1800w and hands over 1200 pixels is a lie
+ * the browser plans its `sizes` around. Equal is excluded too — that rung is
+ * the original, which is always the top of the ladder.
+ */
+export function ladderFor(width: number): number[] {
+  return MEDIA_WIDTHS.filter((rung) => rung < width);
+}
+
+/**
  * The stem `mediaKey` was given, read back off a key.
  *
  * A photograph keeps the name it was filed under, so re-uploading over one has

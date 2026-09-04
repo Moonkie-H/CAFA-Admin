@@ -15,8 +15,7 @@ import { describe, expect, it } from 'vitest';
 
 import { buildBundle } from '../worker/domain/bundle';
 import { photographsOf } from '../worker/connectors/photographs';
-import type { MediaRow } from '../worker/models/rows';
-import type { ContentSet, ImageRef, Work } from '../shared/content/types';
+import type { ContentSet, ImageRef, MediaInfo, Work } from '../shared/content/types';
 import { content } from './content-fixture';
 
 function image(src: string): ImageRef {
@@ -38,11 +37,19 @@ function work(slug: string, status: Work['status'] = 'completed'): Work {
   };
 }
 
-function measured(...keys: string[]): MediaRow[] {
-  return keys.map((key) => ({ key, width: 1_200, height: 800, bytes: 100_000, tint: 210 }));
+function measured(...keys: string[]): MediaInfo[] {
+  return keys.map((key) => ({
+    key,
+    width: 1_200,
+    height: 800,
+    bytes: 100_000,
+    tint: 210,
+    version: 'aaaaaaaaaaaa',
+    widths: [480, 768],
+  }));
 }
 
-function published(set: ContentSet, media: MediaRow[]) {
+function published(set: ContentSet, media: MediaInfo[]) {
   return photographsOf(
     buildBundle(
       set,
@@ -92,7 +99,9 @@ describe('the published photographs', () => {
     const set: ContentSet = { ...content(), works: [work('edible-house')] };
     const [photograph] = published(set, measured('works/edible-house/cover.jpg'));
 
-    expect(photograph?.url).toBe('https://media.example.com/works/edible-house/cover.jpg');
+    expect(photograph?.url).toBe(
+      'https://media.example.com/works/edible-house/cover.jpg?v=aaaaaaaaaaaa',
+    );
     expect(photograph?.width).toBe(1_200);
     expect(photograph?.decorative).toBe(false);
   });

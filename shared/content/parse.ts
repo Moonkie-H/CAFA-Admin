@@ -1,6 +1,8 @@
 /** Runtime parsing for content crossing the HTTP boundary. */
 import {
+  isTypeScale,
   isWorkStatus,
+  TYPE_SCALES,
   WORK_STATUSES,
   type AboutPage,
   type ContentSet,
@@ -15,6 +17,7 @@ import {
   type Project,
   type SiteContent,
   type SitePages,
+  type TypeScale,
   type Work,
   type WorkStatus,
 } from './types';
@@ -226,8 +229,28 @@ function siteAt(value: unknown, path: string): SiteContent {
       wechat: stringAt(property(contact, 'wechat', contactPath), `${contactPath}.wechat`),
       address: localisedAt(property(contact, 'address', contactPath), `${contactPath}.address`),
       hours: localisedAt(property(contact, 'hours', contactPath), `${contactPath}.hours`),
+      // Optional, and absent and null are one answer: a studio without a WeChat
+      // code, and a payload written before there was a field for one. Both are
+      // a card with no code rather than a malformed save.
+      qr: optionalImageAt(contact.qr, `${contactPath}.qr`),
     },
+    // Likewise absent: everything saved before the scale existed is 'normal',
+    // which is the size the site has always set.
+    typeScale: typeScaleAt(record.typeScale, `${path}.typeScale`),
   };
+}
+
+/** An image, or none — the one place in the content where that is a real answer. */
+function optionalImageAt(value: unknown, path: string): ImageRef | null {
+  if (value === undefined || value === null) return null;
+  return imageAt(value, path);
+}
+
+function typeScaleAt(value: unknown, path: string): TypeScale {
+  if (value === undefined || value === null) return 'normal';
+  const found = stringAt(value, path);
+  if (!isTypeScale(found)) throw new ContentShapeError(path, TYPE_SCALES.join(' | '));
+  return found;
 }
 
 export function parseDictionary(value: unknown, path = 'dictionary'): Dictionary {

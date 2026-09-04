@@ -61,6 +61,7 @@
     "failed": "The sign-in could not be completed."
   },
   "common": {
+    "removePhoto": "Remove",
     "building": "Building…",
     "cancel": "Cancel",
     "choosePhoto": "Choose a photograph",
@@ -151,7 +152,7 @@
   "homePage": {
     "intro": "The first thing anyone sees: one line, and the photographs under it.",
     "titleHint": "Not shown on the page — the statement below is its heading. This is what the browser tab and a shared link say.",
-    "statementHint": "One line. It holds the whole first screen on its own, and it is the page’s heading.",
+    "statementHint": "One line. It holds the whole first screen on its own, and it is the page’s heading. Line breaks are kept: press return where you want the line to break.",
     "galleryHint": "They run full width, one at a time, below the fold, in this order.",
     "empty": "No photographs yet — the front page is the statement on its own."
   },
@@ -208,10 +209,28 @@
     "removeIt": "Remove it"
   },
   "contactPage": {
+    "linesHint": "The card keeps the lines you type. Press return where the address should break.",
     "intro": "The card the Contact button pins over whichever page the reader is on. The details, and the words that label them.",
     "words": "The words on the card"
   },
+  "photographs": {
+    "title": "Photograph sizes",
+    "intro": "The site cannot resize a photograph on its way to a reader — image transformations are a paid setting on the domain, and this one does not have them. So every size a reader might be served is made here, in your browser, when the photograph is uploaded.",
+    "complete": "Every photograph has its sizes.",
+    "missing": "{{count}} photograph is only stored full size.",
+    "missing_other": "{{count}} photographs are only stored full size.",
+    "missingNote": "They were uploaded before the smaller sizes were made. Until they have them, a phone is sent the full-size picture and may fail to show it at all.",
+    "make": "Make the missing sizes",
+    "working": "Making them…",
+    "doneNote": "The pictures themselves are untouched — nothing is re-saved, so no address changes and nothing already published moves. Publish afterwards so the site starts using them."
+  },
+  "typeScale": {
+    "normal": "Normal",
+    "large": "Large",
+    "larger": "Larger"
+  },
   "generalPage": {
+    "typeScaleHint": "How large the site sets all of its text. Every size moves together, so headings, prose and labels keep their proportions. It only goes up: the smallest text on the site is already at the smallest size that stays readable.",
     "intro": "What is left once every other word went to the page it appears on.",
     "studioNameHint": "The logotype at the top of every page, and the name in the footer.",
     "missing": "When a page cannot be found",
@@ -219,6 +238,8 @@
     "rarelyNote": "The site reads these by name, so they cannot be left out — but nobody changes them twice in a decade."
   },
   "fields": {
+    "typeScale": "Type size",
+    "qr": "WeChat QR code",
     "key": "Key",
     "name": "Name",
     "title": "Title",

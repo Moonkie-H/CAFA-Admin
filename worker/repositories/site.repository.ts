@@ -11,9 +11,9 @@
  * page now (migration 0005), which is the same photographs with one owner
  * instead of two.
  */
-import type { SiteContent } from '../../shared/content/types';
+import { isTypeScale, type SiteContent } from '../../shared/content/types';
 import type { SiteRow } from '../models/rows';
-import { pair } from './mapping';
+import { imageBindings, imageRef, pair } from './mapping';
 
 export async function readSite(db: D1Database): Promise<SiteContent> {
   const site = await db.prepare('SELECT * FROM site WHERE id = 1').first<SiteRow>();
@@ -27,7 +27,17 @@ export async function readSite(db: D1Database): Promise<SiteContent> {
       wechat: site.contact_wechat,
       address: pair(site.address_zh, site.address_en),
       hours: pair(site.hours_zh, site.hours_en),
+      // An empty key is a studio that has not uploaded a code, which is a card
+      // without one rather than an image element pointed at nothing.
+      qr:
+        site.qr_key === ''
+          ? null
+          : imageRef(site.qr_key, site.qr_alt_zh, site.qr_alt_en, site.qr_decorative),
     },
+    // The column's CHECK already refuses anything else, so this narrows a string
+    // the compiler cannot see that about rather than defending against the
+    // database. A row from before migration 0011 defaults to 'normal' anyway.
+    typeScale: isTypeScale(site.type_scale) ? site.type_scale : 'normal',
   };
 }
 
@@ -40,8 +50,9 @@ export function insertSite(db: D1Database, site: SiteContent): D1PreparedStateme
     db
       .prepare(
         `INSERT INTO site (id, name_zh, name_en, contact_email, contact_wechat,
-                           address_zh, address_en, hours_zh, hours_en)
-         VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                           address_zh, address_en, hours_zh, hours_en,
+                           qr_key, qr_alt_zh, qr_alt_en, qr_decorative, type_scale)
+         VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
         site.name.zh,
@@ -52,6 +63,12 @@ export function insertSite(db: D1Database, site: SiteContent): D1PreparedStateme
         site.contact.address.en,
         site.contact.hours.zh,
         site.contact.hours.en,
+        // No code is four empty columns rather than a NULL key: the column is
+        // NOT NULL, and '' is the value the read above turns back into null.
+        ...(site.contact.qr === null
+          ? (['', '', '', 0] as const)
+          : imageBindings(site.contact.qr)),
+        site.typeScale,
       ),
   ];
 }

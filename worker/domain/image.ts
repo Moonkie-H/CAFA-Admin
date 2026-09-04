@@ -1,11 +1,13 @@
 /**
  * What is true about a photograph before anything stores it.
  *
- * Pure functions over bytes and keys: no bucket, no database, nothing async.
- * The bucket is worker/storage/media-storage.ts and the registry row is
+ * Pure functions over bytes and keys: no bucket, no database, no bindings. The
+ * bucket is worker/storage/media-storage.ts and the registry row is
  * worker/repositories/media.repository.ts; this is the part both of them agree
  * about, which is why it is the only one of the three that can be reasoned
- * about — or tested — without a binding.
+ * about — or tested — without a binding. `versionOf` is async and still of that
+ * kind: WebCrypto's digest returns a promise, and nothing else about it needs
+ * the world.
  *
  * Dimensions are read out of the uploaded bytes rather than taken from the
  * browser that sent them. They are not decoration: the template turns them into
@@ -87,25 +89,76 @@ export function measure(buffer: ArrayBuffer): Measured {
  * record carries exactly one photograph, so the record's own slug names the
  * file and there is no folder to number inside.
  *
- * `studio/` is the fourth and is read-only. Migration 0005 folded the studio
+ * `site/` is the fifth and the newest: the studio's WeChat QR code, which
+ * belongs to the contact card rather than to any record, so it is filed under
+ * the site itself the way a mentor's portrait is filed under the mentor.
+ *
+ * `studio/` is the sixth and is read-only. Migration 0005 folded the studio
  * photographs into a gallery section on the front page and dropped the table
  * they hung off, but the objects kept their keys — `studio/01.jpg` and its four
  * siblings are still cited by live content, so the editor has to be able to
  * preview them. Nothing files a new one there, so nothing may write one.
  *
- * Neither may climb out of the bucket with "..".
+ * Neither may climb out of the bucket with "..", and both read a `derived/`
+ * prefix off first — a rung is filed wherever its photograph is filed, so the
+ * question either predicate is really asking is about the key underneath.
  */
-const WRITABLE = /^(?:(?:works|pages)\/[a-z0-9-]+|mentors|projects)\/[a-z0-9-]+\.(?:jpg|png)$/;
-const READABLE = /^(?:(?:works|pages)\/[a-z0-9-]+|mentors|projects|studio)\/[a-z0-9-]+\.(?:jpg|png)$/;
+const WRITABLE = /^(?:(?:works|pages)\/[a-z0-9-]+|mentors|projects|site)\/[a-z0-9-]+\.(?:jpg|png)$/;
+const READABLE =
+  /^(?:(?:works|pages)\/[a-z0-9-]+|mentors|projects|site|studio)\/[a-z0-9-]+\.(?:jpg|png)$/;
+
+/**
+ * A rung of a photograph's ladder: the same key under `derived/<width>/`.
+ *
+ * Its own namespace, and that is what makes it safe. Content names a photograph
+ * only by the key it was uploaded under, so nothing can ever cite a rung, no
+ * name `nextMediaName` hands out can shadow one, and the derivative half of the
+ * bucket can be listed, re-made or dropped by prefix. The width is bounded
+ * because an unbounded one is an invitation to fill a bucket with 4-pixel JPEGs.
+ */
+const DERIVED = /^derived\/(?:[1-9][0-9]{2,3})\/(?=.)/;
 
 /** A key a photograph may be uploaded under. */
 export function isWritableMediaKey(key: string): boolean {
-  return WRITABLE.test(key) && !key.includes('..');
+  if (key.includes('..')) return false;
+  const stem = key.replace(DERIVED, '');
+  // A rung is writable exactly where the photograph under it is: `derived/` is
+  // a re-filing of an existing key, never a way to reach a folder of its own.
+  return WRITABLE.test(stem);
 }
 
 /** A key the editor may fetch bytes for. Everything writable, plus the legacy folder. */
 export function isReadableMediaKey(key: string): boolean {
-  return READABLE.test(key) && !key.includes('..');
+  if (key.includes('..')) return false;
+  return READABLE.test(key.replace(DERIVED, ''));
+}
+
+/** Whether this key names a rung rather than a photograph the content can cite. */
+export function isDerivedMediaKey(key: string): boolean {
+  return DERIVED.test(key);
+}
+
+/**
+ * A short name for exactly these bytes.
+ *
+ * A photograph keeps its key when it is replaced — that is what stops the
+ * record having to be rewritten and the old object being orphaned — so the key
+ * cannot say which photograph is under it. This can, and it is what makes a
+ * replacement visible: it goes into the published bundle beside the dimensions,
+ * so a bundle differs whenever a file does and publishing is not a no-op, and
+ * the site hangs it off the delivery URL, so every cache between the bucket and
+ * the reader misses on a photograph that has changed.
+ *
+ * Content-addressed rather than a counter or an upload time, so re-uploading
+ * the same file leaves the URL — and every cache of it — alone. Six bytes of
+ * SHA-256: this distinguishes successive versions of one photograph, not every
+ * file in the world, and a URL carries it.
+ */
+export async function versionOf(buffer: ArrayBuffer): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', buffer);
+  return [...new Uint8Array(digest, 0, 6)]
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 export function contentTypeOf(key: string): string {

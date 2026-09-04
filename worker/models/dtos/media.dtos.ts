@@ -45,6 +45,27 @@ export function parseMediaKey(url: URL, intent: 'read' | 'write'): string {
  * because the site's build fails on a hue outside [0, 360) and it should fail
  * here, where the person who caused it is looking, rather than there.
  */
+/**
+ * The `widths` query parameter: which rungs of the ladder the client has just
+ * finished writing, as "480,768,1200".
+ *
+ * Absent is an empty ladder, which is what a photograph too narrow to have one
+ * genuinely has. Anything that is not a list of positive whole numbers is
+ * refused rather than filtered: the site turns each of these into a URL it
+ * expects to resolve, and a client sending nonsense here is a client that has
+ * put nonsense in the bucket.
+ */
+export function parseWidths(url: URL): number[] {
+  const given = url.searchParams.get('widths');
+  if (given === null || given === '') return [];
+
+  const widths = given.split(',').map((width) => Number(width.trim()));
+  if (widths.some((width) => !Number.isInteger(width) || width <= 0)) {
+    throw ApiException.badRequest('The widths must be a list of whole numbers.');
+  }
+  return [...new Set(widths)].sort((first, second) => first - second);
+}
+
 export function parseTint(url: URL): number | null {
   const given = url.searchParams.get('tint');
   if (given === null || given === '') return null;

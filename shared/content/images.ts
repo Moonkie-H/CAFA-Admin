@@ -34,7 +34,8 @@ export type ImageCitation =
   | { kind: 'work-photo'; work: Work; position: number }
   | { kind: 'mentor-portrait'; mentor: Mentor }
   | { kind: 'project-image'; project: Project }
-  | { kind: 'home-photo'; position: number };
+  | { kind: 'home-photo'; position: number }
+  | { kind: 'site-qr' };
 
 export interface CitedImage {
   image: ImageRef;
@@ -53,6 +54,8 @@ export interface ImageBearingContent {
   mentors: readonly Mentor[];
   projects: readonly Project[];
   pages: { home: { gallery: readonly ImageRef[] } };
+  /** The one photograph that hangs off no record: the contact card's QR code. */
+  site: { contact: { qr: ImageRef | null } };
 }
 
 export function* citedImages(content: ImageBearingContent): Generator<CitedImage> {
@@ -74,6 +77,14 @@ export function* citedImages(content: ImageBearingContent): Generator<CitedImage
   for (const [position, image] of content.pages.home.gallery.entries()) {
     yield { image, cite: { kind: 'home-photo', position } };
   }
+
+  // Optional, unlike everything above it, so the walk yields nothing at all for
+  // a studio that has not uploaded one. It has to be walked: this is what puts
+  // the code's dimensions in the published bundle, and the site refuses to build
+  // against a photograph it has no dimensions for.
+  if (content.site.contact.qr !== null) {
+    yield { image: content.site.contact.qr, cite: { kind: 'site-qr' } };
+  }
 }
 
 /**
@@ -93,6 +104,7 @@ export function citationIsPublic(cite: ImageCitation): boolean {
     case 'mentor-portrait':
     case 'project-image':
     case 'home-photo':
+    case 'site-qr':
       return true;
   }
 }

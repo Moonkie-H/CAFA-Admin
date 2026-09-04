@@ -20,6 +20,13 @@ export interface SiteRow {
   address_en: string;
   hours_zh: string;
   hours_en: string;
+  /** The WeChat QR code's four columns. An empty key is "no code". */
+  qr_key: string;
+  qr_alt_zh: string;
+  qr_alt_en: string;
+  qr_decorative: number;
+  /** One of TYPE_SCALES, which the column's own CHECK is the second gate on. */
+  type_scale: string;
 }
 
 export interface PageRow {
@@ -138,6 +145,18 @@ export interface MediaRow {
   bytes: number;
   /** The dominant hue in OKLCH degrees, or null where there is none to have. */
   tint: number | null;
+  /**
+   * Which bytes are under the key, as a digest of them — null for a photograph
+   * uploaded before migration 0009. A key never changes when a photograph is
+   * replaced, so this is the only thing that says a replacement happened.
+   */
+  version: string | null;
+  /**
+   * The narrower copies in the bucket, as a comma-separated ascending list —
+   * "480,768,1200". Null for a photograph uploaded before there was a ladder,
+   * which the site reads as the single candidate it has always had.
+   */
+  widths: string | null;
 }
 
 export interface RevisionRow {

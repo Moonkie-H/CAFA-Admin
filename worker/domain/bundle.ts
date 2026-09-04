@@ -44,6 +44,7 @@ import {
   type LocalisedText,
   type Mentor,
   type Program,
+  type MediaInfo,
   type Project,
   type SiteContent,
   type SitePages,
@@ -51,7 +52,7 @@ import {
 } from '../../shared/content/types';
 import { citedKeys } from '../../shared/content/images';
 import { CONTACT_PATH } from './contact';
-import type { MediaRow } from '../models/rows';
+
 
 /**
  * Copy that describes the chrome rather than a page, and is lifted into `site`
@@ -81,12 +82,36 @@ export interface PublishedBundle {
   /**
    * What was measured about each photograph the published content cites, and
    * nothing about the ones it does not: the intrinsic size the template holds
-   * an aspect box open with, and the dominant hue it draws the works index's
-   * hover band from. `tint` is null for a monochrome photograph and for one
-   * uploaded before the admin measured such things; the site reads both as no
-   * hue and uses its neutral band.
+   * an aspect box open with, the dominant hue it draws the works index's hover
+   * band from, and which bytes are currently under the key. `tint` is null for
+   * a monochrome photograph and for one uploaded before the admin measured such
+   * things; the site reads both as no hue and uses its neutral band.
+   *
+   * `version` is here because without it a replaced photograph was invisible
+   * from end to end. A key does not change when the studio swaps a file, so a
+   * replacement of the same dimensions left this map — and therefore this whole
+   * bundle — byte-identical, and `insertRevisionIfChanged` correctly reported
+   * that there was nothing to publish. It is null for a photograph uploaded
+   * before migration 0009, which the site reads as no version and requests the
+   * plain URL for, exactly as it did before.
+   *
+   * `widths` is the ladder: the narrower copies of the photograph that are in
+   * the bucket beside it. The site's zone cannot transform, so this is the only
+   * thing that lets a `srcset` offer a phone anything but the 2400px original —
+   * which is what stopped photographs appearing on mobile at all. Empty means a
+   * photograph uploaded before the ladder existed, and the site falls back to
+   * the single candidate it used to build.
    */
-  media: Record<string, { width: number; height: number; tint: number | null }>;
+  media: Record<
+    string,
+    {
+      width: number;
+      height: number;
+      tint: number | null;
+      version: string | null;
+      widths: number[];
+    }
+  >;
   /** Where the originals live, so the template can build transform URLs. */
   mediaBase: string;
   /**
@@ -174,7 +199,7 @@ function contactEndpointFor(adminUrl: string | undefined): string | null {
 
 export function buildBundle(
   content: ContentSet,
-  media: MediaRow[],
+  media: MediaInfo[],
   mediaBase: string,
   siteUrl: string,
   mediaTransform: string | undefined,
@@ -192,7 +217,16 @@ export function buildBundle(
   const measured: PublishedBundle['media'] = {};
   for (const row of media) {
     if (cited.has(row.key)) {
-      measured[row.key] = { width: row.width, height: row.height, tint: row.tint };
+      measured[row.key] = {
+        width: row.width,
+        height: row.height,
+        tint: row.tint,
+        version: row.version,
+        // Only rungs narrower than the photograph itself. A row claiming its own
+        // width, or more, would put a candidate in the site's srcset that
+        // promises pixels the file underneath it does not have.
+        widths: row.widths.filter((width) => width < row.width),
+      };
     }
   }
 

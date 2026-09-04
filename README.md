@@ -248,9 +248,38 @@ bundle carries `mediaTransform: false`, which tells the site to render
 https://media.cafa-studio.com/works/<slug>/01.jpg
 ```
 
-directly instead. The photographs are the ≤2400px versions the editor
-downscales to on upload, so the page costs more bytes and nothing else. Remove
-the var once the zone can transform, redeploy, and publish once.
+directly instead.
+
+That used to be "costs more bytes and nothing else", and it was not true. With
+one candidate in every `srcset`, a phone was handed the 2400px original of every
+photograph on the page — and a page of those is where a mobile browser stops
+decoding and draws a broken image instead. Photographs simply did not appear on
+mobile.
+
+So the ladder is written at upload now. The browser doing the uploading has
+already decoded the photograph in order to resize it to 2400 — a Worker has no
+decoder and there is no sharp here — so in the same pass it writes 480, 768,
+1200 and 1800 px copies, each filed under `derived/<width>/` against the
+original's own key:
+
+```
+https://media.cafa-studio.com/derived/768/works/<slug>/01.jpg
+```
+
+The widths it wrote are recorded on the photograph's registry row, published on
+the bundle's `media` map, and turned back into a real `srcset` by the site. The
+rungs go into the bucket *before* the row claims them, so the site is never told
+about a size that is not there. Which of the two ladders a page uses is the only
+thing `mediaTransform` decides; the markup is the same either way.
+
+Photographs uploaded before this existed have no rungs and still get the single
+full-size candidate. **General → Photograph sizes** in the admin is the one-off
+that fixes them: it fetches each original, resizes it in the browser and re-files
+the same bytes, so no digest moves, no published URL changes and no cache is
+invalidated. Publish afterwards so the site starts naming the new sizes.
+
+Remove `MEDIA_TRANSFORM` once the zone can transform, redeploy, and publish
+once.
 
 ```sh
 npm run media           # report

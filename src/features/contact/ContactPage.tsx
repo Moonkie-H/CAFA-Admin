@@ -7,6 +7,10 @@
  * splitting "the email address" from "the word before the email address" across
  * two screens was the clearest thing wrong with the old Site text page.
  *
+ * The QR code is the one optional thing on this screen, and the one photograph
+ * in the whole content set that hangs off no record. Leave it empty and the card
+ * is exactly what it was.
+ *
  * The email address below is now load-bearing in a second way. It is still what
  * the card prints, and it is also where the card's form delivers: the Worker
  * reads it out of the published revision on every message. So changing it here
@@ -15,9 +19,23 @@
  */
 import { useTranslation } from 'react-i18next';
 
-import type { SiteContent } from '../../../shared/content/types';
-import { CopyFields, LocalisedField, TextField, type CopyField } from '../../components/fields';
+import { blankImage, type SiteContent } from '../../../shared/content/types';
+import {
+  CopyFields,
+  ImageField,
+  LocalisedField,
+  TextField,
+  type CopyField,
+} from '../../components/fields';
 import type { Editor } from '../../hooks/useEditor';
+
+/**
+ * Where the WeChat code is filed. `site/` rather than under a record, because
+ * it belongs to the studio rather than to a work, a person or a page — it is
+ * the only photograph on the site that hangs off nothing.
+ */
+const QR_FOLDER = 'site';
+const QR_NAME = 'wechat-qr';
 
 /** The card's own words. The details they label are the fields above them. */
 const CARD_WORDS: CopyField[] = [
@@ -92,15 +110,33 @@ export function ContactPage({ editor }: ContactPageProps) {
         value={site.contact.wechat}
         onChange={(wechat) => setContact({ wechat })}
       />
+      {/* Optional, and the only optional photograph on the site: without one the
+          card prints the ID and nothing else, which is what it did before. With
+          one, a reader on a phone can scan instead of copying an ID into another
+          application from memory — which is where the ID alone stops working. */}
+      <ImageField
+        label={t('fields.qr')}
+        value={site.contact.qr ?? blankImage()}
+        onChange={(qr) => setContact({ qr: qr.src === '' ? null : qr })}
+        folder={QR_FOLDER}
+        name={QR_NAME}
+        mediaUrl={editor.mediaUrl}
+        onUpload={editor.putMedia}
+        onClear={() => setContact({ qr: null })}
+      />
       <LocalisedField
         label={t('fields.address')}
         value={site.contact.address}
         onChange={(address) => setContact({ address })}
+        hint={t('contactPage.linesHint')}
+        multiline
       />
       <LocalisedField
         label={t('fields.hours')}
         value={site.contact.hours}
         onChange={(hours) => setContact({ hours })}
+        hint={t('contactPage.linesHint')}
+        multiline
       />
 
       <h3 className="panel-heading">{t('contactPage.words')}</h3>

@@ -12,8 +12,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildBundle, transformsOn } from '../worker/domain/bundle';
-import type { MediaRow } from '../worker/models/rows';
-import type { ContentSet, Work } from '../shared/content/types';
+import type { ContentSet, MediaInfo, Work } from '../shared/content/types';
 import { content } from './content-fixture';
 
 function work(slug: string, status: Work['status']): Work {
@@ -31,8 +30,16 @@ function work(slug: string, status: Work['status']): Work {
   };
 }
 
-function measured(...keys: string[]): MediaRow[] {
-  return keys.map((key) => ({ key, width: 1_200, height: 800, bytes: 100_000, tint: 210 }));
+function measured(...keys: string[]): MediaInfo[] {
+  return keys.map((key) => ({
+    key,
+    width: 1_200,
+    height: 800,
+    bytes: 100_000,
+    tint: 210,
+    version: 'aaaaaaaaaaaa',
+    widths: [480, 768],
+  }));
 }
 
 function withWorks(...works: Work[]): ContentSet {
@@ -43,7 +50,7 @@ const MEDIA_BASE = 'https://media.example.com';
 const SITE_URL = 'https://example.com';
 const ADMIN_URL = 'https://admin.example.com';
 
-function bundleOf(set: ContentSet, media: MediaRow[]) {
+function bundleOf(set: ContentSet, media: MediaInfo[]) {
   return buildBundle(set, media, MEDIA_BASE, SITE_URL, undefined, ADMIN_URL);
 }
 
@@ -78,6 +85,8 @@ describe('the published bundle', () => {
       width: 1_200,
       height: 800,
       tint: 210,
+      version: 'aaaaaaaaaaaa',
+      widths: [480, 768],
     });
   });
 
@@ -140,6 +149,49 @@ describe('the published bundle', () => {
     const second = bundleOf(withWorks(work('edible-house', 'completed')), media);
 
     expect(JSON.stringify(first)).toBe(JSON.stringify(second));
+  });
+
+  /*
+   * The counterweight to the test above, and the regression this pair exists
+   * for. Determinism is what lets "nothing to publish" be decided by comparing
+   * two bundles as strings — which quietly meant that replacing a photograph
+   * with one of the same dimensions published nothing at all, because the key
+   * does not change and nothing else in the bundle described the file. The
+   * version is what differs now, so the studio's replacement reaches the site.
+   */
+  it('differs when a photograph is replaced under the same key', () => {
+    const set = withWorks(work('edible-house', 'completed'));
+    const before = measured('works/edible-house/cover.jpg', 'works/edible-house/01.jpg');
+    const after = before.map((row) => ({ ...row, version: 'bbbbbbbbbbbb' }));
+
+    expect(JSON.stringify(bundleOf(set, after))).not.toBe(JSON.stringify(bundleOf(set, before)));
+  });
+
+  /*
+   * A rung the file cannot honour is worse than no rung: the site turns each of
+   * these into a `srcset` candidate and tells the browser how wide it is, so a
+   * width at or above the photograph's own is a promise of pixels that are not
+   * there — and the browser plans its `sizes` around the promise.
+   */
+  it('publishes no rung as wide as the photograph itself', () => {
+    const bundle = bundleOf(
+      withWorks(work('edible-house', 'completed')),
+      measured('works/edible-house/cover.jpg').map((row) => ({
+        ...row,
+        widths: [480, 1_200, 1_800],
+      })),
+    );
+
+    expect(bundle.media['works/edible-house/cover.jpg']?.widths).toEqual([480]);
+  });
+
+  it('publishes no version for a photograph uploaded before one was recorded', () => {
+    const bundle = bundleOf(
+      withWorks(work('edible-house', 'completed')),
+      measured('works/edible-house/cover.jpg').map((row) => ({ ...row, version: null })),
+    );
+
+    expect(bundle.media['works/edible-house/cover.jpg']?.version).toBeNull();
   });
 
   it('turns transformations off only for a value that plainly says so', () => {

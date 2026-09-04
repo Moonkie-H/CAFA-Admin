@@ -24,6 +24,7 @@
  */
 
 import { MAX_IMAGE_EDGE } from '../../shared/content/types';
+import { ladderFor } from './media-keys';
 
 /**
  * How hard the re-encode leans on the JPEG quantiser.
@@ -61,6 +62,12 @@ const NEUTRAL = 0.015;
  */
 const AGREEMENT = 0.25;
 
+/** One rung of the ladder: the bytes, and the width they are that wide. */
+export interface SizedImage {
+  width: number;
+  image: Blob;
+}
+
 export interface PreparedImage {
   /** The re-encoded photograph, at most MAX_IMAGE_EDGE on its longest side. */
   image: Blob;
@@ -69,6 +76,19 @@ export interface PreparedImage {
    * has none to give. The site tints the works index's hovered row with it.
    */
   tint: number | null;
+  /**
+   * The narrower copies, ascending — what a phone is actually served.
+   *
+   * They exist because the site's zone cannot transform: `mediaTransform` is
+   * false, so no `/cdn-cgi/image/…` URL resolves and every `<img>` points at
+   * the original. One 2400px candidate for every device is a desktop page a
+   * phone cannot decode, and it is the reason photographs stopped appearing on
+   * mobile at all. There is no decoder in the Worker and no sharp anywhere, but
+   * there is one here — this function has just decoded the photograph in order
+   * to resize it — so the rungs are written in the same pass, from the same
+   * bitmap, at the cost of a few more canvas draws.
+   */
+  ladder: SizedImage[];
 }
 
 function scaleToFit(width: number, height: number): { width: number; height: number } {
@@ -150,20 +170,77 @@ function dominantHue(bitmap: ImageBitmap): number | null {
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
-export async function prepareImage(file: File): Promise<PreparedImage> {
-  const bitmap = await createImageBitmap(file);
-  const size = scaleToFit(bitmap.width, bitmap.height);
-
-  const canvas = new OffscreenCanvas(size.width, size.height);
+/** One draw and one encode, at exactly the width asked for. */
+async function encodeAt(
+  bitmap: ImageBitmap,
+  width: number,
+  height: number,
+): Promise<Blob> {
+  const canvas = new OffscreenCanvas(width, height);
   const context = canvas.getContext('2d');
   if (context === null) throw new Error('This browser cannot resize images.');
+  // The default is 'low', which at these reductions is visibly aliased on the
+  // fine detail — a drawing's hatching, a portrait's hair — and this is the
+  // copy most readers are served.
+  context.imageSmoothingQuality = 'high';
+  context.drawImage(bitmap, 0, 0, width, height);
+  return canvas.convertToBlob({ type: 'image/jpeg', quality: QUALITY });
+}
 
-  context.drawImage(bitmap, 0, 0, size.width, size.height);
-  // Measured from the original rather than from the derivative above: the same
-  // colours either way, and reading a 48px square costs nothing next to reading
-  // a 2400px one.
-  const tint = dominantHue(bitmap);
-  bitmap.close();
+/**
+ * The narrower copies, drawn from the bitmap the caller already has open.
+ *
+ * Every rung comes off the *source* bitmap rather than off the rung above it:
+ * successive halvings compound their own softening, and the 480px copy — the
+ * one a phone is actually handed — would be the worst of them.
+ *
+ * In series rather than all at once. Each encode holds a bitmap of its own
+ * while it runs, and a browser asked for four at a time on a 2400px photograph
+ * is a browser that may not have the memory for any of them.
+ */
+async function ladderOf(
+  bitmap: ImageBitmap,
+  width: number,
+  height: number,
+): Promise<SizedImage[]> {
+  const ladder: SizedImage[] = [];
+  for (const rung of ladderFor(width)) {
+    const tall = Math.max(1, Math.round((height / width) * rung));
+    ladder.push({ width: rung, image: await encodeAt(bitmap, rung, tall) });
+  }
+  return ladder;
+}
 
-  return { image: await canvas.convertToBlob({ type: 'image/jpeg', quality: QUALITY }), tint };
+export async function prepareImage(file: File): Promise<PreparedImage> {
+  const bitmap = await createImageBitmap(file);
+  try {
+    const size = scaleToFit(bitmap.width, bitmap.height);
+    // Measured from the original rather than from any derivative: the same
+    // colours either way, and reading a 48px square costs nothing next to
+    // reading a 2400px one.
+    const tint = dominantHue(bitmap);
+    const image = await encodeAt(bitmap, size.width, size.height);
+    return { image, tint, ladder: await ladderOf(bitmap, size.width, size.height) };
+  } finally {
+    bitmap.close();
+  }
+}
+
+/**
+ * The ladder for a photograph that is already in the bucket.
+ *
+ * The backfill's half of this file, and the difference from `prepareImage` is
+ * the whole point of it: **the original is neither re-encoded nor re-measured.**
+ * It is handed back byte for byte as it was fetched and keeps the hue already
+ * recorded for it, so its digest — and therefore every URL the site has
+ * published, and every cache holding one — is unchanged. Only the rungs
+ * underneath it are new.
+ */
+export async function prepareStored(original: Blob, tint: number | null): Promise<PreparedImage> {
+  const bitmap = await createImageBitmap(original);
+  try {
+    return { image: original, tint, ladder: await ladderOf(bitmap, bitmap.width, bitmap.height) };
+  } finally {
+    bitmap.close();
+  }
 }

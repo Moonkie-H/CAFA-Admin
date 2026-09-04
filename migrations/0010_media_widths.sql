@@ -1,0 +1,40 @@
+-- Which sizes of a photograph are actually in the bucket.
+--
+-- The site's zone cannot transform. Image Transformations are a paid zone
+-- setting, `MEDIA_TRANSFORM` says `off`, and the published bundle carries that
+-- as `mediaTransform: false` — so no `/cdn-cgi/image/…` URL resolves and the
+-- template points every `<img>` straight at the original in `MEDIA_BASE`.
+--
+-- Which meant every photograph on the site was served at 2400 pixels to every
+-- device, with a `srcset` of exactly one candidate. A desktop absorbs that. A
+-- phone on mobile data does not: the front page's gallery, a work's media
+-- column and the band of mentor portraits are each several full-size JPEGs,
+-- and a few megabytes of transfer and tens of megabytes of decoded bitmap is
+-- where a mobile browser stops decoding and draws a broken image instead. That
+-- is the "手机端图片显示不出来" report, and it is also a plain breach of the
+-- site's own performance budget, which requires a real `srcset` on every image.
+--
+-- The missing piece was never a decoder — it was *where* the decoder is. A
+-- Worker has none and there is no sharp anywhere in either repository, but the
+-- browser doing the uploading has already decoded the photograph in order to
+-- resize it to 2400. So it now writes the rest of the ladder in the same pass,
+-- each rung filed under `derived/<width>/<the original's key>`, and this column
+-- records which rungs it wrote.
+--
+-- TEXT, holding the widths as a comma-separated ascending list — "480,768,1200"
+-- — rather than a second table. It is a fixed handful of small integers that is
+-- always read whole, written whole and never queried across, which is a list
+-- and not a relation.
+--
+-- The order of writes is what keeps this honest: every rung goes into the
+-- bucket before this column claims it, for the same reason the object goes in
+-- before the row does. A photograph is never described as having a size the
+-- site would then ask for and not find.
+--
+-- NULL is "uploaded before the ladder existed", and the site reads it as the
+-- one candidate it has always had. `npm run media` — the backfill on the
+-- control panel — is what turns those into ladders without re-uploading
+-- anything: it fetches each original, resizes it in the browser and re-files
+-- the same bytes, so the version does not change and no cached URL is churned.
+
+ALTER TABLE media ADD COLUMN widths TEXT;

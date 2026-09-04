@@ -11,6 +11,15 @@
  * with, so a wrong number here is layout shift on the live site — a value the
  * CLS budget depends on should be derived from the file, not from a form field.
  *
+ * The version is measured here too, and it is the one of the four that is not
+ * about how the photograph looks. A key is stable across a replacement — that
+ * is what keeps the record pointing at the right object and the bucket free of
+ * orphans — so nothing downstream could tell that the bytes had changed: the
+ * bundle carried the same dimensions, `insertRevisionIfChanged` therefore said
+ * there was nothing to publish, and the URL the site built was the one every
+ * cache already held. A digest of the bytes is what closes both, and it is
+ * derived here for the same reason the dimensions are: from the file.
+ *
  * The hue is the one number that arrives the other way round, and the asymmetry
  * is the point rather than an inconsistency. Finding it means reading pixels,
  * and a Worker has no decoder to read them with — there is no sharp here, and
@@ -23,7 +32,7 @@
  * the CLS budget is made of.
  */
 import type { MediaInfo } from '../../shared/content/types';
-import { contentTypeOf, measure } from '../domain/image';
+import { contentTypeOf, isDerivedMediaKey, measure, versionOf } from '../domain/image';
 import { recordMedia } from '../repositories/media.repository';
 import { ApiException } from '../shared/api-exception';
 import { getMedia, putMedia } from '../storage/media-storage';
@@ -34,7 +43,12 @@ export class MediaService {
     private readonly bucket: R2Bucket,
   ) {}
 
-  async upload(key: string, body: ArrayBuffer, tint: number | null): Promise<MediaInfo> {
+  async upload(
+    key: string,
+    body: ArrayBuffer,
+    tint: number | null,
+    widths: number[],
+  ): Promise<MediaInfo> {
     let measured;
     try {
       measured = measure(body);
@@ -54,10 +68,18 @@ export class MediaService {
       height: measured.height,
       bytes: measured.bytes,
       tint,
+      version: await versionOf(body),
+      widths,
     };
 
     await putMedia(this.bucket, key, body);
-    await recordMedia(this.db, info);
+
+    // A rung of a ladder is bytes and nothing else. It has no row because
+    // nothing may cite it: the registry is what content's foreign keys point
+    // into, and a photograph is one entry there however many sizes of it are in
+    // the bucket. Its dimensions are still measured — that is what refuses a
+    // rung that is not the image it claims to be — they are simply not recorded.
+    if (!isDerivedMediaKey(key)) await recordMedia(this.db, info);
 
     return info;
   }

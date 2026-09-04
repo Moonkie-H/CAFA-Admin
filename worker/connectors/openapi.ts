@@ -101,7 +101,10 @@ its object key, and \`mediaBase\` on the bundle — or the \`url\` on each entry
 of \`/api/v1/photographs\` — resolves that key against the media origin, so an
 \`<img src>\` reaches the CDN directly. \`mediaTransform\` on the bundle says
 whether those URLs may go through \`/cdn-cgi/image/…\` first; when it is false
-the zone cannot transform and the originals are what the site renders.
+the zone cannot transform and the originals are what the site renders. Append
+the entry's \`version\` as a query parameter when you build such a URL yourself
+— a key stays the same when the studio replaces the photograph under it, so the
+version is the only thing that tells a cache the picture has changed.
 
 Any origin may read these endpoints. They carry only what is already public.
 

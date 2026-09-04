@@ -1,0 +1,34 @@
+-- A short name for the bytes a photograph is currently made of.
+--
+-- The bug this exists to end: replacing a photograph changed nothing anybody
+-- downstream could see. The key is deliberately stable — `pages/home/01.jpg`
+-- keeps its name so the record that points at it does not have to be rewritten
+-- and the old object is not orphaned — and everything else about the file was
+-- either not published or not distinguishing:
+--
+--   * The published bundle carried `width`, `height` and `tint`. Replace a
+--     photograph with a differently-cropped one of the same dimensions and the
+--     bundle is byte-identical, so `insertRevisionIfChanged` answers "nothing
+--     to publish" and no deploy is triggered. The site keeps the old revision.
+--   * Even when a deploy did run, the URL it built was the key against the
+--     media origin — the same URL as before. The bucket serves it with an hour
+--     of freshness and Cloudflare caches the transformed derivatives, so a
+--     browser that had seen the old photograph kept showing it.
+--
+-- So the studio replaced a photograph, published, and the site did not change.
+-- What was missing was anything that says *which* bytes: a version. It is a
+-- 48-bit prefix of the SHA-256 of the uploaded file, computed in
+-- worker/domain/image.ts, and it travels into the published bundle beside the
+-- dimensions. Two consequences, which are the two halves of the fix: the bundle
+-- now differs whenever the file does, so publishing is not a no-op; and the
+-- site appends it to the delivery URL, so a replaced photograph is a different
+-- URL and every cache between R2 and the reader misses on it.
+--
+-- Content-addressed rather than a counter or a timestamp, because re-uploading
+-- the same file should not churn a URL that every reader has cached.
+--
+-- TEXT and nullable. NULL is "uploaded before this column existed", and the
+-- site reads it as no version and asks for the plain URL — exactly what it did
+-- before. A photograph gets one the next time it is uploaded.
+
+ALTER TABLE media ADD COLUMN version TEXT;

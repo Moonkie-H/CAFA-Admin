@@ -19,7 +19,8 @@ import { ApiError } from '../services/http';
 import { mediaService } from '../services/media';
 import { checkContent, checkImagesInStorage, type Problem } from '../../shared/content/validate';
 import type { ContentSet, MediaInfo } from '../../shared/content/types';
-import { prepareImage } from '../lib/image-prepare';
+import { prepareImage, prepareStored } from '../lib/image-prepare';
+import { ladderFor } from '../lib/media-keys';
 import { useSay } from '../lib/say';
 
 export interface Editor {
@@ -35,7 +36,24 @@ export interface Editor {
   putMedia: (key: string, file: File) => Promise<void>;
   /** A URL the editor can show a committed photograph at. */
   mediaUrl: (key: string) => string;
+  /** The photographs the bucket holds, as the registry describes them. */
+  media: MediaInfo[];
+  /** How many of them are still missing the narrower copies a phone is served. */
+  unladdered: number;
+  /** Give those photographs their ladder, without changing the originals. */
+  fillLadders: () => Promise<void>;
   save: () => Promise<boolean>;
+}
+
+/**
+ * Whether a photograph still owes the site the narrower copies of itself.
+ *
+ * Compared against what its own width earns rather than against a fixed list,
+ * because a 900px photograph is complete with two rungs and would otherwise be
+ * offered for backfilling forever.
+ */
+function needsLadder(entry: MediaInfo): boolean {
+  return entry.widths.length < ladderFor(entry.width).length;
 }
 
 export function useEditor(initial: ContentSet, initialMedia: MediaInfo[]): Editor {
@@ -50,8 +68,14 @@ export function useEditor(initial: ContentSet, initialMedia: MediaInfo[]): Edito
   const uploadsInFlight = useRef(0);
   const saveInFlight = useRef(false);
 
-  /** Keys already in the bucket, so a preview knows whether to expect bytes. */
-  const [known, setKnown] = useState(() => new Set(initialMedia.map((entry) => entry.key)));
+  /**
+   * The registry, held rather than reduced to a set of keys on the way in.
+   *
+   * It answers two questions with one piece of state: whether a preview should
+   * expect bytes at a key, and which photographs are still missing the ladder
+   * the backfill exists to give them.
+   */
+  const [media, setMedia] = useState(initialMedia);
   /** Bumped on every upload so a replaced photograph is re-fetched, not cached. */
   const [version, setVersion] = useState(0);
 
@@ -61,30 +85,78 @@ export function useEditor(initial: ContentSet, initialMedia: MediaInfo[]): Edito
     setDirty(true);
   }, []);
 
-  const putMedia = useCallback(async (key: string, file: File): Promise<void> => {
+  /** One registry entry replaced or added, without disturbing the others. */
+  const record = useCallback((entry: MediaInfo) => {
+    setMedia((current) => [
+      ...current.filter((existing) => existing.key !== entry.key),
+      entry,
+    ]);
+  }, []);
+
+  const putMedia = useCallback(
+    async (key: string, file: File): Promise<void> => {
+      uploadsInFlight.current += 1;
+      setUploading(true);
+      setError(null);
+      try {
+        record(await mediaService.upload(key, await prepareImage(file)));
+        setVersion((current) => current + 1);
+      } finally {
+        uploadsInFlight.current -= 1;
+        setUploading(uploadsInFlight.current > 0);
+      }
+    },
+    [record],
+  );
+
+  /**
+   * The narrower copies, for photographs uploaded before there were any.
+   *
+   * The site's zone cannot transform, so a photograph with no ladder is served
+   * to a phone at 2400 pixels — which is why photographs stopped appearing on
+   * mobile. New uploads get their ladder on the way up; everything already in
+   * the bucket needs this, once.
+   *
+   * The original is fetched and re-filed **byte for byte**. It is not decoded
+   * and re-encoded, so its digest does not move, so no URL the site has
+   * published changes and no cache is invalidated — the only new objects are
+   * the rungs underneath it. One photograph at a time, because each one holds a
+   * full-size bitmap while it resizes.
+   */
+  const fillLadders = useCallback(async (): Promise<void> => {
     uploadsInFlight.current += 1;
     setUploading(true);
     setError(null);
     try {
-      await mediaService.upload(key, await prepareImage(file));
-      setKnown((current) => new Set(current).add(key));
+      for (const entry of media) {
+        if (!needsLadder(entry)) continue;
+        const original = await mediaService.original(entry.key);
+        record(await mediaService.upload(entry.key, await prepareStored(original, entry.tint)));
+      }
       setVersion((current) => current + 1);
+    } catch (failure) {
+      // Partial progress is kept rather than unwound: every photograph this got
+      // to is now complete, and running it again picks up where it stopped.
+      setError(failure instanceof Error ? failure.message : t('fields.uploadFailed'));
     } finally {
       uploadsInFlight.current -= 1;
       setUploading(uploadsInFlight.current > 0);
     }
-  }, []);
+  }, [media, record, t]);
 
   const mediaUrl = useCallback((key: string) => mediaService.url(key, version), [version]);
 
   /*
-   * Both gates, so the banner says the same thing the Worker would. `version`
-   * The known-key set is immutable state: replacing it after an upload makes
-   * the missing-file complaint disappear without exposing a mutable Set.
+   * Both gates, so the banner says the same thing the Worker would. The registry
+   * is immutable state: replacing an entry after an upload makes the
+   * missing-file complaint disappear without exposing anything mutable.
    */
   const problems = useMemo(
-    () => [...checkContent(content), ...checkImagesInStorage(content, known)],
-    [content, known],
+    () => [
+      ...checkContent(content),
+      ...checkImagesInStorage(content, new Set(media.map((entry) => entry.key))),
+    ],
+    [content, media],
   );
 
   const save = useCallback(async (): Promise<boolean> => {
@@ -126,6 +198,9 @@ export function useEditor(initial: ContentSet, initialMedia: MediaInfo[]): Edito
     update,
     putMedia,
     mediaUrl,
+    media,
+    unladdered: media.filter(needsLadder).length,
+    fillLadders,
     save,
   };
 }
