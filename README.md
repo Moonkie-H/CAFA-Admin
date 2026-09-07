@@ -65,14 +65,17 @@ schema, rather than discovered at build time:
   template's `lib/routes.ts` and to the deployment — the site URL literally so:
   it is the `PRODUCTION_URL` var, stamped into each published revision by
   `worker/domain/bundle.ts`.
-- **Prose can be formatted, within the site's six type sizes.** Every box the studio
-  types prose into carries four controls — bold, italic, a size, and where the line
-  sits. What they cannot do is invent a size: "larger" steps the line to the *next
-  type role* the site already has, never to a number of points, so a formatted page
-  still sets type in six sizes and no edit can put nine-pixel body copy on the live
-  site. There is no step down, no colour, no typeface and no indent, and pasting from
-  Word keeps the words and drops the rest. The formatting is stored inside the field
-  it formats, so it saves, publishes and rolls back with everything else.
+- **Prose can be formatted, and the size is a number.** Every box the studio types
+  prose into carries three controls — bold, italic, and the size the field is set at,
+  typed in pixels. The size is the field's rather than the line's, so one control sets
+  it for the Chinese and the English together and the two cannot go out at different
+  sizes; the two marks stay per language, because bold is on *these words* and the two
+  sentences do not share any. What the number cannot do is go outside **14 to 120**:
+  14 is the site's own floor for body text, so no edit can put nine-pixel copy on the
+  live site. There is no alignment — where a line sits is the page's composition and is
+  decided in CAFA-Template — no colour, no typeface and no indent, and pasting from
+  Word keeps the words and drops the rest. The formatting is stored inside the field it
+  formats, so it saves, publishes and rolls back with everything else.
 - **You cannot add a page, and cannot rearrange one.** The site has four, and
   each is a design in CAFA-Template with its own layout and its own motion — the
   front page's statement holding a screen on its own, the mentors read sideways

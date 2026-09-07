@@ -48,36 +48,54 @@ export function CopyFields({ fields, dictionaries, onChange }: CopyFieldsProps) 
 
   return (
     <>
-      {fields.map((field) => (
-        <fieldset key={field.path} className="field localised">
-          <legend className="field-label">{copy(field.label)}</legend>
-          <div className="localised-pair">
-            {LOCALES.map((locale) =>
-              field.rich === true ? (
-                <RichTextField
-                  key={locale}
-                  label={LOCALE_NAMES[locale]}
-                  value={readCopyPath(dictionaries[locale], field.path)}
-                  onChange={(value) =>
-                    onChange(locale, writeCopyPath(dictionaries[locale], field.path, value))
-                  }
-                />
-              ) : (
+      {fields.map((field) => {
+        const read = (locale: Locale) => readCopyPath(dictionaries[locale], field.path);
+        const write = (locale: Locale, value: string) =>
+          onChange(locale, writeCopyPath(dictionaries[locale], field.path, value));
+
+        /*
+         * A prose field is one control over both languages — it shares a size
+         * between them — so it takes the pair and hands the pair back, and this
+         * writes each half into its own dictionary. Two calls rather than one
+         * because `zh` and `en` are two keys of the ContentSet; `useEditor`
+         * updates from the current state each time, so the second does not
+         * undo the first. The guard is what keeps a size set on the Chinese
+         * from also marking the English changed when its words did not change.
+         */
+        if (field.rich === true) {
+          return (
+            <RichTextField
+              key={field.path}
+              label={copy(field.label)}
+              hint={field.hint === undefined ? undefined : copy(field.hint)}
+              value={{ zh: read('zh'), en: read('en') }}
+              onChange={(value) => {
+                for (const locale of LOCALES) {
+                  if (value[locale] !== read(locale)) write(locale, value[locale]);
+                }
+              }}
+            />
+          );
+        }
+
+        return (
+          <fieldset key={field.path} className="field localised">
+            <legend className="field-label">{copy(field.label)}</legend>
+            <div className="localised-pair">
+              {LOCALES.map((locale) => (
                 <TextField
                   key={locale}
                   label={LOCALE_NAMES[locale]}
                   multiline={field.multiline}
-                  value={readCopyPath(dictionaries[locale], field.path)}
-                  onChange={(value) =>
-                    onChange(locale, writeCopyPath(dictionaries[locale], field.path, value))
-                  }
+                  value={read(locale)}
+                  onChange={(value) => write(locale, value)}
                 />
-              ),
-            )}
-          </div>
-          {field.hint !== undefined && <p className="field-hint">{copy(field.hint)}</p>}
-        </fieldset>
-      ))}
+              ))}
+            </div>
+            {field.hint !== undefined && <p className="field-hint">{copy(field.hint)}</p>}
+          </fieldset>
+        );
+      })}
     </>
   );
 }

@@ -228,9 +228,7 @@
     "bold": "加粗",
     "italic": "斜体",
     "size": "字号",
-    "left": "左对齐",
-    "center": "居中",
-    "right": "右对齐"
+    "sizeAuto": "自动"
   },
   "typeScale": {
     "normal": "标准",
