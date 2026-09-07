@@ -182,6 +182,31 @@ export function linesIn(root: HTMLElement, range: Range | null): HTMLElement[] {
   return lines.filter((line) => range.intersectsNode(line));
 }
 
+/**
+ * The selection, if it is inside this surface and still pointing at live nodes.
+ *
+ * Both halves matter. A selection somewhere else on the page is not this
+ * field's business — there are two of these on every bilingual pair. And a
+ * range remembered from before `paint` replaced the contents points at nodes
+ * that are no longer in the document, which is a range that silently matches
+ * nothing rather than one that throws.
+ */
+export function rangeIn(root: HTMLElement): Range | null {
+  const selection = document.getSelection();
+  if (selection === null || selection.rangeCount === 0) return null;
+  const range = selection.getRangeAt(0);
+  return root.contains(range.startContainer) ? range : null;
+}
+
+/** Take the whole of the surface, which is what "nothing selected" means here. */
+export function selectAll(root: HTMLElement): void {
+  const range = document.createRange();
+  range.selectNodeContents(root);
+  const selection = document.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+}
+
 /** What the toolbar shows as switched on, for wherever the caret is. */
 export interface RichState {
   strong: boolean;
@@ -192,20 +217,58 @@ export interface RichState {
 
 export const NEUTRAL: RichState = { strong: false, emphasis: false, align: null, size: 'normal' };
 
+/** Whether some ancestor of this node, up to the surface, is one of `tags`. */
+function within(root: HTMLElement, node: Node, tags: ReadonlySet<string>): boolean {
+  const from = node instanceof HTMLElement ? node : node.parentElement;
+  for (let element = from; element !== null; element = element.parentElement) {
+    if (tags.has(element.tagName)) return true;
+    if (element === root) break;
+  }
+  return false;
+}
+
+/**
+ * The marks a *stretch* of text carries — on only where every word has them.
+ *
+ * A collapsed caret has one place to ask about and this is not used for it. A
+ * selection has many, and asking only the first was wrong in the way that
+ * mattered most: after a control applies to the whole box, the range begins at
+ * the box itself rather than inside the words, so the button that had just
+ * bolded everything reported itself unpressed. A studio looking for whether
+ * bold took needs the light to agree with the text.
+ */
+function marksAcross(root: HTMLElement, range: Range): Pick<RichState, 'strong' | 'emphasis'> | null {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let strong = true;
+  let emphasis = true;
+  let found = false;
+
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    if ((node.nodeValue ?? '') === '' || !range.intersectsNode(node)) continue;
+    found = true;
+    strong &&= within(root, node, STRONG_TAGS);
+    emphasis &&= within(root, node, EMPHASIS_TAGS);
+    if (!strong && !emphasis) break;
+  }
+
+  return found ? { strong, emphasis } : null;
+}
+
 export function stateAt(root: HTMLElement, range: Range | null): RichState {
   if (range === null) return NEUTRAL;
 
   const start = range.startContainer;
-  const from = start instanceof HTMLElement ? start : start.parentElement;
-  if (from === null || !root.contains(from)) return NEUTRAL;
+  if (!root.contains(start)) return NEUTRAL;
 
-  const state = { ...NEUTRAL };
-  for (let element: HTMLElement | null = from; element !== null; element = element.parentElement) {
-    if (STRONG_TAGS.has(element.tagName)) state.strong = true;
-    if (EMPHASIS_TAGS.has(element.tagName)) state.emphasis = true;
-    if (element === root) break;
-  }
+  const marks = range.collapsed
+    ? {
+        strong: within(root, start, STRONG_TAGS),
+        emphasis: within(root, start, EMPHASIS_TAGS),
+      }
+    : (marksAcross(root, range) ?? { strong: false, emphasis: false });
 
+  const state: RichState = { ...NEUTRAL, ...marks };
   const [line] = linesIn(root, range);
   if (line !== undefined) {
     state.align = readAlign(line);
