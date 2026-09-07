@@ -156,16 +156,17 @@ describe('checkContent', () => {
     expect(problems.filter((problem) => problem.section === 'site')).toHaveLength(2);
   });
 
-  it('counts a line that is nothing but formatting as blank', () => {
-    // `{center}` is an alignment and nothing else — the field has no words in
-    // it, so the studio would have published an empty statement. It does not
-    // trim to nothing, which is why the rule measures the plain text.
+  it('counts a value that is nothing but formatting as blank', () => {
+    // A size and nothing else — the field has no words in it, so the studio
+    // would have published an empty statement. It does not trim to nothing,
+    // which is why the rule measures the plain text. The English is a directive
+    // this format has retired, which parses to no words for the same reason.
     expect(
       keys(
         checkContent(
           withPages((pages) => ({
             ...pages,
-            home: { ...pages.home, statement: { zh: '{center}', en: '{right larger}' } },
+            home: { ...pages.home, statement: { zh: '{28}', en: '{right larger}' } },
           })),
         ),
       ),
@@ -177,7 +178,7 @@ describe('checkContent', () => {
       checkContent(
         withPages((pages) => ({
           ...pages,
-          home: { ...pages.home, statement: { zh: '{center}**央艺**', en: '{center}**c.a.f.a**' } },
+          home: { ...pages.home, statement: { zh: '{28}**央艺**', en: '{28}**c.a.f.a**' } },
         })),
       ),
     ).toEqual([]);

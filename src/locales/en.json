@@ -228,9 +228,7 @@
     "bold": "Bold",
     "italic": "Italic",
     "size": "Size",
-    "left": "Align left",
-    "center": "Centre",
-    "right": "Align right"
+    "sizeAuto": "Auto"
   },
   "typeScale": {
     "normal": "Normal",
