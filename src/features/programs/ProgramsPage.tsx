@@ -112,7 +112,7 @@ export function ProgramsPage({ editor }: ProgramsPageProps) {
             label={t('fields.paragraphNumber', { number: at + 1 })}
             value={paragraph}
             onChange={set}
-            multiline
+            rich
           />
         )}
       />

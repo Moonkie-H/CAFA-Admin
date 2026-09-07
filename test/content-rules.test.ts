@@ -156,6 +156,33 @@ describe('checkContent', () => {
     expect(problems.filter((problem) => problem.section === 'site')).toHaveLength(2);
   });
 
+  it('counts a line that is nothing but formatting as blank', () => {
+    // `{center}` is an alignment and nothing else — the field has no words in
+    // it, so the studio would have published an empty statement. It does not
+    // trim to nothing, which is why the rule measures the plain text.
+    expect(
+      keys(
+        checkContent(
+          withPages((pages) => ({
+            ...pages,
+            home: { ...pages.home, statement: { zh: '{center}', en: '{right larger}' } },
+          })),
+        ),
+      ),
+    ).toEqual(['pages/problems.message.empty', 'pages/problems.message.empty']);
+  });
+
+  it('lets a formatted line through, because it has words in it', () => {
+    expect(
+      checkContent(
+        withPages((pages) => ({
+          ...pages,
+          home: { ...pages.home, statement: { zh: '{center}**央艺**', en: '{center}**c.a.f.a**' } },
+        })),
+      ),
+    ).toEqual([]);
+  });
+
   it('treats a decorative photograph as described, and a half-filled alt as not', () => {
     expect(checkContent(withGallery({ src: 'pages/home/01.jpg', alt: '' }))).toEqual([]);
 

@@ -54,7 +54,7 @@ export function ProjectForm({ project, at, editor }: ProjectFormProps) {
         value={project.summary}
         onChange={(summary) => set('summary', summary)}
         hint={t('projectsPage.summaryHint')}
-        multiline
+        rich
       />
 
       {/* The picture is filed under the project's own key, so it cannot be

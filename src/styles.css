@@ -796,6 +796,132 @@ textarea.input {
   margin-top: 0.25rem;
 }
 
+/* ---------- formatting a piece of prose ---------- */
+
+/*
+ * The toolbar and the box under it are drawn as one control, because that is
+ * what they are: the buttons act on the selection in the box and nowhere else.
+ * A gap between them would invite the reading that the toolbar belongs to the
+ * form rather than to the field it sits on — and there are two of these side by
+ * side on every bilingual pair, so that reading has to be closed off.
+ *
+ * It wraps. Four controls at the tap size do not fit across a 15rem column, and
+ * the pair of columns is what the studio actually edits in; a toolbar that
+ * wrapped to two rows was the honest answer, and a set of 30px buttons that fit
+ * on one was not.
+ */
+.rich-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid var(--rule);
+  border-bottom: 0;
+  border-radius: 0.5rem 0.5rem 0 0;
+  background: var(--soft);
+}
+
+.rich-button {
+  display: grid;
+  place-items: center;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 0 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--ink-60);
+  font: inherit;
+  cursor: pointer;
+  transition: background var(--motion) var(--ease), color var(--motion) var(--ease);
+}
+
+.rich-button:hover {
+  background: var(--field);
+  color: var(--ink);
+}
+
+/* Switched on, and saying so to a screen reader in the same attribute the
+   stylesheet reads. A colour alone would be the only signal, which is one
+   signal too few — the border carries it as well. */
+.rich-button[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+}
+
+.rich-button svg {
+  display: block;
+  fill: currentColor;
+}
+
+/* The two marks name themselves in the shape they make. */
+.rich-bold {
+  font-weight: 700;
+}
+
+.rich-italic {
+  font-style: italic;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.rich-size {
+  min-height: var(--tap);
+  padding: 0 0.4rem;
+  border: 1px solid var(--rule);
+  border-radius: 0.4rem;
+  background: var(--field);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+/* The three alignments are one choice, so they are one group with a rule in
+   front of it rather than three more buttons in the same run. */
+.rich-group {
+  display: flex;
+  gap: 0.25rem;
+  margin-inline-start: 0.25rem;
+  padding-inline-start: 0.4rem;
+  border-inline-start: 1px solid var(--rule);
+}
+
+.rich-surface {
+  min-height: 5.5rem;
+  border-radius: 0 0 0.5rem 0.5rem;
+  line-height: 1.55;
+  cursor: text;
+  overflow-wrap: anywhere;
+}
+
+/*
+ * A line of prose, which is also the unit the alignment and the size are set on.
+ * The sizes are `em` and approximate on purpose: the site steps a line to its
+ * *next type role*, which is a set of six sizes this stylesheet does not have.
+ * What the studio needs from this box is to see which line is bigger and by
+ * roughly how much, and the site is where it is set exactly.
+ */
+.rich-line[data-align='left'] {
+  text-align: start;
+}
+
+.rich-line[data-align='center'] {
+  text-align: center;
+}
+
+.rich-line[data-align='right'] {
+  text-align: end;
+}
+
+.rich-line[data-size='large'] {
+  font-size: 1.25em;
+}
+
+.rich-line[data-size='larger'] {
+  font-size: 1.6em;
+}
+
 /* ---------- repeatable lists ---------- */
 
 .repeatable {
