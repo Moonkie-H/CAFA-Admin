@@ -72,7 +72,7 @@ export async function readPages(db: D1Database): Promise<SitePages> {
     ...text('home'),
     statement: line('home', 'statement'),
     gallery: gallery.results.map((row) =>
-      imageRef(row.media_key, row.alt_zh, row.alt_en, row.decorative),
+      imageRef(row.media_key, row.alt_zh, row.alt_en, row.decorative, row.frame),
     ),
   };
 
@@ -146,8 +146,8 @@ export function insertPages(db: D1Database, pages: SitePages): D1PreparedStateme
     statements.push(
       db
         .prepare(
-          `INSERT INTO home_gallery (position, media_key, alt_zh, alt_en, decorative)
-           VALUES (?, ?, ?, ?, ?)`,
+          `INSERT INTO home_gallery (position, media_key, alt_zh, alt_en, decorative, frame)
+           VALUES (?, ?, ?, ?, ?, ?)`,
         )
         .bind(position, ...imageBindings(image)),
     );

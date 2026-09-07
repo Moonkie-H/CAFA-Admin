@@ -1,17 +1,29 @@
 /**
- * One photograph, with the description it is not allowed to go without.
+ * One photograph: the file, how it is drawn, and the description it is not
+ * allowed to go without.
  *
  * The alt text sits in the same box as the picture on purpose. Alt is a
  * required field so it cannot be forgotten; putting it anywhere but next to the
  * image it describes is how it gets forgotten anyway. The `CHECK` constraint on
  * the media columns refuses a half-filled one too, so this is the first of two
  * gates rather than the only one.
+ *
+ * The framing is here for the same reason and appears only once a photograph
+ * has been chosen — there is nothing to frame before that, and an empty frame
+ * with a shape and a zoom on it is a control asking to be set for a file that
+ * does not exist. It replaces the thumbnail rather than sitting beside one: the
+ * thumbnail was a picture of the file, and this is a picture of the page.
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { emptyLocalised, type ImageRef } from '../../../shared/content/types';
+import {
+  emptyLocalised,
+  naturalFraming,
+  type ImageRef,
+} from '../../../shared/content/types';
 import { mediaKey } from '../../lib/media-keys';
+import { FramingField } from './FramingField';
 import { LocalisedField } from './LocalisedField';
 
 interface ImageFieldProps {
@@ -59,7 +71,11 @@ export function ImageField({
       // means the photograph has to exist first.
       const key = mediaKey(folder, name);
       await onUpload(key, file);
-      onChange({ ...value, src: key });
+      // A replacement is a different photograph in the same slot, so the frame
+      // the last one was given is not the frame this one wants — a crop chosen
+      // around a face lands somewhere arbitrary on the next picture. It starts
+      // where every photograph starts: its own shape, whole.
+      onChange({ ...value, src: key, frame: naturalFraming() });
     } catch (error) {
       setFailure(error instanceof Error ? error.message : t('fields.uploadFailed'));
     } finally {
@@ -72,13 +88,18 @@ export function ImageField({
       <h4 className="field-label">{label}</h4>
 
       <div className="image-row">
-        <div className="image-preview">
-          {value.src === '' ? (
+        {value.src === '' ? (
+          <div className="image-preview">
             <span className="image-empty">{t('common.noImage')}</span>
-          ) : (
-            <img src={mediaUrl(value.src)} alt="" loading="lazy" />
-          )}
-        </div>
+          </div>
+        ) : (
+          <FramingField
+            label={label}
+            value={value.frame}
+            onChange={(frame) => onChange({ ...value, frame })}
+            src={mediaUrl(value.src)}
+          />
+        )}
 
         <div className="image-controls">
           <label className="button">

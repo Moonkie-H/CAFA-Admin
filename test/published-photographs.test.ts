@@ -15,11 +15,17 @@ import { describe, expect, it } from 'vitest';
 
 import { buildBundle } from '../worker/domain/bundle';
 import { photographsOf } from '../worker/connectors/photographs';
-import type { ContentSet, ImageRef, MediaInfo, Work } from '../shared/content/types';
+import {
+  naturalFraming,
+  type ContentSet,
+  type ImageRef,
+  type MediaInfo,
+  type Work,
+} from '../shared/content/types';
 import { content } from './content-fixture';
 
 function image(src: string): ImageRef {
-  return { src, alt: { zh: '照片', en: 'Photograph' } };
+  return { src, alt: { zh: '照片', en: 'Photograph' }, frame: naturalFraming() };
 }
 
 function work(slug: string, status: Work['status'] = 'completed'): Work {

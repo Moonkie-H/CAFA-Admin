@@ -14,7 +14,13 @@ export async function readProjects(db: D1Database): Promise<Project[]> {
     slug: row.slug,
     title: pair(row.title_zh, row.title_en),
     summary: pair(row.summary_zh, row.summary_en),
-    image: imageRef(row.image_key, row.image_alt_zh, row.image_alt_en, row.image_decorative),
+    image: imageRef(
+      row.image_key,
+      row.image_alt_zh,
+      row.image_alt_en,
+      row.image_decorative,
+      row.image_frame,
+    ),
   }));
 }
 
@@ -30,8 +36,9 @@ export function insertProjects(
     db
       .prepare(
         `INSERT INTO projects (slug, position, title_zh, title_en, summary_zh, summary_en,
-                               image_key, image_alt_zh, image_alt_en, image_decorative)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                               image_key, image_alt_zh, image_alt_en, image_decorative,
+                               image_frame)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
         project.slug,

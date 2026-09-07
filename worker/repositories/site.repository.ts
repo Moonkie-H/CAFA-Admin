@@ -32,7 +32,13 @@ export async function readSite(db: D1Database): Promise<SiteContent> {
       qr:
         site.qr_key === ''
           ? null
-          : imageRef(site.qr_key, site.qr_alt_zh, site.qr_alt_en, site.qr_decorative),
+          : imageRef(
+              site.qr_key,
+              site.qr_alt_zh,
+              site.qr_alt_en,
+              site.qr_decorative,
+              site.qr_frame,
+            ),
     },
     // The column's CHECK already refuses anything else, so this narrows a string
     // the compiler cannot see that about rather than defending against the
@@ -51,8 +57,8 @@ export function insertSite(db: D1Database, site: SiteContent): D1PreparedStateme
       .prepare(
         `INSERT INTO site (id, name_zh, name_en, contact_email, contact_wechat,
                            address_zh, address_en, hours_zh, hours_en,
-                           qr_key, qr_alt_zh, qr_alt_en, qr_decorative, type_scale)
-         VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                           qr_key, qr_alt_zh, qr_alt_en, qr_decorative, qr_frame, type_scale)
+         VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
         site.name.zh,
@@ -66,7 +72,7 @@ export function insertSite(db: D1Database, site: SiteContent): D1PreparedStateme
         // No code is four empty columns rather than a NULL key: the column is
         // NOT NULL, and '' is the value the read above turns back into null.
         ...(site.contact.qr === null
-          ? (['', '', '', 0] as const)
+          ? (['', '', '', 0, ''] as const)
           : imageBindings(site.contact.qr)),
         site.typeScale,
       ),

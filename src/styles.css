@@ -1133,6 +1133,110 @@ textarea.input {
   word-break: break-all;
 }
 
+/* ---------- framing ---------- */
+
+/*
+ * The preview is the site, and that is the whole design of this block: the four
+ * properties set on the picture here are the four CAFA-Template's MediaFrame
+ * sets on the picture it draws, so what the studio drags into place is what the
+ * page renders. Nothing below styles the photograph — it only gives the frame a
+ * width to be a shape inside.
+ */
+
+.framing {
+  align-items: start;
+  display: flex;
+  flex: 1 1 22rem;
+  flex-wrap: wrap;
+  gap: var(--gap);
+}
+
+.framing-preview-column {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 0;
+  inline-size: 13rem;
+}
+
+/*
+ * The aspect ratio is inline, because it is the value being edited. `overflow:
+ * hidden` is what makes a zoom a crop rather than a picture growing out of its
+ * box, and `touch-action: none` is what makes the drag work on a tablet: without
+ * it the browser claims the gesture and scrolls the form instead.
+ */
+.framing-preview {
+  /*
+   * The same white the site paints behind a photograph (--c-paper-raised over
+   * there is #fff, and so is --field here), which matters for exactly one
+   * setting: "fit inside" shows the frame around the picture, and a preview
+   * that showed a different colour there would be lying about the one case it
+   * is most needed for.
+   */
+  background: var(--field);
+  border: 1px solid var(--rule);
+  inline-size: 100%;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.framing-preview[data-movable] {
+  cursor: grab;
+}
+
+.framing-preview[data-movable]:active {
+  cursor: grabbing;
+}
+
+.framing-preview img {
+  display: block;
+  height: 100%;
+  user-select: none;
+  width: 100%;
+}
+
+.framing-controls {
+  align-content: start;
+  display: grid;
+  flex: 1 1 13rem;
+  gap: 0.5rem;
+  min-inline-size: 0;
+}
+
+/* The fields stack tightly in here. The gap above is the spacing; the field's
+   own bottom margin is the page's, and would double it. */
+.framing-controls .field {
+  margin: 0;
+}
+
+.framing-focus {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.framing-slider {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.framing-slider input {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+/* The one control in here whose value cannot be read off the control itself. */
+.framing-slider output {
+  color: var(--ink-60);
+  flex: none;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.framing-reset {
+  justify-self: start;
+}
+
 /* ---------- problems ---------- */
 
 .problems {

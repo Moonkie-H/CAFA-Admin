@@ -38,6 +38,7 @@
  */
 import {
   LOCALES,
+  naturalFraming,
   type ContentSet,
   type Dictionary,
   type Locale,
@@ -161,7 +162,7 @@ function project(work: Work): Work {
     year: work.year,
     summary: work.summary,
     credits: work.credits,
-    cover: { src: '', alt: '' },
+    cover: { src: '', alt: '', frame: naturalFraming() },
     media: [],
   };
 }

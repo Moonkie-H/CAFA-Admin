@@ -53,9 +53,15 @@ export async function readWorks(db: D1Database): Promise<Work[]> {
       role: pair(entry.role_zh, entry.role_en),
       name: pair(entry.name_zh, entry.name_en),
     })),
-    cover: imageRef(row.cover_key, row.cover_alt_zh, row.cover_alt_en, row.cover_decorative),
+    cover: imageRef(
+      row.cover_key,
+      row.cover_alt_zh,
+      row.cover_alt_en,
+      row.cover_decorative,
+      row.cover_frame,
+    ),
     media: (byWork.media.get(row.slug) ?? []).map((entry) =>
-      imageRef(entry.media_key, entry.alt_zh, entry.alt_en, entry.decorative),
+      imageRef(entry.media_key, entry.alt_zh, entry.alt_en, entry.decorative, entry.frame),
     ),
   }));
 }
@@ -80,8 +86,8 @@ export function insertWorks(db: D1Database, works: readonly Work[]): D1PreparedS
         .prepare(
           `INSERT INTO works (slug, position, index_no, title_zh, title_en, status, year,
                               summary_zh, summary_en, cover_key, cover_alt_zh, cover_alt_en,
-                              cover_decorative)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                              cover_decorative, cover_frame)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .bind(
           work.slug,
@@ -127,8 +133,9 @@ export function insertWorks(db: D1Database, works: readonly Work[]): D1PreparedS
       statements.push(
         db
           .prepare(
-            `INSERT INTO work_media (work_slug, position, media_key, alt_zh, alt_en, decorative)
-             VALUES (?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO work_media (work_slug, position, media_key, alt_zh, alt_en,
+                                     decorative, frame)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
           )
           .bind(work.slug, position, ...imageBindings(image)),
       );

@@ -15,7 +15,7 @@
  * empties a private work's cover and media. What is written here is what a
  * client will actually receive.
  */
-import { TYPE_SCALES } from '../../shared/content/types';
+import { FRAME_ZOOM_MAX, FRAME_ZOOM_MIN, TYPE_SCALES } from '../../shared/content/types';
 
 export interface JsonSchema {
   type?: 'object' | 'array' | 'string' | 'integer' | 'number' | 'boolean' | 'null';
@@ -25,6 +25,8 @@ export interface JsonSchema {
   items?: JsonSchema;
   enum?: readonly string[];
   const?: string;
+  minimum?: number;
+  maximum?: number;
   additionalProperties?: JsonSchema | boolean;
   anyOf?: readonly JsonSchema[];
   $ref?: string;
@@ -45,6 +47,19 @@ export function whole(description: string): JsonSchema {
 
 export function flag(description: string): JsonSchema {
   return { type: 'boolean', description };
+}
+
+/**
+ * A number a client may rely on the range of.
+ *
+ * The three values a frame is set by are the only bounded numbers the content
+ * has, and the bounds are part of what they mean rather than a validation
+ * detail: a zoom is between 1 and 3 because that is the range the admin's
+ * control offers and the parser enforces, so a client that plans for anything
+ * wider is planning for a value it will never receive.
+ */
+export function bounded(low: number, high: number, description: string): JsonSchema {
+  return { type: 'number', minimum: low, maximum: high, description };
 }
 
 /**
@@ -122,6 +137,30 @@ export const COMPONENTS: Record<string, JsonSchema> = {
     'Both languages, always. Neither can be blank — the editor refuses the save.',
   ),
 
+  Frame: shape(
+    {
+      ratio: maybeNumber(
+        'The shape to draw the photograph into, as width ÷ height, or null for the photograph’s own — which is the default and what most photographs carry.',
+      ),
+      fit: choice(
+        ['cover', 'contain'],
+        'How the photograph meets that shape: `cover` fills it and crops what falls outside, `contain` fits the whole photograph inside it and lets the frame show around it. Says nothing while `ratio` is null, where the two describe the same picture.',
+      ),
+      zoom: bounded(
+        FRAME_ZOOM_MIN,
+        FRAME_ZOOM_MAX,
+        'Magnification inside the frame. 1 is none, and it never goes below.',
+      ),
+      x: bounded(
+        0,
+        100,
+        'Which point of the photograph the frame is held over, per cent from the left. 50 is the middle.',
+      ),
+      y: bounded(0, 100, 'The same, per cent from the top.'),
+    },
+    'How a photograph is drawn where it appears — a shape, whether it fills that shape, how far in, and which part of it is kept. Four CSS values (`aspect-ratio`, `object-fit`, `scale`, `object-position`) and nothing else: the object under `src` is never cropped, at any width, so this can be changed as often as the studio likes and costs no upload. Absent means the photograph’s own shape, whole, centred.',
+  ),
+
   Image: shape(
     {
       src: text('The object key, e.g. "works/edible-house/01.jpg". Append it to `mediaBase`.'),
@@ -130,6 +169,7 @@ export const COMPONENTS: Record<string, JsonSchema> = {
         description:
           'The description, in both languages. The empty string is not an omission: it is how a photograph that carries no information is declared decorative.',
       },
+      frame: ref('Frame'),
     },
     'A photograph, as content refers to it. The bytes are served from the media origin, not from this API.',
   ),

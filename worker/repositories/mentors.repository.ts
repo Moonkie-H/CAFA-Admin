@@ -20,6 +20,7 @@ export async function readMentors(db: D1Database): Promise<Mentor[]> {
       row.portrait_alt_zh,
       row.portrait_alt_en,
       row.portrait_decorative,
+      row.portrait_frame,
     ),
   }));
 }
@@ -34,8 +35,8 @@ export function insertMentors(db: D1Database, mentors: readonly Mentor[]): D1Pre
       .prepare(
         `INSERT INTO mentors (slug, position, name_zh, name_en, discipline_zh, discipline_en,
                               note_zh, note_en, portrait_key, portrait_alt_zh, portrait_alt_en,
-                              portrait_decorative)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                              portrait_decorative, portrait_frame)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
         mentor.slug,
