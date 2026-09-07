@@ -65,6 +65,14 @@ schema, rather than discovered at build time:
   template's `lib/routes.ts` and to the deployment — the site URL literally so:
   it is the `PRODUCTION_URL` var, stamped into each published revision by
   `worker/domain/bundle.ts`.
+- **Prose can be formatted, within the site's six type sizes.** Every box the studio
+  types prose into carries four controls — bold, italic, a size, and where the line
+  sits. What they cannot do is invent a size: "larger" steps the line to the *next
+  type role* the site already has, never to a number of points, so a formatted page
+  still sets type in six sizes and no edit can put nine-pixel body copy on the live
+  site. There is no step down, no colour, no typeface and no indent, and pasting from
+  Word keeps the words and drops the rest. The formatting is stored inside the field
+  it formats, so it saves, publishes and rolls back with everything else.
 - **You cannot add a page, and cannot rearrange one.** The site has four, and
   each is a design in CAFA-Template with its own layout and its own motion — the
   front page's statement holding a screen on its own, the mentors read sideways

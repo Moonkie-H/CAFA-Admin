@@ -12,6 +12,7 @@
  */
 import { LOCALES, type LocalisedText } from '../../../shared/content/types';
 import { LOCALE_NAMES } from './locale-names';
+import { RichTextField } from './RichTextField';
 import { TextField } from './TextField';
 
 interface LocalisedFieldProps {
@@ -20,22 +21,48 @@ interface LocalisedFieldProps {
   onChange: (value: LocalisedText) => void;
   hint?: string;
   multiline?: boolean;
+  /**
+   * Prose the studio can format — bold, italic, a size, an alignment.
+   *
+   * A separate flag from `multiline` rather than a widening of it, because the
+   * two are not the same claim. Both give a box with room for several lines;
+   * this one also says the value is *read as prose on a page*, which is what
+   * makes formatting mean anything. A page's meta description is several lines
+   * long and is read by a crawler, so it stays a plain box.
+   */
+  rich?: boolean;
 }
 
-export function LocalisedField({ label, value, onChange, hint, multiline }: LocalisedFieldProps) {
+export function LocalisedField({
+  label,
+  value,
+  onChange,
+  hint,
+  multiline,
+  rich,
+}: LocalisedFieldProps) {
   return (
     <fieldset className="field localised">
       <legend className="field-label">{label}</legend>
       <div className="localised-pair">
-        {LOCALES.map((locale) => (
-          <TextField
-            key={locale}
-            label={LOCALE_NAMES[locale]}
-            value={value[locale] ?? ''}
-            multiline={multiline}
-            onChange={(next) => onChange({ ...value, [locale]: next })}
-          />
-        ))}
+        {LOCALES.map((locale) =>
+          rich === true ? (
+            <RichTextField
+              key={locale}
+              label={LOCALE_NAMES[locale]}
+              value={value[locale] ?? ''}
+              onChange={(next) => onChange({ ...value, [locale]: next })}
+            />
+          ) : (
+            <TextField
+              key={locale}
+              label={LOCALE_NAMES[locale]}
+              value={value[locale] ?? ''}
+              multiline={multiline}
+              onChange={(next) => onChange({ ...value, [locale]: next })}
+            />
+          ),
+        )}
       </div>
       {hint !== undefined && <p className="field-hint">{hint}</p>}
     </fieldset>

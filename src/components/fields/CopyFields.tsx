@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next';
 import { readCopyPath, writeCopyPath, type CopyPath } from '../../../shared/content/dictionary';
 import { LOCALES, type Dictionary, type Locale } from '../../../shared/content/types';
 import { LOCALE_NAMES } from './locale-names';
+import { RichTextField } from './RichTextField';
 import { TextField } from './TextField';
 
 export interface CopyField {
@@ -31,6 +32,8 @@ export interface CopyField {
   label: string;
   hint?: string;
   multiline?: boolean;
+  /** Prose on a page rather than a word on a control — see LocalisedField. */
+  rich?: boolean;
 }
 
 interface CopyFieldsProps {
@@ -49,17 +52,28 @@ export function CopyFields({ fields, dictionaries, onChange }: CopyFieldsProps) 
         <fieldset key={field.path} className="field localised">
           <legend className="field-label">{copy(field.label)}</legend>
           <div className="localised-pair">
-            {LOCALES.map((locale) => (
-              <TextField
-                key={locale}
-                label={LOCALE_NAMES[locale]}
-                multiline={field.multiline}
-                value={readCopyPath(dictionaries[locale], field.path)}
-                onChange={(value) =>
-                  onChange(locale, writeCopyPath(dictionaries[locale], field.path, value))
-                }
-              />
-            ))}
+            {LOCALES.map((locale) =>
+              field.rich === true ? (
+                <RichTextField
+                  key={locale}
+                  label={LOCALE_NAMES[locale]}
+                  value={readCopyPath(dictionaries[locale], field.path)}
+                  onChange={(value) =>
+                    onChange(locale, writeCopyPath(dictionaries[locale], field.path, value))
+                  }
+                />
+              ) : (
+                <TextField
+                  key={locale}
+                  label={LOCALE_NAMES[locale]}
+                  multiline={field.multiline}
+                  value={readCopyPath(dictionaries[locale], field.path)}
+                  onChange={(value) =>
+                    onChange(locale, writeCopyPath(dictionaries[locale], field.path, value))
+                  }
+                />
+              ),
+            )}
           </div>
           {field.hint !== undefined && <p className="field-hint">{copy(field.hint)}</p>}
         </fieldset>

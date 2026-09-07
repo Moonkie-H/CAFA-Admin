@@ -53,7 +53,7 @@ export function AboutPage({ editor }: AboutPageProps) {
             label={t('fields.paragraphNumber', { number: at + 1 })}
             value={paragraph}
             onChange={write}
-            multiline
+            rich
           />
         )}
       />

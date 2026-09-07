@@ -53,7 +53,7 @@ const CARD_WORDS: CopyField[] = [
     path: 'contact.note',
     label: 'Note',
     hint: 'How to apply, and what happens next.',
-    multiline: true,
+    rich: true,
   },
   { path: 'contact.from', label: 'Message form — the address field' },
   { path: 'contact.message', label: 'Message form — the message field' },
@@ -129,14 +129,14 @@ export function ContactPage({ editor }: ContactPageProps) {
         value={site.contact.address}
         onChange={(address) => setContact({ address })}
         hint={t('contactPage.linesHint')}
-        multiline
+        rich
       />
       <LocalisedField
         label={t('fields.hours')}
         value={site.contact.hours}
         onChange={(hours) => setContact({ hours })}
         hint={t('contactPage.linesHint')}
-        multiline
+        rich
       />
 
       <h3 className="panel-heading">{t('contactPage.words')}</h3>

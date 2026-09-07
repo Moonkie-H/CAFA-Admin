@@ -22,6 +22,7 @@
  * translating one translates the other.
  */
 import { citedImages, type ImageCitation } from './images';
+import { richPlainText } from './rich-text';
 import {
   LOCALES,
   WORK_STATUSES,
@@ -102,13 +103,23 @@ class Collector {
     this.problems.push({ section: this.section, record: this.record, label, message });
   }
 
+  /**
+   * Blank measured on the *words*, not on the characters.
+   *
+   * A prose field carries its own formatting now — `{center}` is an alignment
+   * and `**` is a pair of delimiters — so a line that is nothing but formatting
+   * is a field with no words in it, and it is not caught by trimming spaces.
+   * The studio would have saved it, published it, and found an empty line where
+   * a paragraph was. On a value with no formatting in it, which is every value
+   * the site has today, this is `trim()` and nothing else.
+   */
   text(value: string, label: Phrase): void {
-    if (value.trim() === '') this.add(label, fault.empty);
+    if (richPlainText(value).trim() === '') this.add(label, fault.empty);
   }
 
   localised(value: LocalisedText, label: Phrase): void {
     for (const locale of LOCALES) {
-      if ((value[locale] ?? '').trim() === '') {
+      if (richPlainText(value[locale] ?? '').trim() === '') {
         this.add(say('problems.label.inLocale', { field: label, locale: LOCALE_LABEL[locale] }), fault.empty);
       }
     }

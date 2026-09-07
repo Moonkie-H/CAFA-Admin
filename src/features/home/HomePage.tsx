@@ -43,7 +43,7 @@ export function HomePage({ editor }: HomePageProps) {
         value={page.statement}
         onChange={(statement) => set({ ...page, statement })}
         hint={t('homePage.statementHint')}
-        multiline
+        rich
       />
 
       <Repeatable

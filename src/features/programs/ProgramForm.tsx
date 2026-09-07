@@ -62,7 +62,7 @@ export function ProgramForm({ program, at, editor }: ProgramFormProps) {
         label={t('fields.summary')}
         value={program.summary}
         onChange={(summary) => set('summary', summary)}
-        multiline
+        rich
       />
 
       <footer className="form-footer">

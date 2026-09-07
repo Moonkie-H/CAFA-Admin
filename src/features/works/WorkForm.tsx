@@ -108,7 +108,7 @@ export function WorkForm({ work, at, editor }: WorkFormProps) {
         label={t('fields.summary')}
         value={work.summary}
         onChange={(value) => set('summary', value)}
-        multiline
+        rich
       />
 
       <Repeatable

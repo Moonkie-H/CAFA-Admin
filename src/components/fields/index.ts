@@ -11,5 +11,6 @@ export { ImageField } from './ImageField';
 export { LOCALE_NAMES } from './locale-names';
 export { LocalisedField } from './LocalisedField';
 export { NumberField } from './NumberField';
+export { RichTextField } from './RichTextField';
 export { SelectField } from './SelectField';
 export { TextField } from './TextField';

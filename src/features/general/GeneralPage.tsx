@@ -43,7 +43,7 @@ const EVERY_PAGE: CopyField[] = [
     path: 'footer.note',
     label: 'Footer note',
     hint: 'The one line along the bottom of every page. Press return to break it across two.',
-    multiline: true,
+    rich: true,
   },
   {
     path: 'meta.titleTemplate',
@@ -54,7 +54,7 @@ const EVERY_PAGE: CopyField[] = [
 
 const MISSING_PAGE: CopyField[] = [
   { path: 'notFound.title', label: 'Missing page — title' },
-  { path: 'notFound.body', label: 'Missing page — text', multiline: true },
+  { path: 'notFound.body', label: 'Missing page — text', rich: true },
   { path: 'notFound.home', label: 'Missing page — link home' },
 ];
 

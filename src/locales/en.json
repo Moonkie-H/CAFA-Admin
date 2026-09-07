@@ -147,7 +147,7 @@
   },
   "pageText": {
     "titleHint": "The heading at the top of the page, the browser tab, and the word in the menu — all three, so they cannot disagree.",
-    "descriptionHint": "One or two sentences. It appears under the link in a search result."
+    "descriptionHint": "One or two sentences. It appears under the link in a search result, which is why this is the one prose box with no formatting on it — a search result carries none."
   },
   "homePage": {
     "intro": "The first thing anyone sees: one line, and the photographs under it.",
@@ -223,6 +223,14 @@
     "make": "Make the missing sizes",
     "working": "Making them…",
     "doneNote": "The pictures themselves are untouched — nothing is re-saved, so no address changes and nothing already published moves. Publish afterwards so the site starts using them."
+  },
+  "formatting": {
+    "bold": "Bold",
+    "italic": "Italic",
+    "size": "Size",
+    "left": "Align left",
+    "center": "Centre",
+    "right": "Align right"
   },
   "typeScale": {
     "normal": "Normal",
