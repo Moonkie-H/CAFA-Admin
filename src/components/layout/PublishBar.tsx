@@ -55,6 +55,24 @@ export function PublishBar({ editor }: PublishBarProps) {
       : deploymentOf(status.latestRevision, status.production.revision, status.production.rebuilds);
   const settling = preview === 'building' || production === 'building';
 
+  /*
+   * A photograph is the one thing the studio changes without a field changing.
+   * A replacement keeps its key, so the content set is untouched; the backfill
+   * writes no key at all. Either way the draft moves ahead of the published
+   * revision — the bundle carries each photograph's digest and its ladder — and
+   * the status this bar is showing was read before any of it existed. So it
+   * still says there is nothing to publish, and the Publish button it disables
+   * is the one the backfill's own instructions tell the studio to press.
+   *
+   * Asking again on every upload is what makes the button agree with the
+   * bucket. It costs one request per photograph, next to the one that just
+   * carried the photograph itself.
+   */
+  useEffect(() => {
+    if (editor.uploads === 0) return;
+    void reload();
+  }, [editor.uploads, reload]);
+
   // Re-ask while a build is in flight, waiting a full interval *after* each
   // answer rather than every interval regardless — a slow reply should not
   // stack a second request behind the first.

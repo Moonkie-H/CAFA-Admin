@@ -36,6 +36,17 @@ export interface Editor {
   putMedia: (key: string, file: File) => Promise<void>;
   /** A URL the editor can show a committed photograph at. */
   mediaUrl: (key: string) => string;
+  /**
+   * How many times a photograph has reached the bucket this session.
+   *
+   * A count rather than a flag, so a reader can tell one upload from the next
+   * without anything having to be reset. It exists because a photograph is
+   * content the studio changes without touching a field: a replacement keeps
+   * its key, and the backfill writes no key at all, so `dirty` stays false
+   * while the draft moves ahead of what is published. The publish bar reads
+   * this to ask the Worker again — see PublishBar.
+   */
+  uploads: number;
   /** The photographs the bucket holds, as the registry describes them. */
   media: MediaInfo[];
   /** How many of them are still missing the narrower copies a phone is served. */
@@ -76,8 +87,13 @@ export function useEditor(initial: ContentSet, initialMedia: MediaInfo[]): Edito
    * the backfill exists to give them.
    */
   const [media, setMedia] = useState(initialMedia);
-  /** Bumped on every upload so a replaced photograph is re-fetched, not cached. */
-  const [version, setVersion] = useState(0);
+  /**
+   * Bumped on every upload. Two things read it: a preview URL, so a replaced
+   * photograph is re-fetched rather than served from the browser's cache, and
+   * the publish bar, so the button that sends those bytes to the site is not
+   * left disabled by a status that was read before they existed.
+   */
+  const [uploads, setUploads] = useState(0);
 
   const update = useCallback(<K extends keyof ContentSet>(key: K, value: ContentSet[K]) => {
     setContent((current) => ({ ...current, [key]: value }));
@@ -100,7 +116,7 @@ export function useEditor(initial: ContentSet, initialMedia: MediaInfo[]): Edito
       setError(null);
       try {
         record(await mediaService.upload(key, await prepareImage(file)));
-        setVersion((current) => current + 1);
+        setUploads((current) => current + 1);
       } finally {
         uploadsInFlight.current -= 1;
         setUploading(uploadsInFlight.current > 0);
@@ -133,7 +149,7 @@ export function useEditor(initial: ContentSet, initialMedia: MediaInfo[]): Edito
         const original = await mediaService.original(entry.key);
         record(await mediaService.upload(entry.key, await prepareStored(original, entry.tint)));
       }
-      setVersion((current) => current + 1);
+      setUploads((current) => current + 1);
     } catch (failure) {
       // Partial progress is kept rather than unwound: every photograph this got
       // to is now complete, and running it again picks up where it stopped.
@@ -144,7 +160,7 @@ export function useEditor(initial: ContentSet, initialMedia: MediaInfo[]): Edito
     }
   }, [media, record, t]);
 
-  const mediaUrl = useCallback((key: string) => mediaService.url(key, version), [version]);
+  const mediaUrl = useCallback((key: string) => mediaService.url(key, uploads), [uploads]);
 
   /*
    * Both gates, so the banner says the same thing the Worker would. The registry
@@ -198,6 +214,7 @@ export function useEditor(initial: ContentSet, initialMedia: MediaInfo[]): Edito
     update,
     putMedia,
     mediaUrl,
+    uploads,
     media,
     unladdered: media.filter(needsLadder).length,
     fillLadders,
