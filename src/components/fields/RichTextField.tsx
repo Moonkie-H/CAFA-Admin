@@ -38,8 +38,27 @@ import {
   type RichAlign,
   type RichSize,
 } from '../../../shared/content/rich-text';
-import { linesIn, NEUTRAL, paint, readBlocks, stateAt, type RichState } from '../../lib/rich-dom';
+import {
+  linesIn,
+  NEUTRAL,
+  paint,
+  rangeIn,
+  readBlocks,
+  selectAll,
+  stateAt,
+  type RichState,
+} from '../../lib/rich-dom';
 import { Field } from './Field';
+
+/**
+ * Pressing a button must not move focus out of the box.
+ *
+ * A button that took focus would collapse the selection it is about to act on,
+ * so the command would apply to a caret rather than to the chosen words.
+ */
+function keepSelection(event: { preventDefault: () => void }): void {
+  event.preventDefault();
+}
 
 interface RichTextFieldProps {
   label: string;
@@ -93,25 +112,50 @@ export function RichTextField({ label, value, onChange, hint }: RichTextFieldPro
   /**
    * Put the caret back where it was, do the thing, then read the result.
    *
-   * The mousedown handler below keeps focus in the box for a pointer, but a
-   * keyboard reaches a button by tabbing to it — which takes focus out, and
-   * `execCommand` acts on whatever is focused. So the range is restored rather
-   * than assumed, and the toolbar works the same both ways. CLAUDE.md §10.
+   * The mousedown handler on each button keeps focus in the box for a pointer,
+   * but a keyboard reaches a button by tabbing to it — and the size control is
+   * a `<select>`, which takes focus whichever way it is reached. `execCommand`
+   * acts on whatever is focused and a line control needs a range to find its
+   * lines, so the selection is re-established here rather than assumed.
+   *
+   * **A box nobody has put a caret in yet has no selection, and that is the
+   * ordinary first thing that happens to every one of these fields.** It used
+   * to mean the remembered range was null, which made a line control find no
+   * lines and do nothing at all, and sent a mark to whatever character `focus`
+   * happened to land on — so the studio pressed a button, watched nothing
+   * happen, pressed it on the other language, watched that one work, and ended
+   * up with the two reading at different sizes. Nothing selected now means the
+   * whole box, which is both the useful reading of the gesture and the one that
+   * cannot fail silently.
    */
   const act = useCallback(
     (run: (editable: HTMLDivElement, range: Range | null) => void) => {
       const editable = surface.current;
       if (editable === null) return;
       editable.focus();
-      const range = saved.current;
-      if (range !== null) {
+
+      // Only a remembered range that still points into this box: one taken
+      // before an external value repainted it names nodes that are gone.
+      const remembered = saved.current;
+      if (remembered !== null && editable.contains(remembered.startContainer)) {
         const selection = document.getSelection();
         selection?.removeAllRanges();
-        selection?.addRange(range);
+        selection?.addRange(remembered);
+      } else {
+        // Nothing remembered means nobody has put a caret in this box, so the
+        // press is about the box. It has to be decided on the *remembered*
+        // range rather than on the live one: `focus` above leaves a collapsed
+        // caret behind, which is a perfectly good range for a line control and
+        // useless for a mark — bold on a caret only arms the next character, so
+        // the studio saw the size button work and the bold button do nothing.
+        selectAll(editable);
       }
-      run(editable, range);
+
+      run(editable, rangeIn(editable));
       emit();
-      setState(stateAt(editable, saved.current));
+      // Read the live selection rather than the remembered one: the command
+      // just moved it, and the toolbar has to show what is true now.
+      setState(stateAt(editable, rangeIn(editable)));
     },
     [emit],
   );
@@ -164,13 +208,16 @@ export function RichTextField({ label, value, onChange, hint }: RichTextFieldPro
 
   return (
     <Field label={label} hint={hint}>
-      {/* Focus stays in the box when a button is pressed with a pointer: a
-          button that took it would collapse the selection it is about to act
-          on, and every command would apply to nothing. */}
-      <div className="rich-toolbar" onMouseDown={(event) => event.preventDefault()}>
+      {/* `keepSelection` is on the buttons and deliberately not on the bar: a
+          `<select>` whose mousedown is default-prevented does not open its
+          menu, so blanketing the toolbar with it made the size control
+          unclickable. The select is free to take focus instead — `act` puts the
+          selection back before it does anything. */}
+      <div className="rich-toolbar">
         <button
           type="button"
           className="rich-button rich-bold"
+          onMouseDown={keepSelection}
           aria-pressed={state.strong}
           aria-label={t('formatting.bold')}
           title={t('formatting.bold')}
@@ -181,6 +228,7 @@ export function RichTextField({ label, value, onChange, hint }: RichTextFieldPro
         <button
           type="button"
           className="rich-button rich-italic"
+          onMouseDown={keepSelection}
           aria-pressed={state.emphasis}
           aria-label={t('formatting.italic')}
           title={t('formatting.italic')}
@@ -209,6 +257,7 @@ export function RichTextField({ label, value, onChange, hint }: RichTextFieldPro
               key={option}
               type="button"
               className="rich-button"
+              onMouseDown={keepSelection}
               aria-pressed={state.align === option}
               aria-label={t(`formatting.${option}`)}
               title={t(`formatting.${option}`)}
