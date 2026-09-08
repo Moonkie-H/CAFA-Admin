@@ -230,6 +230,28 @@
     "size": "Size",
     "sizeAuto": "Auto"
   },
+  "framing": {
+    "shape": "Shape",
+    "shapes": {
+      "natural": "As the photograph is",
+      "square": "Square",
+      "portrait": "Portrait (4:5)",
+      "landscape": "Landscape (3:2)",
+      "wide": "Wide (16:9)"
+    },
+    "fit": "Inside the shape",
+    "fits": {
+      "cover": "Fill it — the edges are cropped",
+      "contain": "Fit inside it — all of the photograph shows"
+    },
+    "zoom": "Zoom",
+    "horizontal": "Left and right",
+    "vertical": "Up and down",
+    "percent": "{{value}}%",
+    "reset": "Reset {{name}}",
+    "dragHint": "Drag the picture to choose what the frame keeps.",
+    "wholeHint": "The whole photograph, at its own proportions."
+  },
   "typeScale": {
     "normal": "Normal",
     "large": "Large",

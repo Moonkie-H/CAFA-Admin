@@ -97,6 +97,49 @@ translation: it means the photograph carries no information and should be marked
 decorative (`alt=""`, and out of the accessibility tree). `Photograph.decorative`
 says the same thing as a boolean.
 
+## And: the frame decides how a photograph is *drawn*
+
+Separate from where it is fetched from, and easy to miss because a frontend that
+ignores it still renders something. Every image on the bundle carries one:
+
+```json
+{ "src": "projects/quiet-room.jpg",
+  "alt": { "zh": "…", "en": "…" },
+  "frame": { "ratio": 1, "fit": "cover", "zoom": 1.1, "x": 60, "y": 40 } }
+```
+
+- **`ratio`** — the shape to draw it into, as width ÷ height, or `null` for the
+  photograph's own. `null` is the default and is what most photographs have.
+- **`fit`** — `"cover"` fills the shape and crops what falls outside; `"contain"`
+  fits the whole photograph inside it. Meaningless while `ratio` is `null`.
+- **`zoom`** — magnification inside the frame, 1 to 3, never below 1.
+- **`x`, `y`** — which point of the photograph the frame is held over, 0–100 per
+  cent from the left and from the top. 50/50 is the middle.
+
+They are four CSS values and are meant to be spent as four CSS values —
+`aspect-ratio` on the box, `object-fit`, `object-position` and `scale` on the
+picture inside it, with `transform-origin` matching `object-position` so a zoom
+does not also drift. **Nothing is cropped in storage**: the object under `src` is
+the whole photograph at every width, which is what lets the studio reframe it as
+often as it likes at no cost, and is also the only thing that could work — the
+zone cannot transform (see above) and nothing in this repository can re-encode a
+JPEG.
+
+Two things to get right if you honour it:
+
+- **A frame is not layout shift.** The ratio is known before the file arrives, so
+  give the box its `aspect-ratio` rather than waiting for the image.
+- **`sizes` describes the picture, not the box.** Under `cover` a photograph is
+  drawn wider than its frame — a 3:1 panorama in a square frame is drawn at three
+  times the frame's width — so a `sizes` naming the frame asks for a third of the
+  pixels it will display. Multiply each length by `max(1, own ratio ÷ frame ratio)
+  × zoom`; under `contain` use `min(1, …)`, which asks for fewer bytes rather than
+  more. CAFA-Template does this in `MediaFrame.tsx`.
+
+A frame that is absent, or `null`, means the photograph's own shape, whole,
+centred — which is what every revision published before this field carried, so
+reading it as the default is required rather than defensive.
+
 ## Third: the site must publish `build-info.json`
 
 The admin's control panel answers "is it live yet" by fetching

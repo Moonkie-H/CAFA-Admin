@@ -20,11 +20,13 @@ export interface SiteRow {
   address_en: string;
   hours_zh: string;
   hours_en: string;
-  /** The WeChat QR code's four columns. An empty key is "no code". */
+  /** The WeChat QR code's five columns. An empty key is "no code". */
   qr_key: string;
   qr_alt_zh: string;
   qr_alt_en: string;
   qr_decorative: number;
+  /** How the code is drawn, as `mapping.ts` encodes it. '' is untouched. */
+  qr_frame: string;
   /** One of TYPE_SCALES, which the column's own CHECK is the second gate on. */
   type_scale: string;
 }
@@ -55,6 +57,7 @@ export interface HomeGalleryRow {
   alt_zh: string;
   alt_en: string;
   decorative: number;
+  frame: string;
 }
 
 export interface WorkRow {
@@ -70,6 +73,7 @@ export interface WorkRow {
   cover_alt_zh: string;
   cover_alt_en: string;
   cover_decorative: number;
+  cover_frame: string;
 }
 
 export interface DisciplineRow {
@@ -92,6 +96,7 @@ export interface WorkMediaRow {
   alt_zh: string;
   alt_en: string;
   decorative: number;
+  frame: string;
 }
 
 export interface ProgramRow {
@@ -116,6 +121,7 @@ export interface ProjectRow {
   image_alt_zh: string;
   image_alt_en: string;
   image_decorative: number;
+  image_frame: string;
 }
 
 export interface MentorRow {
@@ -130,6 +136,7 @@ export interface MentorRow {
   portrait_alt_zh: string;
   portrait_alt_en: string;
   portrait_decorative: number;
+  portrait_frame: string;
 }
 
 export interface CopyRow {

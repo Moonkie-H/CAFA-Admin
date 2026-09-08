@@ -10,7 +10,12 @@
 import { describe, expect, it } from 'vitest';
 
 import { checkContent, checkImagesInStorage, isSlug } from '../shared/content/validate';
-import type { ContentSet, ImageRef, SitePages } from '../shared/content/types';
+import {
+  naturalFraming,
+  type ContentSet,
+  type ImageRef,
+  type SitePages,
+} from '../shared/content/types';
 import { content } from './content-fixture';
 
 /** The problems, as `section/label-key` pairs — enough to say which rule fired. */
@@ -119,7 +124,7 @@ describe('checkContent', () => {
       slug: '',
       title: { zh: '', en: '' },
       summary: { zh: '简介', en: 'Summary' },
-      image: { src: '', alt: '' } as ImageRef,
+      image: { src: '', alt: '', frame: naturalFraming() } as ImageRef,
     };
 
     const problems = keys(checkContent({ ...content(), projects: [blank] }));
@@ -138,7 +143,11 @@ describe('checkContent', () => {
       slug: 'salt-and-scaffold',
       title: { zh: '项目', en: 'Project' },
       summary: { zh: '简介', en: 'Summary' },
-      image: { src: 'projects/salt-and-scaffold.jpg', alt: { zh: '照片', en: 'Photograph' } },
+      image: {
+        src: 'projects/salt-and-scaffold.jpg',
+        alt: { zh: '照片', en: 'Photograph' },
+        frame: naturalFraming(),
+      },
     };
 
     expect(keys(checkContent({ ...content(), projects: [project, project] }))).toContain(
@@ -185,16 +194,20 @@ describe('checkContent', () => {
   });
 
   it('treats a decorative photograph as described, and a half-filled alt as not', () => {
-    expect(checkContent(withGallery({ src: 'pages/home/01.jpg', alt: '' }))).toEqual([]);
+    expect(checkContent(withGallery({ src: 'pages/home/01.jpg', alt: '', frame: naturalFraming() }))).toEqual([]);
 
     expect(
-      keys(checkContent(withGallery({ src: 'pages/home/01.jpg', alt: { zh: '照片', en: '' } }))),
+      keys(checkContent(withGallery({ src: 'pages/home/01.jpg', alt: { zh: '照片', en: '' }, frame: naturalFraming() }))),
     ).toContain('pages/problems.message.empty');
   });
 });
 
 describe('checkImagesInStorage', () => {
-  const cited = withGallery({ src: 'pages/home/01.jpg', alt: { zh: '照片', en: 'Photograph' } });
+  const cited = withGallery({
+    src: 'pages/home/01.jpg',
+    alt: { zh: '照片', en: 'Photograph' },
+    frame: naturalFraming(),
+  });
 
   it('says which file is missing when the bucket has not got it', () => {
     const problems = checkImagesInStorage(cited, []);
@@ -210,6 +223,6 @@ describe('checkImagesInStorage', () => {
   });
 
   it('ignores a photograph that has not been chosen yet', () => {
-    expect(checkImagesInStorage(withGallery({ src: '', alt: '' }), [])).toEqual([]);
+    expect(checkImagesInStorage(withGallery({ src: '', alt: '', frame: naturalFraming() }), [])).toEqual([]);
   });
 });

@@ -58,6 +58,18 @@ schema, rather than discovered at build time:
   from the bytes, because a Worker has no decoder; the Worker checks it is an
   angle and the column checks again. A photograph with no hue to give, and one
   uploaded before this existed, both record nothing and get a neutral band.
+- **A photograph can be framed, but never cropped.** Beside every picture there
+  is the picture itself, shown at the size and shape the site will show it: a
+  shape to draw it into, whether it fills that shape or fits inside it, how far
+  in, and — by dragging the picture — which part of it the shape keeps. It is
+  how a 3:2 photograph and a 4:5 one end up in the same grid without the grid
+  going ragged, which no amount of care at the camera can fix. What it never
+  does is touch the file. The original and every rung of its ladder stay exactly
+  the bytes they were, so a photograph can be reframed as often as the studio
+  likes and nothing is re-uploaded, nothing is lost, and *Reset* really does put
+  it back. The site spends the four values as CSS. The default — the photograph
+  at its own proportions, whole — is what every photograph already has and what
+  a new one starts at.
 - **A private work publishes nothing.** It is listed in the index and has no
   page; its cover and photographs are dropped when a revision is built, so no
   URL for them ever reaches a browser.

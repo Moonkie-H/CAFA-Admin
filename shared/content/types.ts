@@ -28,11 +28,131 @@ export type LocalisedText = Record<Locale, string>;
 /** The upload and the Worker enforce the same public-image size budget. */
 export const MAX_IMAGE_EDGE = 2400;
 
+/**
+ * How a photograph meets the space the site gives it.
+ *
+ * Until this existed there was one answer for every photograph — the column is
+ * as wide as it is, the picture keeps its own proportions, and whatever ratio
+ * came off the camera is the ratio on the page. That is still the default and
+ * still the right default; what it could not do is put a 3:2 photograph and a
+ * 4:5 one in the same grid without the grid going ragged, and no amount of
+ * uploading fixes that, because the studio does not shoot everything at one
+ * ratio and should not have to.
+ *
+ * So a photograph may now be given a frame, and this says what the frame is and
+ * where the photograph sits inside it. It is a property of the *placement*
+ * rather than of the file: the same photograph is a square on the About grid
+ * and its own shape in a work's media column, and neither has to be re-uploaded
+ * for the other.
+ *
+ * None of it is a crop in the bucket. The original is untouched and every
+ * derivative under it is untouched; this is four numbers and a word that the
+ * site spends as `aspect-ratio`, `object-fit`, `object-position` and `scale`.
+ * That matters for two reasons beyond storage: the studio can change its mind
+ * at no cost, and the zone cannot transform images anyway — there is no
+ * `/cdn-cgi/image/` to crop with, so if the framing were not CSS it could not
+ * exist at all.
+ */
+export interface ImageFraming {
+  /**
+   * The frame's shape, as width ÷ height — or null for the photograph's own,
+   * which is what every photograph on the site had before there was a choice.
+   *
+   * A number rather than a name because the admin and the site are two
+   * codebases: a name would have to mean the same ratio in both, and the day
+   * they disagreed the studio's preview would quietly stop being what the page
+   * draws. The number *is* the shape, so there is nothing to keep in step.
+   */
+  ratio: number | null;
+  /**
+   * Whether the photograph fills the frame or fits inside it.
+   *
+   * `cover` crops — the photograph is enlarged until nothing of the frame is
+   * empty, and whatever falls outside is not drawn. `contain` letterboxes: the
+   * whole photograph is visible and the frame shows through around it.
+   *
+   * Inert while `ratio` is null, and not by a special case: the frame is then
+   * the photograph's own shape, so there is nothing to crop and nothing to
+   * letterbox and both words describe the same picture.
+   */
+  fit: FrameFit;
+  /**
+   * Magnification inside the frame, 1 being none.
+   *
+   * On top of `fit` rather than instead of it: `cover` at 1 is the tightest the
+   * photograph can be drawn without empty frame, and zoom goes in from there.
+   * There is no zoom below 1 — a photograph floating in a box of paper smaller
+   * than its frame is not a composition anyone asked for, and `contain` is
+   * already the way to see all of it.
+   */
+  zoom: number;
+  /**
+   * Which point of the photograph the frame is held over, in per cent from the
+   * left and from the top. 50/50 is the middle, which is where a crop lands
+   * when nobody has said otherwise.
+   *
+   * It is what makes cropping usable rather than dangerous: a square frame over
+   * a landscape photograph throws away a third of it, and which third is a
+   * decision only the person who took it can make.
+   */
+  x: number;
+  y: number;
+}
+
+export const FRAME_FITS = ['cover', 'contain'] as const;
+
+export type FrameFit = (typeof FRAME_FITS)[number];
+
+export function isFrameFit(value: string): value is FrameFit {
+  return FRAME_FITS.some((fit) => fit === value);
+}
+
+/**
+ * How far a frame may be pushed, in both directions.
+ *
+ * Bounds rather than preferences. A ratio outside these is a box the page
+ * cannot lay out — a strip a hundred pixels tall across a whole column — and a
+ * zoom above the top is a photograph enlarged past the pixels it has, which is
+ * softness the reader reads as a broken image. The admin's controls cannot
+ * produce anything outside them; the parser refuses it anyway, because the
+ * controls are not the only thing that can post.
+ */
+export const FRAME_RATIO_MIN = 0.2;
+export const FRAME_RATIO_MAX = 5;
+export const FRAME_ZOOM_MIN = 1;
+export const FRAME_ZOOM_MAX = 3;
+
+/** The photograph as it was uploaded: its own shape, whole, centred. */
+export function naturalFraming(): ImageFraming {
+  return { ratio: null, fit: 'cover', zoom: FRAME_ZOOM_MIN, x: 50, y: 50 };
+}
+
+/**
+ * Whether a framing is the one every photograph starts with.
+ *
+ * The database stores exactly this case as an empty column, so a site that has
+ * never used the feature carries no framing data at all — and a photograph the
+ * studio resets goes back to storing nothing rather than to storing the
+ * defaults spelled out.
+ */
+export function isNaturalFraming(frame: ImageFraming): boolean {
+  const natural = naturalFraming();
+  return (
+    frame.ratio === natural.ratio &&
+    frame.fit === natural.fit &&
+    frame.zoom === natural.zoom &&
+    frame.x === natural.x &&
+    frame.y === natural.y
+  );
+}
+
 export interface ImageRef {
   /** The R2 object key, e.g. "works/edible-house/01.jpg". */
   src: string;
   /** Required. The empty string is how a decorative image is declared. */
   alt: LocalisedText | '';
+  /** How it is drawn where it appears. See ImageFraming. */
+  frame: ImageFraming;
 }
 
 /** Measured from the file when it is uploaded, and never edited by hand. */
@@ -369,5 +489,5 @@ export function emptyLocalised(): LocalisedText {
 
 /** A photograph with nothing chosen yet. Three lists start an entry this way. */
 export function blankImage(): ImageRef {
-  return { src: '', alt: emptyLocalised() };
+  return { src: '', alt: emptyLocalised(), frame: naturalFraming() };
 }

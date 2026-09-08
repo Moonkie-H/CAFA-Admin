@@ -18,11 +18,18 @@ import {
   citedKeys,
   type ImageCitation,
 } from '../shared/content/images';
-import type { ContentSet, ImageRef, Mentor, Project, Work } from '../shared/content/types';
+import {
+  naturalFraming,
+  type ContentSet,
+  type ImageRef,
+  type Mentor,
+  type Project,
+  type Work,
+} from '../shared/content/types';
 import { content, pages } from './content-fixture';
 
 function image(src: string): ImageRef {
-  return { src, alt: { zh: '照片', en: 'Photograph' } };
+  return { src, alt: { zh: '照片', en: 'Photograph' }, frame: naturalFraming() };
 }
 
 function work(slug: string, status: Work['status'] = 'completed'): Work {
@@ -152,7 +159,7 @@ describe('citedKeys', () => {
   });
 
   it('leaves out a photograph that has not been chosen yet', () => {
-    const blank: ContentSet = { ...content(), mentors: [{ ...mentor('new'), portrait: { src: '', alt: '' } }] };
+    const blank: ContentSet = { ...content(), mentors: [{ ...mentor('new'), portrait: { src: '', alt: '', frame: naturalFraming() } }] };
     expect(citedKeys(blank).size).toBe(0);
   });
 

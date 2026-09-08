@@ -1,13 +1,21 @@
 /** Runtime parsing for content crossing the HTTP boundary. */
 import {
+  isFrameFit,
   isTypeScale,
   isWorkStatus,
+  naturalFraming,
+  FRAME_FITS,
+  FRAME_RATIO_MAX,
+  FRAME_RATIO_MIN,
+  FRAME_ZOOM_MAX,
+  FRAME_ZOOM_MIN,
   TYPE_SCALES,
   WORK_STATUSES,
   type AboutPage,
   type ContentSet,
   type Dictionary,
   type HomePage,
+  type ImageFraming,
   type ImageRef,
   type LocalisedText,
   type Mentor,
@@ -81,12 +89,56 @@ function localisedAt(value: unknown, path: string): LocalisedText {
   };
 }
 
+/** A number that has to sit inside a range, named by the range it broke. */
+function boundedAt(value: unknown, path: string, low: number, high: number): number {
+  const found = numberAt(value, path);
+  if (found < low || found > high) {
+    throw new ContentShapeError(path, `between ${low} and ${high}`);
+  }
+  return found;
+}
+
+/**
+ * How a photograph is drawn, off the wire.
+ *
+ * Absent is the whole of the backwards compatibility here, and it has to be:
+ * every record the studio has already saved was written before there was a
+ * frame, and every one of them means "the photograph's own shape, whole" —
+ * which is exactly `naturalFraming()`. So a missing key is not a malformed
+ * record, it is a record from before the question was asked.
+ *
+ * A frame that is *present* is checked to the last field. It reaches the site
+ * as four CSS values, and a ratio of zero or a zoom of a thousand is a page
+ * that lays out wrongly rather than a page that errors — the kind of failure
+ * that is only ever found by looking at it.
+ */
+export function framingAt(value: unknown, path: string): ImageFraming {
+  if (value === undefined || value === null) return naturalFraming();
+  const record = objectAt(value, path);
+
+  const rawRatio = property(record, 'ratio', path);
+  const fit = stringAt(property(record, 'fit', path), `${path}.fit`);
+  if (!isFrameFit(fit)) throw new ContentShapeError(`${path}.fit`, FRAME_FITS.join(' | '));
+
+  return {
+    ratio:
+      rawRatio === null
+        ? null
+        : boundedAt(rawRatio, `${path}.ratio`, FRAME_RATIO_MIN, FRAME_RATIO_MAX),
+    fit,
+    zoom: boundedAt(property(record, 'zoom', path), `${path}.zoom`, FRAME_ZOOM_MIN, FRAME_ZOOM_MAX),
+    x: boundedAt(property(record, 'x', path), `${path}.x`, 0, 100),
+    y: boundedAt(property(record, 'y', path), `${path}.y`, 0, 100),
+  };
+}
+
 function imageAt(value: unknown, path: string): ImageRef {
   const record = objectAt(value, path);
   const rawAlt = property(record, 'alt', path);
   return {
     src: stringAt(property(record, 'src', path), `${path}.src`),
     alt: rawAlt === '' ? '' : localisedAt(rawAlt, `${path}.alt`),
+    frame: framingAt(record.frame, `${path}.frame`),
   };
 }
 

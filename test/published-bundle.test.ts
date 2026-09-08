@@ -12,7 +12,12 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildBundle, transformsOn } from '../worker/domain/bundle';
-import type { ContentSet, MediaInfo, Work } from '../shared/content/types';
+import {
+  naturalFraming,
+  type ContentSet,
+  type MediaInfo,
+  type Work,
+} from '../shared/content/types';
 import { content } from './content-fixture';
 
 function work(slug: string, status: Work['status']): Work {
@@ -25,8 +30,18 @@ function work(slug: string, status: Work['status']): Work {
     year: 2024,
     summary: { zh: '摘要', en: 'Summary' },
     credits: [],
-    cover: { src: `works/${slug}/cover.jpg`, alt: { zh: '封面', en: 'Cover' } },
-    media: [{ src: `works/${slug}/01.jpg`, alt: { zh: '照片', en: 'Photograph' } }],
+    cover: {
+      src: `works/${slug}/cover.jpg`,
+      alt: { zh: '封面', en: 'Cover' },
+      frame: naturalFraming(),
+    },
+    media: [
+      {
+        src: `works/${slug}/01.jpg`,
+        alt: { zh: '照片', en: 'Photograph' },
+        frame: naturalFraming(),
+      },
+    ],
   };
 }
 
@@ -64,7 +79,7 @@ describe('the published bundle', () => {
     const [published] = bundle.works;
     expect(published?.slug).toBe('open-house');
     expect(published?.title).toEqual({ zh: '作品', en: 'Work' });
-    expect(published?.cover).toEqual({ src: '', alt: '' });
+    expect(published?.cover).toEqual({ src: '', alt: '', frame: naturalFraming() });
     expect(published?.media).toEqual([]);
 
     // And nothing measured about them either — no size, no colour, no key.

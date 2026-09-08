@@ -230,6 +230,28 @@
     "size": "字号",
     "sizeAuto": "自动"
   },
+  "framing": {
+    "shape": "形状",
+    "shapes": {
+      "natural": "照片原本的比例",
+      "square": "正方形",
+      "portrait": "竖幅（4:5）",
+      "landscape": "横幅（3:2）",
+      "wide": "宽幅（16:9）"
+    },
+    "fit": "在形状里",
+    "fits": {
+      "cover": "填满——边缘会被裁掉",
+      "contain": "完整放入——照片全部可见"
+    },
+    "zoom": "放大",
+    "horizontal": "左右",
+    "vertical": "上下",
+    "percent": "{{value}}%",
+    "reset": "还原{{name}}",
+    "dragHint": "拖动画面，决定这个形状里保留哪一部分。",
+    "wholeHint": "整张照片，按它原本的比例显示。"
+  },
   "typeScale": {
     "normal": "标准",
     "large": "大",
