@@ -1,4 +1,14 @@
-/** One mentor: a name, a discipline, one line, and a portrait. */
+/**
+ * One mentor: a name, the lines under it, and a portrait.
+ *
+ * The lines are one box rather than the two this form used to ask for. What
+ * goes under a face is a few lines about somebody — a discipline, where they
+ * studied, how long they have taught — and how many of them there are and where
+ * they break is the studio's to decide, so it is the same prose field the rest
+ * of the writing here uses, with its own line breaks. The name stays separate
+ * because it is a heading rather than a line: the site sets it as the plate's
+ * h3 and this admin titles the record with it.
+ */
 import { useTranslation } from 'react-i18next';
 
 import type { Mentor } from '../../../shared/content/types';
@@ -50,15 +60,11 @@ export function MentorForm({ mentor, at, editor }: MentorFormProps) {
         onChange={(name) => set('name', name)}
       />
       <LocalisedField
-        label={t('fields.discipline')}
-        value={mentor.discipline}
-        onChange={(discipline) => set('discipline', discipline)}
-      />
-      <LocalisedField
-        label={t('fields.oneLine')}
+        label={t('fields.about')}
         value={mentor.note}
         onChange={(note) => set('note', note)}
-        hint={t('mentorPage.oneLineHint')}
+        hint={t('mentorPage.aboutHint')}
+        rich
       />
 
       {isSlug(mentor.slug) ? (

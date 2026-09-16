@@ -20,6 +20,11 @@ checked in beside its code.
 > reads "the nav *is* the page titles". README.md § *The four pages, and the
 > tree* is the current description.
 >
+> The `mentors` table below has since lost its `discipline_zh` / `discipline_en`
+> columns: `0013_mentor_note_is_prose.sql` folded each into the first line of
+> `note_zh` / `note_en`, which is where the site drew it anyway, and made the
+> note prose the studio breaks where it likes.
+>
 > All five phases below are in the code. What still needs
 > hands on a Cloudflare account is the provisioning in §8 — creating the
 > database and bucket, running the seed and the upload, setting the secrets and

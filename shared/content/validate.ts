@@ -354,8 +354,7 @@ export function checkContent(content: ContentSet): Problem[] {
     const check = new Collector('mentors', mentor.slug);
     check.slug(mentor.slug, say('fields.key'));
     check.localised(mentor.name, say('fields.name'));
-    check.localised(mentor.discipline, say('fields.discipline'));
-    check.localised(mentor.note, say('fields.oneLine'));
+    check.localised(mentor.note, say('fields.about'));
     check.image(mentor.portrait, say('fields.portrait'));
     problems.push(...check.problems);
   }
