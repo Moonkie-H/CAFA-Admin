@@ -13,7 +13,6 @@ export async function readMentors(db: D1Database): Promise<Mentor[]> {
   return rows.results.map((row) => ({
     slug: row.slug,
     name: pair(row.name_zh, row.name_en),
-    discipline: pair(row.discipline_zh, row.discipline_en),
     note: pair(row.note_zh, row.note_en),
     portrait: imageRef(
       row.portrait_key,
@@ -33,18 +32,16 @@ export function insertMentors(db: D1Database, mentors: readonly Mentor[]): D1Pre
   return mentors.map((mentor, at) =>
     db
       .prepare(
-        `INSERT INTO mentors (slug, position, name_zh, name_en, discipline_zh, discipline_en,
-                              note_zh, note_en, portrait_key, portrait_alt_zh, portrait_alt_en,
+        `INSERT INTO mentors (slug, position, name_zh, name_en, note_zh, note_en,
+                              portrait_key, portrait_alt_zh, portrait_alt_en,
                               portrait_decorative, portrait_frame)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
         mentor.slug,
         at,
         mentor.name.zh,
         mentor.name.en,
-        mentor.discipline.zh,
-        mentor.discipline.en,
         mentor.note.zh,
         mentor.note.en,
         ...imageBindings(mentor.portrait),

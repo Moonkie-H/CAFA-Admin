@@ -238,10 +238,21 @@ export interface Program {
   summary: LocalisedText;
 }
 
+/**
+ * One of the people, as a plate on the band across About.
+ *
+ * Two pieces of writing and a photograph, where there used to be three: the
+ * name, which is the plate's heading and this record's title in the admin, and
+ * then everything else the studio wants to say about them, in one field of
+ * prose with its own line breaks. The discipline used to be a third box drawn
+ * on its own line above the note — a shape the form imposed on a paragraph —
+ * and `0013_mentor_note_is_prose.sql` folded it into the first line of `note`,
+ * which is where it was being read anyway.
+ */
 export interface Mentor {
   slug: string;
   name: LocalisedText;
-  discipline: LocalisedText;
+  /** The lines under the name. Prose: the studio decides how many there are. */
   note: LocalisedText;
   portrait: ImageRef;
 }

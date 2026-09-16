@@ -264,7 +264,6 @@ function mentorAt(value: unknown, path: string): Mentor {
   return {
     slug: stringAt(property(record, 'slug', path), `${path}.slug`),
     name: localisedAt(property(record, 'name', path), `${path}.name`),
-    discipline: localisedAt(property(record, 'discipline', path), `${path}.discipline`),
     note: localisedAt(property(record, 'note', path), `${path}.note`),
     portrait: imageAt(property(record, 'portrait', path), `${path}.portrait`),
   };

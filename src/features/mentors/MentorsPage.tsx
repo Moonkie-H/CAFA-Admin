@@ -8,7 +8,13 @@
  */
 import { useTranslation } from 'react-i18next';
 
-import { blankImage, emptyLocalised, type Mentor } from '../../../shared/content/types';
+import { richPlainText } from '../../../shared/content/rich-text';
+import {
+  blankImage,
+  emptyLocalised,
+  type LocalisedText,
+  type Mentor,
+} from '../../../shared/content/types';
 import { DeleteRecord, RecordIndex, RecordRow, ReorderControls } from '../../components/records';
 import type { Editor } from '../../hooks/useEditor';
 import { navigate, recordAt } from '../../routes';
@@ -17,10 +23,21 @@ function blankMentor(): Mentor {
   return {
     slug: '',
     name: emptyLocalised(),
-    discipline: emptyLocalised(),
     note: emptyLocalised(),
     portrait: blankImage(),
   };
+}
+
+/**
+ * A row shows one line about a person, and the note is now several.
+ *
+ * The first of them, with the formatting taken off — the studio's own opening
+ * line is the one that says who this is, and a row that printed `{28}` and a
+ * pair of asterisks would be showing the marks rather than the words.
+ */
+function opening(note: LocalisedText): string {
+  const written = richPlainText(note.zh) || richPlainText(note.en);
+  return written.split('\n')[0] ?? '';
 }
 
 interface MentorsPageProps {
@@ -52,7 +69,7 @@ export function MentorsPage({ editor }: MentorsPageProps) {
               key={mentor.slug === '' ? `new-${at}` : mentor.slug}
               number={String(at + 1).padStart(2, '0')}
               title={named}
-              subtitle={mentor.discipline.zh || mentor.discipline.en || t('mentorPage.noDiscipline')}
+              subtitle={opening(mentor.note) || t('mentorPage.noNote')}
               onOpen={() => navigate(recordAt('mentors', at))}
               controls={
                 <>

@@ -203,13 +203,15 @@ export const COMPONENTS: Record<string, JsonSchema> = {
     summary: ref('LocalisedText'),
   }),
 
-  Mentor: shape({
-    slug: text('Stable id.'),
-    name: ref('LocalisedText'),
-    discipline: ref('LocalisedText'),
-    note: ref('LocalisedText'),
-    portrait: ref('Image'),
-  }),
+  Mentor: shape(
+    {
+      slug: text('Stable id.'),
+      name: ref('LocalisedText'),
+      note: ref('LocalisedText'),
+      portrait: ref('Image'),
+    },
+    'One of the people, as a plate on the band across About: a portrait, a name, and the lines under it. `note` is prose and carries its own line breaks — it used to be one sentence with a separate `discipline` above it, and that discipline is now its first line.',
+  ),
 
   Project: shape(
     {

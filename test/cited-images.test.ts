@@ -51,8 +51,7 @@ function mentor(slug: string): Mentor {
   return {
     slug,
     name: { zh: '导师', en: 'Mentor' },
-    discipline: { zh: '建筑', en: 'Architecture' },
-    note: { zh: '一句话', en: 'One line' },
+    note: { zh: '建筑\n一句话', en: 'Architecture\nOne line' },
     portrait: image(`mentors/${slug}.jpg`),
   };
 }

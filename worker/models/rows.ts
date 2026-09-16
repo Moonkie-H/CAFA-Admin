@@ -128,8 +128,6 @@ export interface MentorRow {
   slug: string;
   name_zh: string;
   name_en: string;
-  discipline_zh: string;
-  discipline_en: string;
   note_zh: string;
   note_en: string;
   portrait_key: string;
